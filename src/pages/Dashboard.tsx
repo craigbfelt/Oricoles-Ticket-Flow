@@ -15,16 +15,30 @@ const Dashboard = () => {
     activeAssets: 0,
   });
   const [recentTickets, setRecentTickets] = useState<any[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         navigate("/auth");
+      } else {
+        checkAdminRole(session.user.id);
       }
     });
 
     fetchDashboardData();
   }, [navigate]);
+
+  const checkAdminRole = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    setIsAdmin(!!data);
+  };
 
   const fetchDashboardData = async () => {
     const { data: tickets } = await supabase
@@ -42,20 +56,29 @@ const Dashboard = () => {
       .select("*", { count: "exact", head: true })
       .in("status", ["open", "in_progress"]);
 
-    const { count: totalAssets } = await supabase
-      .from("assets")
-      .select("*", { count: "exact", head: true });
+    // Only fetch assets if admin
+    let totalAssets = 0;
+    let activeAssets = 0;
+    
+    if (isAdmin) {
+      const { count: totalCount } = await supabase
+        .from("assets")
+        .select("*", { count: "exact", head: true });
 
-    const { count: activeAssets } = await supabase
-      .from("assets")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "active");
+      const { count: activeCount } = await supabase
+        .from("assets")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "active");
+
+      totalAssets = totalCount || 0;
+      activeAssets = activeCount || 0;
+    }
 
     setStats({
       totalTickets: totalTickets || 0,
       openTickets: openTickets || 0,
-      totalAssets: totalAssets || 0,
-      activeAssets: activeAssets || 0,
+      totalAssets,
+      activeAssets,
     });
 
     setRecentTickets(tickets || []);

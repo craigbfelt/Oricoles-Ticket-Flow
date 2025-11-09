@@ -10,14 +10,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const Assets = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [assets, setAssets] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [assetToDelete, setAssetToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     asset_tag: "",
@@ -33,11 +37,24 @@ const Assets = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         navigate("/auth");
+      } else {
+        checkAdminRole(session.user.id);
       }
     });
 
     fetchAssets();
   }, [navigate]);
+
+  const checkAdminRole = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    setIsAdmin(!!data);
+  };
 
   const fetchAssets = async () => {
     const { data } = await supabase
@@ -88,6 +105,31 @@ const Assets = () => {
     }
   };
 
+  const handleDeleteAsset = async () => {
+    if (!assetToDelete) return;
+
+    const { error } = await supabase
+      .from("assets")
+      .delete()
+      .eq("id", assetToDelete);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Asset deleted successfully",
+      });
+      fetchAssets();
+    }
+    setDeleteDialogOpen(false);
+    setAssetToDelete(null);
+  };
+
   const getStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
       active: "bg-green-500",
@@ -111,7 +153,8 @@ const Assets = () => {
             <h1 className="text-3xl font-bold">Assets</h1>
             <p className="text-muted-foreground">Manage company assets</p>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
+          {isAdmin && (
+            <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
@@ -203,6 +246,7 @@ const Assets = () => {
               </form>
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         <Card>
@@ -210,7 +254,9 @@ const Assets = () => {
             <CardTitle>All Assets</CardTitle>
           </CardHeader>
           <CardContent>
-            {assets.length === 0 ? (
+            {!isAdmin ? (
+              <p className="text-muted-foreground">Only administrators can view and manage assets.</p>
+            ) : assets.length === 0 ? (
               <p className="text-muted-foreground">No assets yet. Add your first asset to get started.</p>
             ) : (
               <div className="space-y-4">
@@ -235,6 +281,21 @@ const Assets = () => {
             )}
           </CardContent>
         </Card>
+
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Asset</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this asset? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteAsset}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );

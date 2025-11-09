@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus } from "lucide-react";
+import { Plus, Trash2, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const Tickets = () => {
   const navigate = useNavigate();
@@ -23,6 +24,9 @@ const Tickets = () => {
   const [priority, setPriority] = useState("medium");
   const [category, setCategory] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [ticketToDelete, setTicketToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -45,7 +49,19 @@ const Tickets = () => {
 
     if (data) {
       setCurrentUserId(data.id);
+      checkAdminRole(userId);
     }
+  };
+
+  const checkAdminRole = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    setIsAdmin(!!data);
   };
 
   const fetchTickets = async () => {
@@ -96,6 +112,52 @@ const Tickets = () => {
       setCategory("");
       fetchTickets();
     }
+  };
+
+  const handleCloseTicket = async (ticketId: string) => {
+    const { error } = await supabase
+      .from("tickets")
+      .update({ status: "closed" as any, resolved_at: new Date().toISOString() })
+      .eq("id", ticketId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Ticket closed successfully",
+      });
+      fetchTickets();
+    }
+  };
+
+  const handleDeleteTicket = async () => {
+    if (!ticketToDelete) return;
+
+    const { error } = await supabase
+      .from("tickets")
+      .delete()
+      .eq("id", ticketToDelete);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Ticket deleted successfully",
+      });
+      fetchTickets();
+    }
+    setDeleteDialogOpen(false);
+    setTicketToDelete(null);
   };
 
   const getStatusBadge = (status: string) => {
@@ -222,9 +284,32 @@ const Tickets = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       {getPriorityBadge(ticket.priority)}
                       {getStatusBadge(ticket.status)}
+                      {ticket.status !== "closed" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleCloseTicket(ticket.id)}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Close
+                        </Button>
+                      )}
+                      {isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => {
+                            setTicketToDelete(ticket.id);
+                            setDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -232,6 +317,21 @@ const Tickets = () => {
             )}
           </CardContent>
         </Card>
+
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this ticket? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteTicket}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
