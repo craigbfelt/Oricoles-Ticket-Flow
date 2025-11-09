@@ -274,7 +274,20 @@ const Assets = () => {
                         {asset.location && <span>Location: {asset.location}</span>}
                       </div>
                     </div>
-                    {getStatusBadge(asset.status)}
+                    <div className="flex gap-2">
+                      {getStatusBadge(asset.status)}
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          setAssetToDelete(asset.id);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
