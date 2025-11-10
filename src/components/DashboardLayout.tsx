@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Ticket, Package, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, Ticket, Package, LogOut, Menu, X, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +13,25 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    checkAdminRole();
+  }, []);
+
+  const checkAdminRole = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    setIsAdmin(!!data);
+  };
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -29,6 +48,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Tickets", href: "/tickets", icon: Ticket },
     { name: "Assets", href: "/assets", icon: Package },
+    ...(isAdmin ? [{ name: "Users", href: "/users", icon: Users }] : []),
   ];
 
   return (
