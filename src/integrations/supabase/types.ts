@@ -142,42 +142,54 @@ export type Database = {
       tickets: {
         Row: {
           assigned_to: string | null
+          branch: string | null
           category: string | null
           created_at: string
           created_by: string | null
           description: string | null
+          error_code: string | null
+          fault_type: string | null
           id: string
           priority: Database["public"]["Enums"]["ticket_priority"]
           resolved_at: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           title: string
           updated_at: string
+          user_email: string | null
         }
         Insert: {
           assigned_to?: string | null
+          branch?: string | null
           category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          error_code?: string | null
+          fault_type?: string | null
           id?: string
           priority?: Database["public"]["Enums"]["ticket_priority"]
           resolved_at?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           title: string
           updated_at?: string
+          user_email?: string | null
         }
         Update: {
           assigned_to?: string | null
+          branch?: string | null
           category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          error_code?: string | null
+          fault_type?: string | null
           id?: string
           priority?: Database["public"]["Enums"]["ticket_priority"]
           resolved_at?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           title?: string
           updated_at?: string
+          user_email?: string | null
         }
         Relationships: [
           {
