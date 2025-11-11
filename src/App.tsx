@@ -13,7 +13,8 @@ import HardwareInventory from "./pages/HardwareInventory";
 import SoftwareInventory from "./pages/SoftwareInventory";
 import Licenses from "./pages/Licenses";
 import Microsoft365Dashboard from "./pages/Microsoft365Dashboard";
-import VpnRdp from "./pages/VpnRdp";
+import Vpn from "./pages/Vpn";
+import Rdp from "./pages/Rdp";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,7 +37,8 @@ const App = () => (
           <Route path="/software" element={<SoftwareInventory />} />
           <Route path="/licenses" element={<Licenses />} />
           <Route path="/microsoft365" element={<Microsoft365Dashboard />} />
-          <Route path="/vpn-rdp" element={<VpnRdp />} />
+          <Route path="/vpn" element={<Vpn />} />
+          <Route path="/rdp" element={<Rdp />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

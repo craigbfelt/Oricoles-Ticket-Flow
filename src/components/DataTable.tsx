@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
 
 interface Column<T> {
@@ -17,6 +18,10 @@ interface DataTableProps<T> {
   columns: Column<T>[];
   onRowClick?: (row: T) => void;
   searchKeys?: string[];
+  selectable?: boolean;
+  selectedRows?: T[];
+  onSelectionChange?: (rows: T[]) => void;
+  getRowId?: (row: T) => string;
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -24,6 +29,10 @@ export function DataTable<T extends Record<string, any>>({
   columns,
   onRowClick,
   searchKeys = [],
+  selectable = false,
+  selectedRows = [],
+  onSelectionChange,
+  getRowId = (row) => row.id,
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -105,6 +114,28 @@ export function DataTable<T extends Record<string, any>>({
     }));
   };
 
+  const isRowSelected = (row: T) => {
+    return selectedRows.some((selected) => getRowId(selected) === getRowId(row));
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      onSelectionChange?.(filteredData);
+    } else {
+      onSelectionChange?.([]);
+    }
+  };
+
+  const handleSelectRow = (row: T, checked: boolean) => {
+    if (checked) {
+      onSelectionChange?.([...selectedRows, row]);
+    } else {
+      onSelectionChange?.(selectedRows.filter((r) => getRowId(r) !== getRowId(row)));
+    }
+  };
+
+  const allSelected = filteredData.length > 0 && filteredData.every((row) => isRowSelected(row));
+
   return (
     <div className="space-y-4">
       {searchKeys.length > 0 && (
@@ -130,6 +161,15 @@ export function DataTable<T extends Record<string, any>>({
         <Table>
           <TableHeader>
             <TableRow>
+              {selectable && (
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={handleSelectAll}
+                    aria-label="Select all"
+                  />
+                </TableHead>
+              )}
               {columns.map((column) => (
                 <TableHead key={column.key}>
                   <div className="space-y-2">
@@ -165,7 +205,7 @@ export function DataTable<T extends Record<string, any>>({
           <TableBody>
             {filteredData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={columns.length + (selectable ? 1 : 0)} className="text-center text-muted-foreground py-8">
                   No results found
                 </TableCell>
               </TableRow>
@@ -173,11 +213,24 @@ export function DataTable<T extends Record<string, any>>({
               filteredData.map((row, index) => (
                 <TableRow
                   key={index}
-                  onClick={() => onRowClick?.(row)}
-                  className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""}
+                  onClick={() => !selectable && onRowClick?.(row)}
+                  className={!selectable && onRowClick ? "cursor-pointer hover:bg-muted/50" : ""}
                 >
+                  {selectable && (
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={isRowSelected(row)}
+                        onCheckedChange={(checked) => handleSelectRow(row, checked as boolean)}
+                        aria-label="Select row"
+                      />
+                    </TableCell>
+                  )}
                   {columns.map((column) => (
-                    <TableCell key={column.key}>
+                    <TableCell 
+                      key={column.key}
+                      onClick={() => selectable && onRowClick?.(row)}
+                      className={selectable && onRowClick ? "cursor-pointer" : ""}
+                    >
                       {column.render
                         ? column.render(row[column.key], row)
                         : row[column.key]?.toString() || "-"}

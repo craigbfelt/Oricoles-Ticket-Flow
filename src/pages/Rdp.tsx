@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
-import { KeyRound, Upload, Plus, Trash2 } from "lucide-react";
+import { Monitor, Upload, Plus, Trash2, ArrowLeftRight } from "lucide-react";
 import { DataTable, type Column } from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,16 +25,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-interface VpnRdpCredential {
+interface RdpCredential {
   id: string;
   username: string;
   password: string;
@@ -45,22 +46,22 @@ interface VpnRdpCredential {
   updated_at: string;
 }
 
-const VpnRdp = () => {
+const Rdp = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [credentials, setCredentials] = useState<VpnRdpCredential[]>([]);
+  const [credentials, setCredentials] = useState<RdpCredential[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCredential, setSelectedCredential] = useState<VpnRdpCredential | null>(null);
+  const [selectedCredential, setSelectedCredential] = useState<RdpCredential | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [bulkConvertDialogOpen, setBulkConvertDialogOpen] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState<"VPN" | "RDP">("VPN");
+  const [selectedRows, setSelectedRows] = useState<RdpCredential[]>([]);
 
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    service_type: "VPN" as "VPN" | "RDP",
     email: "",
     notes: "",
   });
@@ -99,27 +100,26 @@ const VpnRdp = () => {
     const { data, error } = await supabase
       .from("vpn_rdp_credentials")
       .select("*")
-      .order("service_type")
+      .eq("service_type", "RDP")
       .order("username");
 
     if (error) {
       toast({
         title: "Error",
-        description: "Failed to fetch credentials",
+        description: "Failed to fetch RDP credentials",
         variant: "destructive",
       });
     } else {
-      setCredentials((data || []) as VpnRdpCredential[]);
+      setCredentials((data || []) as RdpCredential[]);
     }
     setLoading(false);
   };
 
-  const handleRowClick = (credential: VpnRdpCredential) => {
+  const handleRowClick = (credential: RdpCredential) => {
     setSelectedCredential(credential);
     setFormData({
       username: credential.username,
       password: credential.password,
-      service_type: credential.service_type,
       email: credential.email || "",
       notes: credential.notes || "",
     });
@@ -132,7 +132,6 @@ const VpnRdp = () => {
     setFormData({
       username: "",
       password: "",
-      service_type: activeTab,
       email: "",
       notes: "",
     });
@@ -153,7 +152,7 @@ const VpnRdp = () => {
     const dataToSave = {
       username: formData.username,
       password: formData.password,
-      service_type: formData.service_type,
+      service_type: "RDP" as const,
       email: formData.email || null,
       notes: formData.notes || null,
     };
@@ -224,6 +223,30 @@ const VpnRdp = () => {
     }
   };
 
+  const handleBulkConvertToVpn = async () => {
+    const ids = selectedRows.map((row) => row.id);
+    const { error } = await supabase
+      .from("vpn_rdp_credentials")
+      .update({ service_type: "VPN" })
+      .in("id", ids);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to convert credentials to VPN",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: `Converted ${selectedRows.length} credential(s) to VPN`,
+      });
+      setSelectedRows([]);
+      setBulkConvertDialogOpen(false);
+      fetchCredentials();
+    }
+  };
+
   const handleCsvUpload = async () => {
     if (!csvFile) {
       toast({
@@ -239,15 +262,14 @@ const VpnRdp = () => {
       const text = e.target?.result as string;
       const rows = text.split("\n").filter(row => row.trim());
       
-      // Skip header row if it exists
       const dataRows = rows[0].toLowerCase().includes("username") ? rows.slice(1) : rows;
       
       const credentialsToInsert = dataRows.map(row => {
-        const [username, password, serviceType, email, notes] = row.split(",").map(cell => cell.trim());
+        const [username, password, , email, notes] = row.split(",").map(cell => cell.trim());
         return {
           username,
           password,
-          service_type: (serviceType?.toUpperCase() === "RDP" ? "RDP" : "VPN") as "VPN" | "RDP",
+          service_type: "RDP" as const,
           email: email || null,
           notes: notes || null,
         };
@@ -275,7 +297,7 @@ const VpnRdp = () => {
       } else {
         toast({
           title: "Success",
-          description: `Imported ${credentialsToInsert.length} credentials successfully`,
+          description: `Imported ${credentialsToInsert.length} credential(s) successfully`,
         });
         setAddDialogOpen(false);
         setCsvFile(null);
@@ -286,7 +308,7 @@ const VpnRdp = () => {
     reader.readAsText(csvFile);
   };
 
-  const columns: Column<VpnRdpCredential>[] = [
+  const columns: Column<RdpCredential>[] = [
     {
       key: "username",
       label: "Username",
@@ -315,93 +337,87 @@ const VpnRdp = () => {
     },
   ];
 
-  const vpnCredentials = credentials.filter(c => c.service_type === "VPN");
-  const rdpCredentials = credentials.filter(c => c.service_type === "RDP");
-
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
-              <KeyRound className="w-8 h-8" />
-              VPN & RDP Credentials
+              <Monitor className="w-8 h-8" />
+              RDP Credentials
             </h1>
-            <p className="text-muted-foreground">Manage FortiClient VPN and RDP login credentials</p>
+            <p className="text-muted-foreground">Manage Remote Desktop Protocol login credentials</p>
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "VPN" | "RDP")}>
-          <div className="flex items-center justify-between mb-4">
-            <TabsList>
-              <TabsTrigger value="VPN">VPN Credentials</TabsTrigger>
-              <TabsTrigger value="RDP">RDP Credentials</TabsTrigger>
-            </TabsList>
-            
-            <div className="flex gap-2">
-              <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Import CSV
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Import {activeTab} Credentials from CSV</DialogTitle>
-                    <DialogDescription>
-                      Upload a CSV file with columns: username, password, service_type (VPN/RDP), email, notes
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="csv-file">CSV File</Label>
-                      <Input
-                        id="csv-file"
-                        type="file"
-                        accept=".csv"
-                        onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
-                      />
-                    </div>
-                    <Button onClick={handleCsvUpload} className="w-full">
-                      Upload and Import
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-              <Button onClick={handleAddNew}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add {activeTab} Credential
+        <div className="flex items-center justify-between">
+          {selectedRows.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {selectedRows.length} selected
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setBulkConvertDialogOpen(true)}
+              >
+                <ArrowLeftRight className="w-4 h-4 mr-2" />
+                Convert to VPN
               </Button>
             </div>
+          )}
+          
+          <div className="flex gap-2 ml-auto">
+            <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Import CSV
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Import RDP Credentials from CSV</DialogTitle>
+                  <DialogDescription>
+                    Upload a CSV file with columns: username, password, service_type, email, notes
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="csv-file">CSV File</Label>
+                    <Input
+                      id="csv-file"
+                      type="file"
+                      accept=".csv"
+                      onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                    />
+                  </div>
+                  <Button onClick={handleCsvUpload} className="w-full">
+                    Upload and Import
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button onClick={handleAddNew}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add RDP Credential
+            </Button>
           </div>
+        </div>
 
-          <TabsContent value="VPN">
-            {loading ? (
-              <p>Loading VPN credentials...</p>
-            ) : (
-              <DataTable
-                data={vpnCredentials}
-                columns={columns}
-                onRowClick={handleRowClick}
-                searchKeys={["username", "email"]}
-              />
-            )}
-          </TabsContent>
-
-          <TabsContent value="RDP">
-            {loading ? (
-              <p>Loading RDP credentials...</p>
-            ) : (
-              <DataTable
-                data={rdpCredentials}
-                columns={columns}
-                onRowClick={handleRowClick}
-                searchKeys={["username", "email"]}
-              />
-            )}
-          </TabsContent>
-        </Tabs>
+        {loading ? (
+          <p>Loading RDP credentials...</p>
+        ) : (
+          <DataTable
+            data={credentials}
+            columns={columns}
+            onRowClick={handleRowClick}
+            searchKeys={["username", "email"]}
+            selectable={true}
+            selectedRows={selectedRows}
+            onSelectionChange={setSelectedRows}
+          />
+        )}
 
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetContent className="overflow-y-auto">
@@ -413,24 +429,6 @@ const VpnRdp = () => {
             </SheetHeader>
 
             <div className="space-y-6 mt-6">
-              <div className="space-y-2">
-                <Label htmlFor="service_type">Service Type *</Label>
-                <Select
-                  value={formData.service_type}
-                  onValueChange={(value: "VPN" | "RDP") =>
-                    setFormData({ ...formData, service_type: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="VPN">VPN</SelectItem>
-                    <SelectItem value="RDP">RDP</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="username">Username *</Label>
                 <Input
@@ -487,9 +485,24 @@ const VpnRdp = () => {
             </div>
           </SheetContent>
         </Sheet>
+
+        <AlertDialog open={bulkConvertDialogOpen} onOpenChange={setBulkConvertDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Convert to VPN Credentials?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will convert {selectedRows.length} RDP credential(s) to VPN credentials. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleBulkConvertToVpn}>Convert</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
 };
 
-export default VpnRdp;
+export default Rdp;

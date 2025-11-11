@@ -53,7 +53,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       { name: "Hardware", href: "/hardware", icon: Monitor },
       { name: "Software", href: "/software", icon: Code },
       { name: "Licenses", href: "/licenses", icon: Key },
-      { name: "VPN/RDP", href: "/vpn-rdp", icon: Key },
+      { name: "VPN", href: "/vpn", icon: Key },
+      { name: "RDP", href: "/rdp", icon: Monitor },
       { name: "Reports", href: "/reports", icon: FileBarChart },
       { name: "Users", href: "/users", icon: Users }
     ] : []),
