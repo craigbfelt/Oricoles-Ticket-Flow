@@ -287,10 +287,25 @@ const Rdp = () => {
       const text = e.target?.result as string;
       const rows = text.split("\n").filter(row => row.trim());
       
-      const dataRows = rows[0].toLowerCase().includes("username") ? rows.slice(1) : rows;
+      const hasHeader = rows[0].toLowerCase().includes("username");
+      const dataRows = hasHeader ? rows.slice(1) : rows;
       
       const credentialsToInsert = dataRows.map(row => {
-        const [username, password, , email, notes] = row.split(",").map(cell => cell.trim());
+        const columns = row.split(",").map(cell => cell.trim());
+        
+        // Support both formats:
+        // Format 1: username, password, email, notes (4 columns)
+        // Format 2: username, password, service_type, email, notes (5 columns)
+        let username, password, email, notes;
+        
+        if (columns.length >= 5) {
+          // 5+ columns: assume service_type is included
+          [username, password, , email, notes] = columns;
+        } else {
+          // 4 or fewer columns: no service_type column
+          [username, password, email, notes] = columns;
+        }
+        
         return {
           username,
           password,
