@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -17,6 +18,7 @@ const HardwareInventory = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [formData, setFormData] = useState({
     device_name: "",
     device_type: "",
@@ -161,6 +163,33 @@ const HardwareInventory = () => {
     }
   };
 
+  const handleMicrosoftSync = async () => {
+    setIsSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-microsoft-365');
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        const { results } = data;
+        toast.success(
+          `Sync completed! Devices: ${results.devices}, Users: ${results.users}, Licenses: ${results.licenses}`
+        );
+        if (results.errors.length > 0) {
+          console.warn('Sync errors:', results.errors);
+        }
+        fetchDevices();
+      } else {
+        throw new Error(data?.error || 'Sync failed');
+      }
+    } catch (error) {
+      console.error('Microsoft sync error:', error);
+      toast.error('Failed to sync with Microsoft 365');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="p-8">
@@ -171,6 +200,14 @@ const HardwareInventory = () => {
           </div>
           {isAdmin && (
             <div className="flex gap-2">
+              <Button 
+                onClick={handleMicrosoftSync}
+                disabled={isSyncing}
+                variant="outline"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+                {isSyncing ? 'Syncing...' : 'Sync Microsoft 365'}
+              </Button>
               <Button variant="outline" disabled={isImporting} onClick={() => document.getElementById('hw-csv-upload')?.click()}>
                 <Upload className="mr-2 h-4 w-4" />
                 {isImporting ? 'Importing...' : 'Import CSV'}
