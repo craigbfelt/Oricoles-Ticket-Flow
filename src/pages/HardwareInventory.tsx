@@ -2,16 +2,17 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Plus, Edit } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
+import { DataTable } from "@/components/DataTable";
 
 const HardwareInventory = () => {
   const [devices, setDevices] = useState<any[]>([]);
@@ -19,6 +20,9 @@ const HardwareInventory = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [selectedDevice, setSelectedDevice] = useState<any | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({
     device_name: "",
     device_type: "",
@@ -190,6 +194,111 @@ const HardwareInventory = () => {
     }
   };
 
+  const handleDeviceClick = (device: any) => {
+    setSelectedDevice(device);
+    setFormData({
+      device_name: device.device_name || "",
+      device_type: device.device_type || "",
+      manufacturer: device.manufacturer || "",
+      model: device.model || "",
+      serial_number: device.serial_number || "",
+      processor: device.processor || "",
+      ram_gb: device.ram_gb?.toString() || "",
+      storage_gb: device.storage_gb?.toString() || "",
+      os: device.os || "",
+      os_version: device.os_version || "",
+      location: device.location || "",
+      branch: device.branch || "",
+      purchase_date: device.purchase_date || "",
+      warranty_expires: device.warranty_expires || "",
+      status: device.status || "active",
+      notes: device.notes || "",
+    });
+    setEditMode(false);
+    setSheetOpen(true);
+  };
+
+  const handleSaveDevice = async () => {
+    if (!selectedDevice) return;
+
+    const deviceData = {
+      ...formData,
+      ram_gb: formData.ram_gb ? parseInt(formData.ram_gb) : null,
+      storage_gb: formData.storage_gb ? parseInt(formData.storage_gb) : null,
+      purchase_date: formData.purchase_date || null,
+      warranty_expires: formData.warranty_expires || null,
+    };
+
+    const { error } = await supabase
+      .from("hardware_inventory")
+      .update(deviceData)
+      .eq("id", selectedDevice.id);
+
+    if (error) {
+      toast.error('Failed to update device');
+    } else {
+      toast.success('Device updated successfully');
+      fetchDevices();
+      setSheetOpen(false);
+      setSelectedDevice(null);
+      setEditMode(false);
+    }
+  };
+
+  const columns = [
+    {
+      key: "device_name",
+      label: "Device Name",
+      filterPlaceholder: "Filter by name...",
+    },
+    {
+      key: "device_type",
+      label: "Type",
+      filterPlaceholder: "Filter by type...",
+    },
+    {
+      key: "manufacturer",
+      label: "Manufacturer",
+      filterPlaceholder: "Filter by manufacturer...",
+    },
+    {
+      key: "model",
+      label: "Model",
+    },
+    {
+      key: "serial_number",
+      label: "Serial Number",
+      filterPlaceholder: "Filter by serial...",
+    },
+    {
+      key: "ram_gb",
+      label: "RAM (GB)",
+    },
+    {
+      key: "storage_gb",
+      label: "Storage (GB)",
+    },
+    {
+      key: "os",
+      label: "OS",
+      render: (value: any, row: any) => `${value || ""} ${row.os_version || ""}`.trim(),
+    },
+    {
+      key: "branch",
+      label: "Branch",
+      filterPlaceholder: "Filter by branch...",
+    },
+    {
+      key: "status",
+      label: "Status",
+      render: (value: any) => (
+        <Badge variant={value === 'active' ? 'default' : 'secondary'}>
+          {value}
+        </Badge>
+      ),
+    },
+  ];
+
   return (
     <DashboardLayout>
       <div className="p-8">
@@ -231,54 +340,12 @@ const HardwareInventory = () => {
             <CardTitle>Devices ({devices.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Device Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Manufacturer</TableHead>
-                  <TableHead>Model</TableHead>
-                  <TableHead>Serial Number</TableHead>
-                  <TableHead>RAM (GB)</TableHead>
-                  <TableHead>Storage (GB)</TableHead>
-                  <TableHead>OS</TableHead>
-                  <TableHead>Branch</TableHead>
-                  <TableHead>Status</TableHead>
-                  {isAdmin && <TableHead>Actions</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {devices.map((device) => (
-                  <TableRow key={device.id}>
-                    <TableCell className="font-medium">{device.device_name}</TableCell>
-                    <TableCell>{device.device_type}</TableCell>
-                    <TableCell>{device.manufacturer}</TableCell>
-                    <TableCell>{device.model}</TableCell>
-                    <TableCell>{device.serial_number}</TableCell>
-                    <TableCell>{device.ram_gb}</TableCell>
-                    <TableCell>{device.storage_gb}</TableCell>
-                    <TableCell>{device.os} {device.os_version}</TableCell>
-                    <TableCell>{device.branch}</TableCell>
-                    <TableCell>
-                      <Badge variant={device.status === 'active' ? 'default' : 'secondary'}>
-                        {device.status}
-                      </Badge>
-                    </TableCell>
-                    {isAdmin && (
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(device.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <DataTable
+              data={devices}
+              columns={columns}
+              onRowClick={handleDeviceClick}
+              searchKeys={["device_name", "device_type", "manufacturer", "model", "serial_number", "branch"]}
+            />
           </CardContent>
         </Card>
 
@@ -438,6 +505,208 @@ const HardwareInventory = () => {
             </form>
           </DialogContent>
         </Dialog>
+
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+          <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+            {selectedDevice && (
+              <>
+                <SheetHeader>
+                  <SheetTitle className="flex items-center gap-2">
+                    {editMode ? "Edit Device" : "Device Details"}
+                    {!editMode && isAdmin && (
+                      <Button size="sm" variant="ghost" onClick={() => setEditMode(true)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </SheetTitle>
+                  <SheetDescription>
+                    {selectedDevice.serial_number || "No serial number"}
+                  </SheetDescription>
+                </SheetHeader>
+
+                <div className="space-y-6 mt-6">
+                  {!editMode ? (
+                    <>
+                      <div className="grid gap-4">
+                        <div>
+                          <Label className="text-muted-foreground">Device Name</Label>
+                          <p className="text-sm mt-1 font-medium">{selectedDevice.device_name}</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-muted-foreground">Type</Label>
+                            <p className="text-sm mt-1">{selectedDevice.device_type || "-"}</p>
+                          </div>
+                          <div>
+                            <Label className="text-muted-foreground">Status</Label>
+                            <Badge variant={selectedDevice.status === 'active' ? 'default' : 'secondary'} className="mt-1">
+                              {selectedDevice.status}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-muted-foreground">Manufacturer</Label>
+                            <p className="text-sm mt-1">{selectedDevice.manufacturer || "-"}</p>
+                          </div>
+                          <div>
+                            <Label className="text-muted-foreground">Model</Label>
+                            <p className="text-sm mt-1">{selectedDevice.model || "-"}</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-muted-foreground">RAM</Label>
+                            <p className="text-sm mt-1">{selectedDevice.ram_gb ? `${selectedDevice.ram_gb} GB` : "-"}</p>
+                          </div>
+                          <div>
+                            <Label className="text-muted-foreground">Storage</Label>
+                            <p className="text-sm mt-1">{selectedDevice.storage_gb ? `${selectedDevice.storage_gb} GB` : "-"}</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-muted-foreground">Operating System</Label>
+                            <p className="text-sm mt-1">{selectedDevice.os || "-"} {selectedDevice.os_version || ""}</p>
+                          </div>
+                          <div>
+                            <Label className="text-muted-foreground">Processor</Label>
+                            <p className="text-sm mt-1">{selectedDevice.processor || "-"}</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-muted-foreground">Branch</Label>
+                            <p className="text-sm mt-1">{selectedDevice.branch || "-"}</p>
+                          </div>
+                          <div>
+                            <Label className="text-muted-foreground">Location</Label>
+                            <p className="text-sm mt-1">{selectedDevice.location || "-"}</p>
+                          </div>
+                        </div>
+
+                        {selectedDevice.notes && (
+                          <div>
+                            <Label className="text-muted-foreground">Notes</Label>
+                            <p className="text-sm mt-1 whitespace-pre-wrap">{selectedDevice.notes}</p>
+                          </div>
+                        )}
+
+                        {isAdmin && (
+                          <div className="flex gap-2 pt-4">
+                            <Button
+                              variant="destructive"
+                              onClick={() => {
+                                handleDelete(selectedDevice.id);
+                                setSheetOpen(false);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Device
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="edit_device_name">Device Name</Label>
+                            <Input
+                              id="edit_device_name"
+                              value={formData.device_name}
+                              onChange={(e) => setFormData({ ...formData, device_name: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit_device_type">Type</Label>
+                            <Input
+                              id="edit_device_type"
+                              value={formData.device_type}
+                              onChange={(e) => setFormData({ ...formData, device_type: e.target.value })}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="edit_manufacturer">Manufacturer</Label>
+                            <Input
+                              id="edit_manufacturer"
+                              value={formData.manufacturer}
+                              onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit_model">Model</Label>
+                            <Input
+                              id="edit_model"
+                              value={formData.model}
+                              onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="edit_status">Status</Label>
+                          <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="inactive">Inactive</SelectItem>
+                              <SelectItem value="maintenance">Maintenance</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button onClick={handleSaveDevice} className="flex-1">
+                          Save Changes
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setEditMode(false);
+                            setFormData({
+                              device_name: selectedDevice.device_name || "",
+                              device_type: selectedDevice.device_type || "",
+                              manufacturer: selectedDevice.manufacturer || "",
+                              model: selectedDevice.model || "",
+                              serial_number: selectedDevice.serial_number || "",
+                              processor: selectedDevice.processor || "",
+                              ram_gb: selectedDevice.ram_gb?.toString() || "",
+                              storage_gb: selectedDevice.storage_gb?.toString() || "",
+                              os: selectedDevice.os || "",
+                              os_version: selectedDevice.os_version || "",
+                              location: selectedDevice.location || "",
+                              branch: selectedDevice.branch || "",
+                              purchase_date: selectedDevice.purchase_date || "",
+                              warranty_expires: selectedDevice.warranty_expires || "",
+                              status: selectedDevice.status || "active",
+                              notes: selectedDevice.notes || "",
+                            });
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+          </SheetContent>
+        </Sheet>
       </div>
     </DashboardLayout>
   );
