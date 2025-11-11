@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { RefreshCw, Laptop, Monitor, Key, Users, Shield, Activity, Cloud, Lock } from "lucide-react";
+import { RefreshCw, Laptop, Monitor, Key, Users, Shield, Activity, Cloud, Lock, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Microsoft365Dashboard = () => {
@@ -18,6 +18,18 @@ const Microsoft365Dashboard = () => {
   const [devices, setDevices] = useState<any[]>([]);
   const [licenses, setLicenses] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [syncStatus, setSyncStatus] = useState<{
+    lastSync: Date | null;
+    results: {
+      devices: number;
+      users: number;
+      licenses: number;
+      errors: string[];
+    } | null;
+  }>({
+    lastSync: null,
+    results: null,
+  });
 
   useEffect(() => {
     checkAuth();
@@ -75,9 +87,19 @@ const Microsoft365Dashboard = () => {
 
       if (error) throw error;
 
+      setSyncStatus({
+        lastSync: new Date(),
+        results: data?.results || null,
+      });
+
+      const hasErrors = data?.results?.errors?.length > 0;
+
       toast({
-        title: "Sync Completed",
-        description: `Synced ${data.results.devices} devices, ${data.results.users} users, and ${data.results.licenses} licenses`,
+        title: hasErrors ? "Sync completed with errors" : "Sync completed",
+        description: hasErrors
+          ? `Synced ${data.results.devices} devices, ${data.results.users} users, ${data.results.licenses} licenses. ${data.results.errors.length} errors occurred.`
+          : `Synced ${data.results.devices} devices, ${data.results.users} users, and ${data.results.licenses} licenses`,
+        variant: hasErrors ? "destructive" : "default",
       });
 
       fetchData();
@@ -108,6 +130,58 @@ const Microsoft365Dashboard = () => {
             Sync Microsoft 365
           </Button>
         </div>
+
+        {syncStatus.lastSync && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Sync Status</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Last Sync</span>
+                <span className="text-sm font-medium">{syncStatus.lastSync.toLocaleString()}</span>
+              </div>
+
+              {syncStatus.results && (
+                <>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Devices Synced</span>
+                      <Badge variant={syncStatus.results.devices > 0 ? "default" : "secondary"}>
+                        {syncStatus.results.devices}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Users Synced</span>
+                      <Badge variant={syncStatus.results.users > 0 ? "default" : "secondary"}>
+                        {syncStatus.results.users}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Licenses Synced</span>
+                      <Badge variant={syncStatus.results.licenses > 0 ? "default" : "secondary"}>
+                        {syncStatus.results.licenses}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {syncStatus.results.errors.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <h4 className="text-sm font-semibold text-destructive">Errors ({syncStatus.results.errors.length})</h4>
+                      <div className="space-y-1">
+                        {syncStatus.results.errors.map((error, index) => (
+                          <div key={index} className="text-sm text-destructive bg-destructive/10 p-2 rounded">
+                            {error}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <Card>
