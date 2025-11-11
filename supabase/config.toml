@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.sync-microsoft-365]
 verify_jwt = false
+
+[functions.register-remote-client]
+verify_jwt = false
