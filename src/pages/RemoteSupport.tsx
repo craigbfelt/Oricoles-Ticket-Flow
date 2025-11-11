@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
-import { Monitor, Video, Phone, Eye, Copy, Check, Chrome, Tv, Network, Plus } from "lucide-react";
+import { Monitor, Video, Phone, Eye, Copy, Check, Chrome, Tv, Network, Plus, Download } from "lucide-react";
 import { DataTable, type Column } from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +20,104 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useQuery } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
+
+interface RemoteClient {
+  id: string;
+  registration_token: string;
+  computer_name: string;
+  username: string;
+  os_version: string | null;
+  ip_address: string | null;
+  last_seen_at: string;
+  registered_at: string;
+  status: string;
+}
+
+const RegisteredClients = () => {
+  const { data: clients, isLoading } = useQuery({
+    queryKey: ['remote-clients'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('remote_clients')
+        .select('*')
+        .order('last_seen_at', { ascending: false });
+      
+      if (error) throw error;
+      return data as RemoteClient[];
+    },
+  });
+
+  const clientColumns: Column<RemoteClient>[] = [
+    {
+      key: "computer_name",
+      label: "Computer Name",
+      sortable: true,
+    },
+    {
+      key: "username",
+      label: "Username",
+      sortable: true,
+    },
+    {
+      key: "status",
+      label: "Status",
+      sortable: true,
+      render: (client) => {
+        const lastSeen = new Date(client.last_seen_at);
+        const minutesAgo = (Date.now() - lastSeen.getTime()) / 1000 / 60;
+        
+        const actualStatus = minutesAgo > 10 ? 'offline' : client.status;
+        
+        return (
+          <Badge variant={actualStatus === 'online' ? 'default' : 'secondary'}>
+            {actualStatus}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: "ip_address",
+      label: "IP Address",
+      sortable: true,
+    },
+    {
+      key: "os_version",
+      label: "OS Version",
+      sortable: true,
+    },
+    {
+      key: "last_seen_at",
+      label: "Last Seen",
+      sortable: true,
+      render: (client) => {
+        return formatDistanceToNow(new Date(client.last_seen_at), { addSuffix: true });
+      },
+    },
+  ];
+
+  if (isLoading) {
+    return <div>Loading clients...</div>;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Monitor className="h-5 w-5" />
+          <CardTitle>Registered Clients</CardTitle>
+        </div>
+        <CardDescription>
+          Computers that have installed the remote support client
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <DataTable columns={clientColumns} data={clients || []} searchKeys={["computer_name", "username", "ip_address"]} />
+      </CardContent>
+    </Card>
+  );
+};
 
 interface RemoteSession {
   id: string;
@@ -433,10 +531,16 @@ const RemoteSupport = () => {
             </h1>
             <p className="text-muted-foreground">Unified access for Chrome Remote Desktop, RDP, and VNC</p>
           </div>
-          <Button onClick={() => setNewSessionDialogOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            New Session
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate('/remote-client-setup')}>
+              <Download className="w-4 h-4 mr-2" />
+              Client Setup
+            </Button>
+            <Button onClick={() => setNewSessionDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              New Session
+            </Button>
+          </div>
         </div>
 
         <Card>
@@ -456,15 +560,28 @@ const RemoteSupport = () => {
           </CardContent>
         </Card>
 
-        {loading ? (
-          <p>Loading sessions...</p>
-        ) : (
-          <DataTable
-            data={sessions}
-            columns={columns}
-            searchKeys={["session_code", "user_name", "user_email"]}
-          />
-        )}
+        <Tabs defaultValue="sessions" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="sessions">Sessions</TabsTrigger>
+            <TabsTrigger value="clients">Registered Clients</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="sessions">
+            {loading ? (
+              <p>Loading sessions...</p>
+            ) : (
+              <DataTable
+                data={sessions}
+                columns={columns}
+                searchKeys={["session_code", "user_name", "user_email"]}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="clients">
+            <RegisteredClients />
+          </TabsContent>
+        </Tabs>
 
         <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
           <DialogContent className="max-w-4xl">

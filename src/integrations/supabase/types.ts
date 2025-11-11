@@ -274,6 +274,45 @@ export type Database = {
         }
         Relationships: []
       }
+      remote_clients: {
+        Row: {
+          computer_name: string
+          id: string
+          ip_address: string | null
+          last_seen_at: string | null
+          metadata: Json | null
+          os_version: string | null
+          registered_at: string
+          registration_token: string
+          status: string | null
+          username: string
+        }
+        Insert: {
+          computer_name: string
+          id?: string
+          ip_address?: string | null
+          last_seen_at?: string | null
+          metadata?: Json | null
+          os_version?: string | null
+          registered_at?: string
+          registration_token: string
+          status?: string | null
+          username: string
+        }
+        Update: {
+          computer_name?: string
+          id?: string
+          ip_address?: string | null
+          last_seen_at?: string | null
+          metadata?: Json | null
+          os_version?: string | null
+          registered_at?: string
+          registration_token?: string
+          status?: string | null
+          username?: string
+        }
+        Relationships: []
+      }
       remote_sessions: {
         Row: {
           connection_details: Json | null

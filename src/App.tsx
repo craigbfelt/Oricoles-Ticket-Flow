@@ -17,6 +17,7 @@ import Vpn from "./pages/Vpn";
 import Rdp from "./pages/Rdp";
 import RemoteSupport from "./pages/RemoteSupport";
 import RemoteClient from "./pages/RemoteClient";
+import RemoteClientSetup from "./pages/RemoteClientSetup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
           <Route path="/rdp" element={<Rdp />} />
           <Route path="/remote-support" element={<RemoteSupport />} />
           <Route path="/remote-client" element={<RemoteClient />} />
+          <Route path="/remote-client-setup" element={<RemoteClientSetup />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
