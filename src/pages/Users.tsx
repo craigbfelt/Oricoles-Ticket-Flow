@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
-import { Users as UsersIcon } from "lucide-react";
+import { Users as UsersIcon, Search } from "lucide-react";
 import { DataTable, type Column } from "@/components/DataTable";
 import {
   Sheet,
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 
 interface DirectoryUser {
   id: string;
@@ -50,6 +51,7 @@ const Users = () => {
   const [selectedUser, setSelectedUser] = useState<DirectoryUser | VpnRdpUser | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [userType, setUserType] = useState<"365" | "rdp" | "vpn" | "staff">("staff");
+  const [globalSearch, setGlobalSearch] = useState("");
 
   useEffect(() => {
     checkAccess();
@@ -125,6 +127,23 @@ const Users = () => {
     setUserType(type);
     setSheetOpen(true);
   };
+
+  const filterUsers = <T extends DirectoryUser | VpnRdpUser>(userList: T[], searchFields: (keyof T)[]): T[] => {
+    if (!globalSearch) return userList;
+    
+    const searchLower = globalSearch.toLowerCase();
+    return userList.filter(user => 
+      searchFields.some(field => {
+        const value = user[field];
+        return value && String(value).toLowerCase().includes(searchLower);
+      })
+    );
+  };
+
+  const filtered365Users = filterUsers(users, ["display_name", "email", "job_title", "department"]);
+  const filteredRdpUsers = filterUsers(rdpUsers, ["username", "email", "notes"]);
+  const filteredVpnUsers = filterUsers(vpnUsers, ["username", "email", "notes"]);
+  const filteredStaffUsers = filterUsers(staffUsers, ["username", "email", "notes"]);
 
   const m365Columns: Column<DirectoryUser>[] = [
     {
@@ -209,66 +228,86 @@ const Users = () => {
         {loading ? (
           <p>Loading users...</p>
         ) : (
-          <Tabs defaultValue="staff" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="staff">Staff Users</TabsTrigger>
-              <TabsTrigger value="365">365 Users</TabsTrigger>
-              <TabsTrigger value="rdp">RDP Users</TabsTrigger>
-              <TabsTrigger value="vpn">VPN Users</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="staff" className="mt-6">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold">Staff Users (Most Accurate)</h2>
-                <p className="text-sm text-muted-foreground">Combined list from Forticlient and RDP users</p>
-              </div>
-              <DataTable
-                data={staffUsers}
-                columns={vpnRdpColumns}
-                onRowClick={(user) => handleRowClick(user, "staff")}
-                searchKeys={["username", "email", "notes"]}
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search across all user categories..."
+                value={globalSearch}
+                onChange={(e) => setGlobalSearch(e.target.value)}
+                className="pl-10"
               />
-            </TabsContent>
+            </div>
 
-            <TabsContent value="365" className="mt-6">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold">Microsoft 365 Users</h2>
-                <p className="text-sm text-muted-foreground">Note: May not be accurate when staff leave</p>
-              </div>
-              <DataTable
-                data={users}
-                columns={m365Columns}
-                onRowClick={(user) => handleRowClick(user, "365")}
-                searchKeys={["display_name", "email", "job_title", "department"]}
-              />
-            </TabsContent>
+            <Tabs defaultValue="staff" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="staff">
+                  Staff Users {globalSearch && `(${filteredStaffUsers.length})`}
+                </TabsTrigger>
+                <TabsTrigger value="365">
+                  365 Users {globalSearch && `(${filtered365Users.length})`}
+                </TabsTrigger>
+                <TabsTrigger value="rdp">
+                  RDP Users {globalSearch && `(${filteredRdpUsers.length})`}
+                </TabsTrigger>
+                <TabsTrigger value="vpn">
+                  VPN Users {globalSearch && `(${filteredVpnUsers.length})`}
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="rdp" className="mt-6">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold">RDP Users</h2>
-                <p className="text-sm text-muted-foreground">Users with RDP access credentials</p>
-              </div>
-              <DataTable
-                data={rdpUsers}
-                columns={vpnRdpColumns}
-                onRowClick={(user) => handleRowClick(user, "rdp")}
-                searchKeys={["username", "email", "notes"]}
-              />
-            </TabsContent>
+              <TabsContent value="staff" className="mt-6">
+                <div className="mb-4">
+                  <h2 className="text-lg font-semibold">Staff Users (Most Accurate)</h2>
+                  <p className="text-sm text-muted-foreground">Combined list from Forticlient and RDP users</p>
+                </div>
+                <DataTable
+                  data={filteredStaffUsers}
+                  columns={vpnRdpColumns}
+                  onRowClick={(user) => handleRowClick(user, "staff")}
+                  searchKeys={["username", "email", "notes"]}
+                />
+              </TabsContent>
 
-            <TabsContent value="vpn" className="mt-6">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold">VPN Users</h2>
-                <p className="text-sm text-muted-foreground">Users with VPN access credentials</p>
-              </div>
-              <DataTable
-                data={vpnUsers}
-                columns={vpnRdpColumns}
-                onRowClick={(user) => handleRowClick(user, "vpn")}
-                searchKeys={["username", "email", "notes"]}
-              />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="365" className="mt-6">
+                <div className="mb-4">
+                  <h2 className="text-lg font-semibold">Microsoft 365 Users</h2>
+                  <p className="text-sm text-muted-foreground">Note: May not be accurate when staff leave</p>
+                </div>
+                <DataTable
+                  data={filtered365Users}
+                  columns={m365Columns}
+                  onRowClick={(user) => handleRowClick(user, "365")}
+                  searchKeys={["display_name", "email", "job_title", "department"]}
+                />
+              </TabsContent>
+
+              <TabsContent value="rdp" className="mt-6">
+                <div className="mb-4">
+                  <h2 className="text-lg font-semibold">RDP Users</h2>
+                  <p className="text-sm text-muted-foreground">Users with RDP access credentials</p>
+                </div>
+                <DataTable
+                  data={filteredRdpUsers}
+                  columns={vpnRdpColumns}
+                  onRowClick={(user) => handleRowClick(user, "rdp")}
+                  searchKeys={["username", "email", "notes"]}
+                />
+              </TabsContent>
+
+              <TabsContent value="vpn" className="mt-6">
+                <div className="mb-4">
+                  <h2 className="text-lg font-semibold">VPN Users</h2>
+                  <p className="text-sm text-muted-foreground">Users with VPN access credentials</p>
+                </div>
+                <DataTable
+                  data={filteredVpnUsers}
+                  columns={vpnRdpColumns}
+                  onRowClick={(user) => handleRowClick(user, "vpn")}
+                  searchKeys={["username", "email", "notes"]}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
         )}
 
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
