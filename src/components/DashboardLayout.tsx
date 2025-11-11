@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Ticket, Package, LogOut, Menu, X, Users, FileBarChart, Monitor, Code, Key } from "lucide-react";
+import { LayoutDashboard, Ticket, Package, LogOut, Menu, X, Users, FileBarChart, Monitor, Code, Key, Cloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -49,6 +49,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Tickets", href: "/tickets", icon: Ticket },
     { name: "Assets", href: "/assets", icon: Package },
     ...(isAdmin ? [
+      { name: "Microsoft 365", href: "/microsoft365", icon: Cloud },
       { name: "Hardware", href: "/hardware", icon: Monitor },
       { name: "Software", href: "/software", icon: Code },
       { name: "Licenses", href: "/licenses", icon: Key },

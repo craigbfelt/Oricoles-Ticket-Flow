@@ -12,6 +12,7 @@ import Reports from "./pages/Reports";
 import HardwareInventory from "./pages/HardwareInventory";
 import SoftwareInventory from "./pages/SoftwareInventory";
 import Licenses from "./pages/Licenses";
+import Microsoft365Dashboard from "./pages/Microsoft365Dashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/hardware" element={<HardwareInventory />} />
           <Route path="/software" element={<SoftwareInventory />} />
           <Route path="/licenses" element={<Licenses />} />
+          <Route path="/microsoft365" element={<Microsoft365Dashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
