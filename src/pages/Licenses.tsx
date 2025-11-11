@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Trash2, Edit } from "lucide-react";
+import { Trash2, Edit, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
 import { DataTable } from "@/components/DataTable";
@@ -23,6 +23,7 @@ const Licenses = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const [formData, setFormData] = useState({
     license_name: "",
     license_type: "",
@@ -59,6 +60,7 @@ const Licenses = () => {
     const { data, error } = await supabase
       .from('licenses')
       .select('*')
+      .eq('deleted_manually', false)
       .order('created_at', { ascending: false });
     
     if (error) {
@@ -66,6 +68,22 @@ const Licenses = () => {
       toast.error('Failed to load licenses');
     } else {
       setLicenses(data || []);
+    }
+  };
+
+  const handleRemoveDuplicates = async () => {
+    setIsRemoving(true);
+    try {
+      const { data, error } = await supabase.rpc('remove_license_duplicates' as any);
+
+      if (error) throw error;
+
+      toast.success(`Removed ${data || 0} duplicate records`);
+      fetchLicenses();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to remove duplicates');
+    } finally {
+      setIsRemoving(false);
     }
   };
 
@@ -178,9 +196,19 @@ const Licenses = () => {
             <p className="text-muted-foreground">Track RDP, Microsoft 365, and other software licenses</p>
           </div>
           {isAdmin && (
-            <Button onClick={() => setIsModalOpen(true)}>
-              Add License
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={handleRemoveDuplicates}
+                disabled={isRemoving}
+              >
+                {isRemoving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                Remove Duplicates
+              </Button>
+              <Button onClick={() => setIsModalOpen(true)}>
+                Add License
+              </Button>
+            </div>
           )}
         </div>
 

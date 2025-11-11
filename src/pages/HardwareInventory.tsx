@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RefreshCw, Plus, Edit } from "lucide-react";
+import { RefreshCw, Plus, Edit, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -20,6 +20,7 @@ const HardwareInventory = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<any | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -64,6 +65,7 @@ const HardwareInventory = () => {
     const { data, error } = await supabase
       .from('hardware_inventory')
       .select('*')
+      .eq('deleted_manually', false)
       .order('created_at', { ascending: false });
     
     if (error) {
@@ -71,6 +73,22 @@ const HardwareInventory = () => {
       toast.error('Failed to load devices');
     } else {
       setDevices(data || []);
+    }
+  };
+
+  const handleRemoveDuplicates = async () => {
+    setIsRemoving(true);
+    try {
+      const { data, error } = await supabase.rpc('remove_hardware_duplicates' as any);
+
+      if (error) throw error;
+
+      toast.success(`Removed ${data || 0} duplicate records`);
+      fetchDevices();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to remove duplicates');
+    } finally {
+      setIsRemoving(false);
     }
   };
 
@@ -316,6 +334,14 @@ const HardwareInventory = () => {
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
                 {isSyncing ? 'Syncing...' : 'Sync Microsoft 365'}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleRemoveDuplicates}
+                disabled={isRemoving}
+              >
+                {isRemoving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                Remove Duplicates
               </Button>
               <Button variant="outline" disabled={isImporting} onClick={() => document.getElementById('hw-csv-upload')?.click()}>
                 <Upload className="mr-2 h-4 w-4" />

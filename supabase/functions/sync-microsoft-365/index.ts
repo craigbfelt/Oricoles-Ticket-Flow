@@ -110,6 +110,20 @@ serve(async (req) => {
         console.log(`Found ${devices.length} devices`);
 
         for (const device of devices) {
+          // Check if this device was manually deleted
+          if (device.serialNumber) {
+            const { data: existing } = await supabase
+              .from('hardware_inventory')
+              .select('deleted_manually')
+              .eq('serial_number', device.serialNumber)
+              .maybeSingle();
+
+            if (existing?.deleted_manually) {
+              console.log(`Skipping manually deleted device: ${device.deviceName}`);
+              continue;
+            }
+          }
+
           const deviceData = {
             device_name: device.deviceName || 'Unknown Device',
             device_type: device.operatingSystem || 'Unknown',
@@ -122,6 +136,7 @@ serve(async (req) => {
             status: 'active',
             location: device.managedDeviceOwnerType || null,
             notes: `Synced from Microsoft 365 - User: ${device.userPrincipalName || 'N/A'}`,
+            deleted_manually: false,
           };
 
           const { error } = await supabase
@@ -162,6 +177,18 @@ serve(async (req) => {
         console.log(`Found ${users.length} users`);
 
         for (const user of users) {
+          // Check if this user was manually deleted
+          const { data: existing } = await supabase
+            .from('directory_users')
+            .select('deleted_manually')
+            .eq('aad_id', user.id)
+            .maybeSingle();
+
+          if (existing?.deleted_manually) {
+            console.log(`Skipping manually deleted user: ${user.displayName}`);
+            continue;
+          }
+
           const email = user.mail || user.userPrincipalName;
           const { error } = await supabase
             .from('directory_users')
@@ -173,6 +200,7 @@ serve(async (req) => {
               job_title: user.jobTitle || null,
               department: user.department || null,
               account_enabled: typeof user.accountEnabled === 'boolean' ? user.accountEnabled : null,
+              deleted_manually: false,
             }, {
               onConflict: 'aad_id',
               ignoreDuplicates: false
@@ -209,6 +237,19 @@ serve(async (req) => {
         console.log(`Found ${licenses.length} license types`);
 
         for (const license of licenses) {
+          // Check if this license was manually deleted
+          const { data: existing } = await supabase
+            .from('licenses')
+            .select('deleted_manually')
+            .eq('license_name', license.skuPartNumber)
+            .eq('vendor', 'Microsoft')
+            .maybeSingle();
+
+          if (existing?.deleted_manually) {
+            console.log(`Skipping manually deleted license: ${license.skuPartNumber}`);
+            continue;
+          }
+
           const licenseData = {
             license_name: license.skuPartNumber,
             vendor: 'Microsoft',
@@ -217,6 +258,7 @@ serve(async (req) => {
             used_seats: license.consumedUnits || 0,
             status: license.capabilityStatus === 'Enabled' ? 'active' : 'inactive',
             notes: `Synced from Microsoft 365 - SKU ID: ${license.skuId}`,
+            deleted_manually: false,
           };
 
           const { error } = await supabase

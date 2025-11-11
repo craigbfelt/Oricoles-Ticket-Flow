@@ -78,6 +78,7 @@ export type Database = {
           aad_id: string | null
           account_enabled: boolean | null
           created_at: string
+          deleted_manually: boolean | null
           department: string | null
           display_name: string | null
           email: string | null
@@ -90,6 +91,7 @@ export type Database = {
           aad_id?: string | null
           account_enabled?: boolean | null
           created_at?: string
+          deleted_manually?: boolean | null
           department?: string | null
           display_name?: string | null
           email?: string | null
@@ -102,6 +104,7 @@ export type Database = {
           aad_id?: string | null
           account_enabled?: boolean | null
           created_at?: string
+          deleted_manually?: boolean | null
           department?: string | null
           display_name?: string | null
           email?: string | null
@@ -117,6 +120,7 @@ export type Database = {
           assigned_to: string | null
           branch: string | null
           created_at: string
+          deleted_manually: boolean | null
           device_name: string
           device_type: string
           id: string
@@ -140,6 +144,7 @@ export type Database = {
           assigned_to?: string | null
           branch?: string | null
           created_at?: string
+          deleted_manually?: boolean | null
           device_name: string
           device_type: string
           id?: string
@@ -163,6 +168,7 @@ export type Database = {
           assigned_to?: string | null
           branch?: string | null
           created_at?: string
+          deleted_manually?: boolean | null
           device_name?: string
           device_type?: string
           id?: string
@@ -189,6 +195,7 @@ export type Database = {
           assigned_to: string | null
           cost: number | null
           created_at: string
+          deleted_manually: boolean | null
           id: string
           license_key: string | null
           license_name: string
@@ -206,6 +213,7 @@ export type Database = {
           assigned_to?: string | null
           cost?: number | null
           created_at?: string
+          deleted_manually?: boolean | null
           id?: string
           license_key?: string | null
           license_name: string
@@ -223,6 +231,7 @@ export type Database = {
           assigned_to?: string | null
           cost?: number | null
           created_at?: string
+          deleted_manually?: boolean | null
           id?: string
           license_key?: string | null
           license_name?: string
@@ -545,6 +554,9 @@ export type Database = {
         }
         Returns: boolean
       }
+      remove_hardware_duplicates: { Args: never; Returns: number }
+      remove_license_duplicates: { Args: never; Returns: number }
+      remove_user_duplicates: { Args: never; Returns: number }
     }
     Enums: {
       app_role: "admin" | "support_staff" | "user"

@@ -7,8 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { RefreshCw, Laptop, Monitor, Key, Users, Shield, Activity, Cloud, Lock, Loader2 } from "lucide-react";
+import { RefreshCw, Laptop, Monitor, Key, Users, Shield, Activity, Cloud, Lock, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const Microsoft365Dashboard = () => {
   const navigate = useNavigate();
@@ -30,6 +32,11 @@ const Microsoft365Dashboard = () => {
     lastSync: null,
     results: null,
   });
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedItemType, setSelectedItemType] = useState<'device' | 'license' | 'user' | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -62,17 +69,20 @@ const Microsoft365Dashboard = () => {
     const { data: hardwareData } = await supabase
       .from("hardware_inventory")
       .select("*")
+      .eq("deleted_manually", false)
       .order("created_at", { ascending: false });
 
     const { data: licenseData } = await supabase
       .from("licenses")
       .select("*")
       .eq("vendor", "Microsoft")
+      .eq("deleted_manually", false)
       .order("created_at", { ascending: false });
 
     const { data: userData } = await supabase
       .from("directory_users" as any)
-      .select("id, display_name, email, created_at")
+      .select("id, display_name, email, created_at, aad_id, user_principal_name, job_title, department, account_enabled")
+      .eq("deleted_manually", false)
       .order("created_at", { ascending: false });
 
     setDevices(hardwareData || []);
@@ -111,6 +121,70 @@ const Microsoft365Dashboard = () => {
       });
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handleItemClick = (item: any, type: 'device' | 'license' | 'user') => {
+    setSelectedItem(item);
+    setSelectedItemType(type);
+    setIsSheetOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedItem || !selectedItemType) return;
+
+    try {
+      const table = selectedItemType === 'device' ? 'hardware_inventory' : 
+                    selectedItemType === 'license' ? 'licenses' : 'directory_users';
+      
+      const { error } = await supabase
+        .from(table as any)
+        .update({ deleted_manually: true })
+        .eq('id', selectedItem.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Item deleted",
+        description: "The item has been marked as deleted and will be skipped in future syncs",
+      });
+
+      setDeleteDialogOpen(false);
+      setIsSheetOpen(false);
+      fetchData();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveDuplicates = async (type: 'device' | 'license' | 'user') => {
+    setIsRemoving(true);
+    try {
+      const functionName = type === 'device' ? 'remove_hardware_duplicates' :
+                          type === 'license' ? 'remove_license_duplicates' : 'remove_user_duplicates';
+      
+      const { data, error } = await supabase.rpc(functionName as any);
+
+      if (error) throw error;
+
+      toast({
+        title: "Duplicates removed",
+        description: `Removed ${data || 0} duplicate records`,
+      });
+
+      fetchData();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsRemoving(false);
     }
   };
 
@@ -281,8 +355,17 @@ const Microsoft365Dashboard = () => {
 
           <TabsContent value="laptops">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Laptop Devices</CardTitle>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleRemoveDuplicates('device')}
+                  disabled={isRemoving}
+                >
+                  {isRemoving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                  Remove Duplicates
+                </Button>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -297,7 +380,11 @@ const Microsoft365Dashboard = () => {
                   </TableHeader>
                   <TableBody>
                     {laptops.map((device) => (
-                      <TableRow key={device.id}>
+                      <TableRow 
+                        key={device.id} 
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleItemClick(device, 'device')}
+                      >
                         <TableCell className="font-medium">{device.device_name}</TableCell>
                         <TableCell>{device.model || "N/A"}</TableCell>
                         <TableCell>{device.os} {device.os_version}</TableCell>
@@ -317,8 +404,17 @@ const Microsoft365Dashboard = () => {
 
           <TabsContent value="thin-clients">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Thin Client Devices</CardTitle>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleRemoveDuplicates('device')}
+                  disabled={isRemoving}
+                >
+                  {isRemoving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                  Remove Duplicates
+                </Button>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -339,7 +435,11 @@ const Microsoft365Dashboard = () => {
                       </TableRow>
                     ) : (
                       thinClients.map((device) => (
-                        <TableRow key={device.id}>
+                        <TableRow 
+                          key={device.id}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => handleItemClick(device, 'device')}
+                        >
                           <TableCell className="font-medium">{device.device_name}</TableCell>
                           <TableCell>{device.model || "N/A"}</TableCell>
                           <TableCell>{device.location || "N/A"}</TableCell>
@@ -359,8 +459,17 @@ const Microsoft365Dashboard = () => {
 
           <TabsContent value="licenses">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Microsoft 365 Licenses</CardTitle>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleRemoveDuplicates('license')}
+                  disabled={isRemoving}
+                >
+                  {isRemoving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                  Remove Duplicates
+                </Button>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -376,7 +485,11 @@ const Microsoft365Dashboard = () => {
                   </TableHeader>
                   <TableBody>
                     {licenses.map((license) => (
-                      <TableRow key={license.id}>
+                      <TableRow 
+                        key={license.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleItemClick(license, 'license')}
+                      >
                         <TableCell className="font-medium">{license.license_name}</TableCell>
                         <TableCell>{license.license_type}</TableCell>
                         <TableCell>{license.total_seats}</TableCell>
@@ -397,8 +510,17 @@ const Microsoft365Dashboard = () => {
 
           <TabsContent value="users">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Microsoft 365 Users</CardTitle>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleRemoveDuplicates('user')}
+                  disabled={isRemoving}
+                >
+                  {isRemoving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                  Remove Duplicates
+                </Button>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -411,7 +533,11 @@ const Microsoft365Dashboard = () => {
                   </TableHeader>
                   <TableBody>
                     {users.map((user) => (
-                      <TableRow key={user.id}>
+                      <TableRow 
+                        key={user.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleItemClick(user, 'user')}
+                      >
                         <TableCell className="font-medium">{user.display_name || "N/A"}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
@@ -518,6 +644,179 @@ const Microsoft365Dashboard = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+          <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>
+                {selectedItemType === 'device' ? 'Device Details' : 
+                 selectedItemType === 'license' ? 'License Details' : 'User Details'}
+              </SheetTitle>
+              <SheetDescription>
+                View and manage this {selectedItemType} record
+              </SheetDescription>
+            </SheetHeader>
+            
+            {selectedItem && (
+              <div className="space-y-6 py-6">
+                {selectedItemType === 'device' && (
+                  <>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground">Device Name</h4>
+                      <p className="text-sm">{selectedItem.device_name}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground">Model</h4>
+                      <p className="text-sm">{selectedItem.model || 'N/A'}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground">Manufacturer</h4>
+                      <p className="text-sm">{selectedItem.manufacturer || 'N/A'}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground">Serial Number</h4>
+                      <p className="text-sm">{selectedItem.serial_number || 'N/A'}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground">Operating System</h4>
+                      <p className="text-sm">{selectedItem.os} {selectedItem.os_version}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground">Last Seen</h4>
+                      <p className="text-sm">
+                        {selectedItem.last_seen ? new Date(selectedItem.last_seen).toLocaleString() : 'N/A'}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground">Status</h4>
+                      <Badge variant={selectedItem.status === 'active' ? 'default' : 'secondary'}>
+                        {selectedItem.status}
+                      </Badge>
+                    </div>
+                    {selectedItem.notes && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-semibold text-muted-foreground">Notes</h4>
+                        <p className="text-sm">{selectedItem.notes}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {selectedItemType === 'license' && (
+                  <>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground">License Name</h4>
+                      <p className="text-sm">{selectedItem.license_name}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground">Type</h4>
+                      <p className="text-sm">{selectedItem.license_type}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground">Vendor</h4>
+                      <p className="text-sm">{selectedItem.vendor}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground">Total Seats</h4>
+                      <p className="text-sm">{selectedItem.total_seats}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground">Used Seats</h4>
+                      <p className="text-sm">{selectedItem.used_seats}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground">Available Seats</h4>
+                      <p className="text-sm">{selectedItem.total_seats - selectedItem.used_seats}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground">Status</h4>
+                      <Badge variant={selectedItem.status === 'active' ? 'default' : 'secondary'}>
+                        {selectedItem.status}
+                      </Badge>
+                    </div>
+                    {selectedItem.notes && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-semibold text-muted-foreground">Notes</h4>
+                        <p className="text-sm">{selectedItem.notes}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {selectedItemType === 'user' && (
+                  <>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground">Display Name</h4>
+                      <p className="text-sm">{selectedItem.display_name || 'N/A'}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground">Email</h4>
+                      <p className="text-sm">{selectedItem.email}</p>
+                    </div>
+                    {selectedItem.user_principal_name && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-semibold text-muted-foreground">User Principal Name</h4>
+                        <p className="text-sm">{selectedItem.user_principal_name}</p>
+                      </div>
+                    )}
+                    {selectedItem.job_title && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-semibold text-muted-foreground">Job Title</h4>
+                        <p className="text-sm">{selectedItem.job_title}</p>
+                      </div>
+                    )}
+                    {selectedItem.department && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-semibold text-muted-foreground">Department</h4>
+                        <p className="text-sm">{selectedItem.department}</p>
+                      </div>
+                    )}
+                    {typeof selectedItem.account_enabled === 'boolean' && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-semibold text-muted-foreground">Account Status</h4>
+                        <Badge variant={selectedItem.account_enabled ? 'default' : 'secondary'}>
+                          {selectedItem.account_enabled ? 'Enabled' : 'Disabled'}
+                        </Badge>
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground">Created</h4>
+                      <p className="text-sm">{new Date(selectedItem.created_at).toLocaleString()}</p>
+                    </div>
+                  </>
+                )}
+
+                <div className="pt-4 border-t">
+                  <Button 
+                    variant="destructive" 
+                    className="w-full"
+                    onClick={() => setDeleteDialogOpen(true)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete {selectedItemType === 'device' ? 'Device' : 
+                            selectedItemType === 'license' ? 'License' : 'User'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
+
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will mark the item as manually deleted. It will be hidden from view and will not be updated 
+                during future Microsoft 365 syncs. This action can be reversed by manually updating the database.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
