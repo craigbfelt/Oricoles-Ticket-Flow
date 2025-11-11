@@ -343,6 +343,28 @@ const Vpn = () => {
     reader.readAsText(csvFile);
   };
 
+  const handleDownloadSampleCsv = () => {
+    const sampleCsv = `username,password,email,notes
+vpnuser1,SecurePass123,user1@example.com,Primary VPN account
+vpnuser2,MyPassword456,user2@example.com,Secondary access
+vpnuser3,Pass789word,user3@example.com,Guest VPN user`;
+    
+    const blob = new Blob([sampleCsv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sample-vpn-credentials.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Sample Downloaded",
+      description: "Use this template to format your CSV file",
+    });
+  };
+
   const handleConfirmImport = async () => {
     const validCredentials = csvPreview
       .filter(cred => cred.valid)
@@ -488,6 +510,13 @@ const Vpn = () => {
                         }}
                       />
                     </div>
+                    <Button 
+                      onClick={handleDownloadSampleCsv} 
+                      variant="outline" 
+                      className="w-full"
+                    >
+                      Download Sample CSV Template
+                    </Button>
                     <Button onClick={handleCsvUpload} className="w-full" disabled={!csvFile}>
                       Preview Import
                     </Button>
