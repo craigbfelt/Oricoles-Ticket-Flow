@@ -274,6 +274,59 @@ export type Database = {
         }
         Relationships: []
       }
+      remote_sessions: {
+        Row: {
+          created_at: string
+          device_info: Json | null
+          ended_at: string | null
+          id: string
+          session_code: string
+          started_at: string | null
+          status: string
+          support_staff_id: string | null
+          ticket_id: string | null
+          updated_at: string
+          user_email: string | null
+          user_name: string
+        }
+        Insert: {
+          created_at?: string
+          device_info?: Json | null
+          ended_at?: string | null
+          id?: string
+          session_code: string
+          started_at?: string | null
+          status?: string
+          support_staff_id?: string | null
+          ticket_id?: string | null
+          updated_at?: string
+          user_email?: string | null
+          user_name: string
+        }
+        Update: {
+          created_at?: string
+          device_info?: Json | null
+          ended_at?: string | null
+          id?: string
+          session_code?: string
+          started_at?: string | null
+          status?: string
+          support_staff_id?: string | null
+          ticket_id?: string | null
+          updated_at?: string
+          user_email?: string | null
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remote_sessions_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       software_inventory: {
         Row: {
           assigned_to: string | null

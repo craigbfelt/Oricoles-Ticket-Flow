@@ -15,6 +15,8 @@ import Licenses from "./pages/Licenses";
 import Microsoft365Dashboard from "./pages/Microsoft365Dashboard";
 import Vpn from "./pages/Vpn";
 import Rdp from "./pages/Rdp";
+import RemoteSupport from "./pages/RemoteSupport";
+import RemoteClient from "./pages/RemoteClient";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +41,8 @@ const App = () => (
           <Route path="/microsoft365" element={<Microsoft365Dashboard />} />
           <Route path="/vpn" element={<Vpn />} />
           <Route path="/rdp" element={<Rdp />} />
+          <Route path="/remote-support" element={<RemoteSupport />} />
+          <Route path="/remote-client" element={<RemoteClient />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
