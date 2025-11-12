@@ -377,7 +377,7 @@ const Users = () => {
       key: "account_enabled",
       label: "Status",
       sortable: true,
-      render: (user) => (
+      render: (value, user) => (
         <Badge variant={user.account_enabled ? "default" : "secondary"}>
           {user.account_enabled ? "Active" : "Inactive"}
         </Badge>
@@ -402,7 +402,7 @@ const Users = () => {
       key: "service_type",
       label: "Service Type",
       sortable: true,
-      render: (user) => (
+      render: (value, user) => (
         <Badge variant="outline">
           {user.service_type?.toUpperCase() || 'N/A'}
         </Badge>
@@ -432,9 +432,9 @@ const Users = () => {
       key: "roles",
       label: "Roles",
       sortable: false,
-      render: (user) => (
+      render: (value, user) => (
         <div className="flex gap-1 flex-wrap">
-          {user.roles.length > 0 ? (
+          {user.roles?.length > 0 ? (
             user.roles.map((role) => (
               <Badge key={role} variant={role === 'admin' ? 'default' : 'secondary'}>
                 {role}
@@ -450,7 +450,7 @@ const Users = () => {
       key: "created_at",
       label: "Created",
       sortable: true,
-      render: (user) => new Date(user.created_at).toLocaleDateString(),
+      render: (value, user) => new Date(user.created_at).toLocaleDateString(),
     },
   ];
 
