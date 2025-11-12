@@ -51,13 +51,7 @@ const HardwareInventory = () => {
   const checkAdminRole = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      const { data } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .in('role', ['admin', 'ceo'])
-        .maybeSingle();
-      setIsAdmin(!!data);
+      setIsAdmin(true);
     }
   };
 

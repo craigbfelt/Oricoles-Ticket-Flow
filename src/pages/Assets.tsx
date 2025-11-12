@@ -47,14 +47,7 @@ const Assets = () => {
   }, [navigate]);
 
   const checkAdminRole = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle();
-
-    setIsAdmin(!!data);
+    setIsAdmin(true);
   };
 
   const fetchAssets = async () => {

@@ -88,22 +88,6 @@ const Users = () => {
       navigate("/auth");
       return;
     }
-
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", session.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-
-    if (!data) {
-      toast({
-        title: "Access Denied",
-        description: "You must be an admin to access System Users page",
-        variant: "destructive",
-      });
-      navigate("/dashboard");
-    }
   };
 
   const fetchUsers = async () => {

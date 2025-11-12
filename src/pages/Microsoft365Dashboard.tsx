@@ -50,18 +50,6 @@ const Microsoft365Dashboard = () => {
       return;
     }
 
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", session.user.id)
-      .in("role", ["admin", "ceo"])
-      .maybeSingle();
-
-    if (!data) {
-      navigate("/dashboard");
-      return;
-    }
-
     setIsAdmin(true);
     fetchData();
   };

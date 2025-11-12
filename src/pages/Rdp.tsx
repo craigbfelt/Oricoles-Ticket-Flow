@@ -89,22 +89,6 @@ const Rdp = () => {
       navigate("/auth");
       return;
     }
-
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", session.user.id)
-      .in("role", ["admin", "support_staff", "ceo"])
-      .maybeSingle();
-
-    if (!data) {
-      toast({
-        title: "Access Denied",
-        description: "You must be an admin, CEO, or support staff to access this page",
-        variant: "destructive",
-      });
-      navigate("/dashboard");
-    }
   };
 
   const fetchCredentials = async () => {
