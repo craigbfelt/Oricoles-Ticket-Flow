@@ -512,3 +512,10 @@ CREATE POLICY IF NOT EXISTS "Admins and CEOs can manage remote clients"
     has_role(auth.uid(), 'admin'::app_role)
     OR has_role(auth.uid(), 'ceo'::app_role)
   );
+
+-- CRITICAL: Ensure everyone can CREATE tickets
+-- This was accidentally removed - all authenticated users should be able to create tickets
+CREATE POLICY IF NOT EXISTS "Authenticated users can create tickets"
+  ON public.tickets FOR INSERT
+  TO authenticated
+  WITH CHECK (true);
