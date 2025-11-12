@@ -146,6 +146,7 @@ A modern, professional helpdesk and asset management system built with React, Ty
 For detailed instructions, see:
 - **[LOCAL_SETUP.md](./LOCAL_SETUP.md)** - Complete local development guide
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Free hosting and deployment options
+- **[ADMIN_ACCOUNT_SETUP.md](./ADMIN_ACCOUNT_SETUP.md)** - Create admin account with full permissions
 
 ### First Steps
 1. Create an account using the sign-up form
@@ -153,6 +154,13 @@ For detailed instructions, see:
 3. Explore the dashboard
 4. Create your first ticket
 5. (Admin only) Manage assets
+
+### Admin Account Setup
+If you need to create an admin account or have lost access to your admin account:
+- See **[ADMIN_ACCOUNT_SETUP.md](./ADMIN_ACCOUNT_SETUP.md)** for detailed instructions
+- Pre-configured admin emails that automatically get admin role:
+  - `craig@zerobitone.co.za`
+  - `admin@oricol.co.za`
 
 ## How can I edit this code?
 
@@ -271,15 +279,25 @@ The application includes two migrations:
 
 2. **Role-Based Access** (20251109045855)
    - Adds user_roles table
-   - Implements app_role enum (admin, support_staff, user)
+   - Implements app_role enum (admin, ceo, support_staff, user)
    - Updates RLS policies for role-based access
    - Adds helper function for role checking
+
+3. **Admin Account Setup** (20251112170113)
+   - Auto-assigns admin role to admin@oricol.co.za
+   - Ensures admin permissions are properly configured
+   - See [ADMIN_ACCOUNT_SETUP.md](./ADMIN_ACCOUNT_SETUP.md) for details
 
 ## Security
 
 - All tables protected with Row Level Security (RLS)
 - User authentication via Supabase Auth
 - Role-based access control for sensitive operations
+- Four-tier permission system:
+  - **admin**: Full access to everything including System Users management
+  - **ceo**: Full access except System Users management
+  - **support_staff**: Access to tickets, users, reports, VPN, RDP, remote support
+  - **user**: Basic access to tickets and remote support only
 - Secure data access policies:
   - Users can only see their own tickets or assigned tickets
   - Support staff and admins can see all tickets
