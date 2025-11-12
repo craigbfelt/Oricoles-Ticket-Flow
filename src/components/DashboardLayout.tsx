@@ -91,7 +91,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       { name: "RDP", href: "/rdp", icon: Monitor },
       { name: "Reports", href: "/reports", icon: FileBarChart },
     ] : []),
-    ...(isAdmin || isSupportStaff ? [
+    ...(isAdmin || isCEO || isSupportStaff ? [
       { name: "Users", href: "/users", icon: Users }
     ] : []),
   ];
