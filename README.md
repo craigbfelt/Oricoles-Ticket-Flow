@@ -161,6 +161,7 @@ If you need to create an admin account or have lost access to your admin account
 - Pre-configured admin emails that automatically get admin role:
   - `craig@zerobitone.co.za`
   - `admin@oricol.co.za`
+  - `admin@zerobitone.co.za`
 
 ## How can I edit this code?
 

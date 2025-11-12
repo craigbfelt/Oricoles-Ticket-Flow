@@ -143,7 +143,8 @@ The admin role has access to:
 The following emails are automatically assigned admin role on account creation:
 
 1. `craig@zerobitone.co.za` - Original admin
-2. `admin@oricol.co.za` - New admin account
+2. `admin@oricol.co.za` - System admin account
+3. `admin@zerobitone.co.za` - Zero Bit One admin account
 
 ## Alternative Admin Accounts
 
