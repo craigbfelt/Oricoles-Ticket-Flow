@@ -15,7 +15,9 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { UserPlus, AlertCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { UserPlus, AlertCircle, Mail, Copy } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 
@@ -41,11 +43,29 @@ export function AddStaffMemberDialog({ onSuccess }: { onSuccess: () => void }) {
   const [availableLicenses, setAvailableLicenses] = useState<License[]>([]);
   const [existingUsers, setExistingUsers] = useState<DirectoryUser[]>([]);
   
-  // Form state
+  // Basic Information
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [cellPhone, setCellPhone] = useState("");
+  const [location, setLocation] = useState("");
   const [jobTitle, setJobTitle] = useState("");
   const [department, setDepartment] = useState("");
+  
+  // Replacement Info
+  const [isReplacement, setIsReplacement] = useState(false);
+  const [oldUserName, setOldUserName] = useState("");
+  const [oldUserEmail, setOldUserEmail] = useState("");
+  const [deleteOldProfile, setDeleteOldProfile] = useState(true);
+  const [createEmailAlias, setCreateEmailAlias] = useState(false);
+  const [aliasForwardTo, setAliasForwardTo] = useState("");
+  
+  // Access Rights
+  const [copyAccessFrom, setCopyAccessFrom] = useState("");
+  const [folderAccess, setFolderAccess] = useState("");
+  const [emailDistributions, setEmailDistributions] = useState("");
+  const [printerAccess, setPrinterAccess] = useState("");
+  const [requireMfa, setRequireMfa] = useState(true);
   
   // License management
   const [licenseOption, setLicenseOption] = useState<"unused" | "migrate">("unused");
@@ -107,11 +127,46 @@ export function AddStaffMemberDialog({ onSuccess }: { onSuccess: () => void }) {
     );
   };
 
+  const generateQwertiEmail = () => {
+    const usernamePart = displayName.replace(/\s+/g, '.');
+    
+    return `From: Graeme Smart <Graeme.Smart@oricoles.co.za>
+To: Qwerti Managed Services <support@qwerti.co.za>; Shaun Chetty <shaun.chetty@qwerti.co.za>
+cc: Jerusha Naidoo <Jerusha.Naidoo@oricoles.co.za>; Craig Felt <craig@zerobitone.co.za>; Andrew Fernandes <Andrew.Fernandes@oricoles.co.za>; Peter Allen <Peter.Allen@oricoles.co.za>; Muhammed Rassool <Muhammed.Rassool@Oricoles.co.za>
+
+Hello Support / Shaun,
+
+${isReplacement ? `In brief, ${oldUserName} was a staff member${location ? ` in ${location}` : ''}, and has left Oricol.
+I would now like to use their RDP and O365 license for ${displayName} who is our ${jobTitle}${location ? ` – ${location}` : ''}.
+Can we make these changes today, ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.` : `We have a new staff member joining: ${displayName} who is our ${jobTitle}${location ? ` in ${location}` : ''}.`}
+
+Please ${isReplacement ? 'move forward to act as follows on our active directory and effectively reallocate the license' + (oldUserName ? ` of ${oldUserName}` : '') + ` to ${displayName}` : 'act as follows on our active directory'}:
+
+NEW USER SETUP:
+1. New user is ${usernamePart}
+2. Email is ${email}
+3. Password to be issued is ${password}
+${copyAccessFrom ? `4. In terms of access rights/privileges, please can ${displayName.split(' ')[0]}'s profile be set up with the same rights as ${copyAccessFrom}${folderAccess ? `, so that they can access ${folderAccess}` : ''}.` : folderAccess ? `4. Folder access required: ${folderAccess}` : ''}
+${emailDistributions ? `5. Email distribution: Please place ${displayName.split(' ')[0]} on ${emailDistributions}` : ''}
+${printerAccess ? `6. ${printerAccess}` : ''}
+${requireMfa && cellPhone ? `7. Multi Factor Authentication will need to be set up too for ${displayName.split(' ')[0]} – ${displayName.split(' ')[0]} is with us (cell ${cellPhone}) and Jerusha can work with you to get this set up for ${displayName.split(' ')[0]}` : ''}
+
+${isReplacement && oldUserName ? `
+OLD PROFILE: ${oldUserName}
+1. ${deleteOldProfile ? 'The profile can be deleted.' : 'Please disable the profile.'}
+${createEmailAlias && aliasForwardTo ? `2. Please can we add ${oldUserEmail} as an ALIAS to ${aliasForwardTo} (email forward already in place, plus a PST is done and in place of the old emails of ${oldUserName.split(' ')[0]} under ${aliasForwardTo})` : ''}` : ''}
+
+If I have missed anything, please feel free to reach out to me or Jerusha and we can resolve very promptly.
+
+Kind regards
+Graeme Smart`;
+  };
+
   const handleSubmit = async () => {
-    if (!displayName || !email) {
+    if (!displayName || !email || !password) {
       toast({
         title: "Validation Error",
-        description: "Name and email are required",
+        description: "Name, email, and password are required",
         variant: "destructive",
       });
       return;
@@ -196,16 +251,41 @@ export function AddStaffMemberDialog({ onSuccess }: { onSuccess: () => void }) {
         if (vpnError) throw vpnError;
       }
 
-      toast({
-        title: "Success",
-        description: `Staff member ${displayName} added successfully`,
-      });
+      // 5. Generate and copy email to clipboard
+      const qwertiEmail = generateQwertiEmail();
+      
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(qwertiEmail);
+        toast({
+          title: "Success",
+          description: "Staff member added and email copied to clipboard!",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Staff member added successfully",
+        });
+      }
 
       // Reset form
       setDisplayName("");
       setEmail("");
+      setPassword("");
+      setCellPhone("");
+      setLocation("");
       setJobTitle("");
       setDepartment("");
+      setIsReplacement(false);
+      setOldUserName("");
+      setOldUserEmail("");
+      setDeleteOldProfile(true);
+      setCreateEmailAlias(false);
+      setAliasForwardTo("");
+      setCopyAccessFrom("");
+      setFolderAccess("");
+      setEmailDistributions("");
+      setPrinterAccess("");
+      setRequireMfa(true);
       setSelectedLicense("");
       setOldUserId("");
       setNeedsRdp(false);
@@ -239,63 +319,232 @@ export function AddStaffMemberDialog({ onSuccess }: { onSuccess: () => void }) {
           Add Staff Member
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Staff Member</DialogTitle>
           <DialogDescription>
-            Add a new staff member with Microsoft 365 license and access credentials
+            Complete the form below. An email will be generated and copied to your clipboard for provider notifications.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           {/* Basic Information */}
           <div className="space-y-4">
-            <h3 className="font-semibold">Basic Information</h3>
+            <h3 className="font-semibold flex items-center gap-2">
+              Basic Information
+              <Badge variant="outline">Required</Badge>
+            </h3>
             
-            <div className="space-y-2">
-              <Label htmlFor="displayName">Full Name *</Label>
-              <Input
-                id="displayName"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="John Doe"
-              />
-            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="displayName">Full Name *</Label>
+                <Input
+                  id="displayName"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="e.g., Mathiatse Ramaphakela"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="john.doe@company.com"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="e.g., Mathiatse.Ramaphakela@oricoles.co.za"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="jobTitle">Job Title</Label>
-              <Input
-                id="jobTitle"
-                value={jobTitle}
-                onChange={(e) => setJobTitle(e.target.value)}
-                placeholder="Manager"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password *</Label>
+                <Input
+                  id="password"
+                  type="text"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="e.g., @Ve0lia!113"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="department">Department</Label>
-              <Input
-                id="department"
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                placeholder="IT"
-              />
+              <div className="space-y-2">
+                <Label htmlFor="cellPhone">Cell Phone</Label>
+                <Input
+                  id="cellPhone"
+                  value={cellPhone}
+                  onChange={(e) => setCellPhone(e.target.value)}
+                  placeholder="e.g., 0665113936"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="jobTitle">Job Title</Label>
+                <Input
+                  id="jobTitle"
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
+                  placeholder="e.g., Intern"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="e.g., Durban liquid treatment plant"
+                />
+              </div>
+
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="department">Department</Label>
+                <Input
+                  id="department"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  placeholder="e.g., Operations"
+                />
+              </div>
             </div>
           </div>
 
+          <Separator />
+
+          {/* Replacement Information */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isReplacement"
+                checked={isReplacement}
+                onCheckedChange={(checked) => setIsReplacement(checked as boolean)}
+              />
+              <Label htmlFor="isReplacement" className="font-semibold">
+                This is a replacement for a departing staff member
+              </Label>
+            </div>
+
+            {isReplacement && (
+              <div className="grid gap-4 pl-6 border-l-2 border-muted">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="oldUserName">Departing Staff Name</Label>
+                    <Input
+                      id="oldUserName"
+                      value={oldUserName}
+                      onChange={(e) => setOldUserName(e.target.value)}
+                      placeholder="e.g., Rishen Nohur"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="oldUserEmail">Departing Staff Email</Label>
+                    <Input
+                      id="oldUserEmail"
+                      type="email"
+                      value={oldUserEmail}
+                      onChange={(e) => setOldUserEmail(e.target.value)}
+                      placeholder="e.g., Rishen.Nohur@oricoles.co.za"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="deleteOldProfile"
+                    checked={deleteOldProfile}
+                    onCheckedChange={(checked) => setDeleteOldProfile(checked as boolean)}
+                  />
+                  <Label htmlFor="deleteOldProfile">Delete old profile</Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="createEmailAlias"
+                    checked={createEmailAlias}
+                    onCheckedChange={(checked) => setCreateEmailAlias(checked as boolean)}
+                  />
+                  <Label htmlFor="createEmailAlias">Create email alias for old email address</Label>
+                </div>
+
+                {createEmailAlias && (
+                  <div className="space-y-2 pl-6">
+                    <Label htmlFor="aliasForwardTo">Forward old email to</Label>
+                    <Input
+                      id="aliasForwardTo"
+                      value={aliasForwardTo}
+                      onChange={(e) => setAliasForwardTo(e.target.value)}
+                      placeholder="e.g., Muhammed Rassool"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Access Rights */}
+          <div className="space-y-4">
+            <h3 className="font-semibold">Access Rights & Privileges</h3>
+            
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="copyAccessFrom">Copy access rights from existing user</Label>
+                <Input
+                  id="copyAccessFrom"
+                  value={copyAccessFrom}
+                  onChange={(e) => setCopyAccessFrom(e.target.value)}
+                  placeholder="e.g., Rishen Nohur or other Durban users"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="folderAccess">Folder Access</Label>
+                <Input
+                  id="folderAccess"
+                  value={folderAccess}
+                  onChange={(e) => setFolderAccess(e.target.value)}
+                  placeholder="e.g., National Folder and Durban folder"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="emailDistributions">Email Distribution Lists</Label>
+                <Input
+                  id="emailDistributions"
+                  value={emailDistributions}
+                  onChange={(e) => setEmailDistributions(e.target.value)}
+                  placeholder='e.g., "Oricol ALL" and "Oricol KZN"'
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="printerAccess">Printer Setup</Label>
+                <Input
+                  id="printerAccess"
+                  value={printerAccess}
+                  onChange={(e) => setPrinterAccess(e.target.value)}
+                  placeholder="e.g., Please set up the normal Durban default printers"
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="requireMfa"
+                  checked={requireMfa}
+                  onCheckedChange={(checked) => setRequireMfa(checked as boolean)}
+                />
+                <Label htmlFor="requireMfa">Multi-Factor Authentication (MFA) required</Label>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
           {/* Microsoft 365 License */}
-          <div className="space-y-4 border-t pt-4">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">Microsoft 365 License</h3>
               {unusedLicenses.length === 0 && (
@@ -390,17 +639,19 @@ export function AddStaffMemberDialog({ onSuccess }: { onSuccess: () => void }) {
             </Alert>
           </div>
 
+          <Separator />
+
           {/* RDP License */}
-          <div className="space-y-4 border-t pt-4">
+          <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
+              <Checkbox
                 id="needsRdp"
                 checked={needsRdp}
-                onChange={(e) => setNeedsRdp(e.target.checked)}
-                className="h-4 w-4"
+                onCheckedChange={(checked) => setNeedsRdp(checked as boolean)}
               />
-              <Label htmlFor="needsRdp" className="font-semibold">RDP License Required</Label>
+              <Label htmlFor="needsRdp" className="font-semibold">
+                RDP License Required {isReplacement && "(will be migrated from departing user)"}
+              </Label>
             </div>
 
             {needsRdp && (
@@ -412,25 +663,27 @@ export function AddStaffMemberDialog({ onSuccess }: { onSuccess: () => void }) {
                   </AlertDescription>
                 </Alert>
 
-                <div className="space-y-2">
-                  <Label htmlFor="rdpUsername">RDP Username</Label>
-                  <Input
-                    id="rdpUsername"
-                    value={rdpUsername}
-                    onChange={(e) => setRdpUsername(e.target.value)}
-                    placeholder="rdp_username"
-                  />
-                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="rdpUsername">RDP Username</Label>
+                    <Input
+                      id="rdpUsername"
+                      value={rdpUsername}
+                      onChange={(e) => setRdpUsername(e.target.value)}
+                      placeholder="rdp_username"
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="rdpPassword">RDP Password</Label>
-                  <Input
-                    id="rdpPassword"
-                    type="password"
-                    value={rdpPassword}
-                    onChange={(e) => setRdpPassword(e.target.value)}
-                    placeholder="Enter password"
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="rdpPassword">RDP Password</Label>
+                    <Input
+                      id="rdpPassword"
+                      type="password"
+                      value={rdpPassword}
+                      onChange={(e) => setRdpPassword(e.target.value)}
+                      placeholder="Enter password"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -446,15 +699,15 @@ export function AddStaffMemberDialog({ onSuccess }: { onSuccess: () => void }) {
             )}
           </div>
 
+          <Separator />
+
           {/* VPN License */}
-          <div className="space-y-4 border-t pt-4">
+          <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
+              <Checkbox
                 id="needsVpn"
                 checked={needsVpn}
-                onChange={(e) => setNeedsVpn(e.target.checked)}
-                className="h-4 w-4"
+                onCheckedChange={(checked) => setNeedsVpn(checked as boolean)}
               />
               <Label htmlFor="needsVpn" className="font-semibold">VPN Profile Required</Label>
             </div>
@@ -468,25 +721,27 @@ export function AddStaffMemberDialog({ onSuccess }: { onSuccess: () => void }) {
                   </AlertDescription>
                 </Alert>
 
-                <div className="space-y-2">
-                  <Label htmlFor="vpnUsername">VPN Username</Label>
-                  <Input
-                    id="vpnUsername"
-                    value={vpnUsername}
-                    onChange={(e) => setVpnUsername(e.target.value)}
-                    placeholder="vpn_username"
-                  />
-                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="vpnUsername">VPN Username</Label>
+                    <Input
+                      id="vpnUsername"
+                      value={vpnUsername}
+                      onChange={(e) => setVpnUsername(e.target.value)}
+                      placeholder="vpn_username"
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="vpnPassword">VPN Password</Label>
-                  <Input
-                    id="vpnPassword"
-                    type="password"
-                    value={vpnPassword}
-                    onChange={(e) => setVpnPassword(e.target.value)}
-                    placeholder="Enter password"
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="vpnPassword">VPN Password</Label>
+                    <Input
+                      id="vpnPassword"
+                      type="password"
+                      value={vpnPassword}
+                      onChange={(e) => setVpnPassword(e.target.value)}
+                      placeholder="Enter password"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -502,14 +757,34 @@ export function AddStaffMemberDialog({ onSuccess }: { onSuccess: () => void }) {
             )}
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+          <Separator />
+
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={loading}
+            >
               Cancel
             </Button>
             <Button onClick={handleSubmit} disabled={loading}>
-              {loading ? "Adding..." : "Add Staff Member"}
+              {loading ? (
+                <>Loading...</>
+              ) : (
+                <>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Add Staff & Generate Email
+                </>
+              )}
             </Button>
           </div>
+          
+          <Alert>
+            <Copy className="h-4 w-4" />
+            <AlertDescription>
+              After clicking "Add Staff & Generate Email", the provider notification email will be automatically copied to your clipboard. You can then paste and send it to Qwerti.
+            </AlertDescription>
+          </Alert>
         </div>
       </DialogContent>
     </Dialog>
