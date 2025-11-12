@@ -261,15 +261,86 @@ async function executeEDiscoveryWorkflow(
     console.log(`Created case: ${caseId}`);
   }
 
-  // Step 2: Create search (simplified - full implementation would add custodians first)
-  console.log('Step 2: Creating eDiscovery search...');
+  // Step 2: Add custodians if specific mailboxes are requested
+  let dataSourceIds: string[] = [];
   
-  const searchBody = {
+  if (mailboxes.length > 0) {
+    console.log('Step 2: Adding custodians for specific mailboxes...');
+    
+    for (const email of mailboxes) {
+      try {
+        // Add custodian to the case
+        const custodianBody = {
+          email: email,
+        };
+        
+        const addCustodianResponse = await fetch(
+          `https://graph.microsoft.com/v1.0/security/cases/ediscoveryCases/${caseId}/custodians`,
+          {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(custodianBody),
+          }
+        );
+        
+        if (addCustodianResponse.ok) {
+          const custodian = await addCustodianResponse.json();
+          console.log(`Added custodian: ${email}, ID: ${custodian.id}`);
+          
+          // Get data sources for this custodian
+          const dataSourcesResponse = await fetch(
+            `https://graph.microsoft.com/v1.0/security/cases/ediscoveryCases/${caseId}/custodians/${custodian.id}/userSources`,
+            { headers }
+          );
+          
+          if (dataSourcesResponse.ok) {
+            const dataSourcesData = await dataSourcesResponse.json();
+            const sources = dataSourcesData.value || [];
+            sources.forEach((source: { id: string }) => {
+              dataSourceIds.push(source.id);
+              console.log(`Found data source ID: ${source.id}`);
+            });
+          }
+        } else {
+          const errorText = await addCustodianResponse.text();
+          console.warn(`Failed to add custodian ${email}:`, errorText);
+          // Continue with other custodians
+        }
+      } catch (error) {
+        console.warn(`Error adding custodian ${email}:`, error);
+        // Continue with other custodians
+      }
+    }
+    
+    if (dataSourceIds.length === 0) {
+      console.warn('No data sources found for specified mailboxes, falling back to Graph search');
+      return await executeGraphSearch(accessToken, query, mailboxes);
+    }
+  }
+  
+  // Step 3: Create search
+  console.log('Step 3: Creating eDiscovery search...');
+  
+  const searchBody: {
+    displayName: string;
+    description: string;
+    contentQuery: string;
+    dataSourceScopes: string;
+    dataSources?: Array<{ '@odata.type': string; id: string }>;
+  } = {
     displayName: `Search_${Date.now()}`,
     description: `Content search: ${query}`,
     contentQuery: query,
     dataSourceScopes: mailboxes.length > 0 ? 'specificLocations' : 'allTenantMailboxes',
   };
+  
+  // Add data sources if searching specific locations
+  if (dataSourceIds.length > 0) {
+    searchBody.dataSources = dataSourceIds.map(id => ({
+      '@odata.type': '#microsoft.graph.security.userSource',
+      id: id,
+    }));
+  }
 
   const createSearchResponse = await fetch(
     `https://graph.microsoft.com/v1.0/security/cases/ediscoveryCases/${caseId}/searches`,

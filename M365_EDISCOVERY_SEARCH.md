@@ -129,6 +129,9 @@ body:"confidential information"
 - **m365-ediscovery-search/index.ts**: Supabase Edge Function
 - Handles two request types:
   - **POST**: Creates eDiscovery search
+    - When specific mailboxes are requested, adds custodians to the case
+    - Retrieves data source IDs (Microsoft 365 mailbox IDs) for each custodian
+    - Creates search with proper data source references
   - **GET**: Polls export status by exportId
 - Implements fallback to Graph search API
 - Secure error handling without stack trace exposure
