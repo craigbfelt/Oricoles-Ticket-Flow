@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,9 +9,40 @@ import { supabase } from "@/integrations/supabase/client";
 import { DataTable } from "@/components/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { AddJobDialog } from "@/components/AddJobDialog";
+import { useToast } from "@/hooks/use-toast";
 
 const Jobs = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("live");
+
+  useEffect(() => {
+    checkAccess();
+  }, [navigate]);
+
+  const checkAccess = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .in("role", ["admin", "ceo", "support_staff"])
+      .maybeSingle();
+
+    if (!data) {
+      toast({
+        title: "Access Denied",
+        description: "You must be an admin, CEO, or support staff to access this page",
+        variant: "destructive",
+      });
+      navigate("/dashboard");
+    }
+  };
 
   const { data: jobs, isLoading, refetch } = useQuery({
     queryKey: ["jobs"],

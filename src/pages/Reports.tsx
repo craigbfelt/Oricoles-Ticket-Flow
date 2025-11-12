@@ -39,10 +39,15 @@ const Reports = () => {
       .from("user_roles")
       .select("role")
       .eq("user_id", session.user.id)
-      .in("role", ["admin", "support_staff", "ceo"])
+      .in("role", ["admin", "ceo", "support_staff"])
       .maybeSingle();
 
     if (!data) {
+      toast({
+        title: "Access Denied",
+        description: "You must be an admin, CEO, or support staff to access this page",
+        variant: "destructive",
+      });
       navigate("/dashboard");
     }
   };

@@ -70,25 +70,39 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     }
   };
 
-  const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Tickets", href: "/tickets", icon: Ticket },
-    { name: "Jobs", href: "/jobs", icon: Briefcase },
-    { name: "Maintenance", href: "/maintenance", icon: Wrench },
-    { name: "Logistics", href: "/logistics", icon: Truck },
-    { name: "Assets", href: "/assets", icon: Package },
-    { name: "Branches", href: "/branches", icon: Building2 },
-    { name: "Microsoft 365", href: "/microsoft-365", icon: Cloud },
-    { name: "Hardware", href: "/hardware", icon: Monitor },
-    { name: "Software", href: "/software", icon: Code },
-    { name: "Licenses", href: "/licenses", icon: Key },
-    { name: "Provider Emails", href: "/provider-emails", icon: FileBarChart },
-    { name: "Remote Support", href: "/remote-support", icon: Video },
-    { name: "VPN", href: "/vpn", icon: Key },
-    { name: "RDP", href: "/rdp", icon: Monitor },
-    { name: "Reports", href: "/reports", icon: FileBarChart },
-    { name: "Users", href: "/users", icon: Users },
+  const allNavigation = [
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, requiredRoles: [] }, // Everyone
+    { name: "Tickets", href: "/tickets", icon: Ticket, requiredRoles: [] }, // Everyone
+    { name: "Remote Support", href: "/remote-support", icon: Video, requiredRoles: [] }, // Everyone
+    { name: "Jobs", href: "/jobs", icon: Briefcase, requiredRoles: ['admin', 'ceo', 'support_staff'] },
+    { name: "Maintenance", href: "/maintenance", icon: Wrench, requiredRoles: ['admin', 'ceo', 'support_staff'] },
+    { name: "Logistics", href: "/logistics", icon: Truck, requiredRoles: ['admin', 'ceo', 'support_staff'] },
+    { name: "Assets", href: "/assets", icon: Package, requiredRoles: ['admin', 'ceo', 'support_staff'] },
+    { name: "Branches", href: "/branches", icon: Building2, requiredRoles: ['admin', 'ceo', 'support_staff'] },
+    { name: "Microsoft 365", href: "/microsoft-365", icon: Cloud, requiredRoles: ['admin', 'ceo', 'support_staff'] },
+    { name: "Hardware", href: "/hardware", icon: Monitor, requiredRoles: ['admin', 'ceo', 'support_staff'] },
+    { name: "Software", href: "/software", icon: Code, requiredRoles: ['admin', 'ceo', 'support_staff'] },
+    { name: "Licenses", href: "/licenses", icon: Key, requiredRoles: ['admin', 'ceo', 'support_staff'] },
+    { name: "Provider Emails", href: "/provider-emails", icon: FileBarChart, requiredRoles: ['admin', 'ceo', 'support_staff'] },
+    { name: "VPN", href: "/vpn", icon: Key, requiredRoles: ['admin', 'ceo', 'support_staff'] },
+    { name: "RDP", href: "/rdp", icon: Monitor, requiredRoles: ['admin', 'ceo', 'support_staff'] },
+    { name: "Reports", href: "/reports", icon: FileBarChart, requiredRoles: ['admin', 'ceo', 'support_staff'] },
+    { name: "Users", href: "/users", icon: Users, requiredRoles: ['admin'] }, // Admin only, not CEO
   ];
+
+  // Filter navigation based on user roles
+  // New structure: Regular users see Tickets + Remote Support, Admin sees everything, CEO sees everything except Users
+  const navigation = allNavigation.filter(item => {
+    // If no roles required, show to everyone
+    if (item.requiredRoles.length === 0) return true;
+    
+    // Check if user has any of the required roles
+    if (item.requiredRoles.includes('admin') && isAdmin) return true;
+    if (item.requiredRoles.includes('ceo') && isCEO) return true;
+    if (item.requiredRoles.includes('support_staff') && isSupportStaff) return true;
+    
+    return false;
+  });
 
   return (
     <div className="flex h-screen bg-background">

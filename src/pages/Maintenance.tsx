@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,10 +32,39 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 
 const Maintenance = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("requests");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [requestType, setRequestType] = useState("");
   const { toast } = useToast();
+
+  useEffect(() => {
+    checkAccess();
+  }, [navigate]);
+
+  const checkAccess = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .in("role", ["admin", "ceo", "support_staff"])
+      .maybeSingle();
+
+    if (!data) {
+      toast({
+        title: "Access Denied",
+        description: "You must be an admin, CEO, or support staff to access this page",
+        variant: "destructive",
+      });
+      navigate("/dashboard");
+    }
+  };
 
   const { data: requests, refetch } = useQuery({
     queryKey: ["maintenance-requests"],
