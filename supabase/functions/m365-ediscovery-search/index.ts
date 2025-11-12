@@ -122,11 +122,10 @@ serve(async (req) => {
   } catch (error: unknown) {
     console.error('eDiscovery search error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
-    const errorDetails = error instanceof Error ? error.toString() : String(error);
+    // Don't expose stack trace details to client for security
     return new Response(
       JSON.stringify({ 
-        error: errorMessage,
-        details: errorDetails
+        error: errorMessage
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
