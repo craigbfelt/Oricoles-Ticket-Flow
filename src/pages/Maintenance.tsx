@@ -3,7 +3,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, ArrowRightLeft, Trash2, Truck, List } from "lucide-react";
+import { Plus, ArrowRightLeft, Trash2, List } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DataTable } from "@/components/DataTable";
@@ -42,6 +42,7 @@ const Maintenance = () => {
       const { data, error } = await supabase
         .from("maintenance_requests")
         .select("*")
+        .in("request_type", ["reassignment", "retirement"])
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -81,8 +82,6 @@ const Maintenance = () => {
         <Badge variant="outline">
           {value === "reassignment" && "PC Reassignment"}
           {value === "retirement" && "Device Retirement"}
-          {value === "courier" && "Courier Request"}
-          {value === "new_device" && "New Device"}
         </Badge>
       ),
     },
@@ -126,11 +125,6 @@ const Maintenance = () => {
       ),
     },
     {
-      key: "courier_tracking_number",
-      label: "Tracking #",
-      render: (value: string) => value || "-",
-    },
-    {
       key: "created_at",
       label: "Date",
       render: (value: string) => new Date(value).toLocaleDateString(),
@@ -142,9 +136,9 @@ const Maintenance = () => {
       <div className="space-y-6 p-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Maintenance & Logistics</h1>
+            <h1 className="text-3xl font-bold">Device Maintenance</h1>
             <p className="text-muted-foreground">
-              Manage device reassignments, retirements, and courier bookings
+              Manage device reassignments and retirements
             </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -170,32 +164,15 @@ const Maintenance = () => {
           </Dialog>
         </div>
 
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertTitle>Courier Automation Recommendation</AlertTitle>
-          <AlertDescription>
-            For automated courier booking, I recommend using <strong>Zapier</strong> to connect with multiple courier platforms:
-            <ul className="list-disc ml-6 mt-2 space-y-1">
-              <li><strong>The Courier Guy</strong> - South African courier service</li>
-              <li><strong>Aramex</strong> - International & local deliveries</li>
-              <li><strong>DHL</strong> - Premium international shipping</li>
-              <li><strong>Pargo</strong> - Collection points network</li>
-            </ul>
-            <p className="mt-2">
-              Create a Zap that triggers when a courier request is created, then automatically books with your preferred courier service.
-            </p>
-          </AlertDescription>
-        </Alert>
-
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="requests" className="flex items-center gap-2">
               <List className="h-4 w-4" />
               All Requests
             </TabsTrigger>
-            <TabsTrigger value="courier" className="flex items-center gap-2">
-              <Truck className="h-4 w-4" />
-              Courier Tracking
+            <TabsTrigger value="reassignment" className="flex items-center gap-2">
+              <ArrowRightLeft className="h-4 w-4" />
+              Reassignments
             </TabsTrigger>
           </TabsList>
 
@@ -217,21 +194,19 @@ const Maintenance = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="courier" className="mt-6">
+          <TabsContent value="reassignment" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Active Courier Shipments</CardTitle>
+                <CardTitle>Device Reassignments</CardTitle>
                 <CardDescription>
-                  Track courier bookings and deliveries
+                  Track PC and device reassignments between users
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <DataTable
-                  data={
-                    requests?.filter((r) => r.request_type === "courier" && r.status !== "completed") || []
-                  }
+                  data={requests?.filter((r) => r.request_type === "reassignment") || []}
                   columns={columns}
-                  searchKeys={["courier_tracking_number", "delivery_address"]}
+                  searchKeys={["title", "current_user_name", "new_user_name"]}
                 />
               </CardContent>
             </Card>
@@ -281,18 +256,6 @@ const RequestForm = ({ requestType, setRequestType, onSubmit }: any) => {
               <div className="flex items-center gap-2">
                 <Trash2 className="h-4 w-4" />
                 Device Retirement
-              </div>
-            </SelectItem>
-            <SelectItem value="courier">
-              <div className="flex items-center gap-2">
-                <Truck className="h-4 w-4" />
-                Courier Request
-              </div>
-            </SelectItem>
-            <SelectItem value="new_device">
-              <div className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                New Device Setup
               </div>
             </SelectItem>
           </SelectContent>
@@ -391,55 +354,6 @@ const RequestForm = ({ requestType, setRequestType, onSubmit }: any) => {
                 setFormData({ ...formData, new_user_name: e.target.value })
               }
               placeholder="Name of new user"
-            />
-          </div>
-        </>
-      )}
-
-      {(requestType === "courier" || requestType === "new_device") && (
-        <>
-          <div className="space-y-2">
-            <Label htmlFor="courier_platform">Preferred Courier</Label>
-            <Select
-              value={formData.courier_platform}
-              onValueChange={(value) =>
-                setFormData({ ...formData, courier_platform: value })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select courier service" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="courier_guy">The Courier Guy</SelectItem>
-                <SelectItem value="aramex">Aramex</SelectItem>
-                <SelectItem value="dhl">DHL</SelectItem>
-                <SelectItem value="pargo">Pargo</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="pickup_address">Pickup Address</Label>
-            <Textarea
-              id="pickup_address"
-              value={formData.pickup_address}
-              onChange={(e) =>
-                setFormData({ ...formData, pickup_address: e.target.value })
-              }
-              placeholder="Full pickup address"
-              rows={2}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="delivery_address">Delivery Address</Label>
-            <Textarea
-              id="delivery_address"
-              value={formData.delivery_address}
-              onChange={(e) =>
-                setFormData({ ...formData, delivery_address: e.target.value })
-              }
-              placeholder="Full delivery address"
-              rows={2}
             />
           </div>
         </>

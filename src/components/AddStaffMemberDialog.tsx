@@ -82,6 +82,11 @@ export function AddStaffMemberDialog({ onSuccess }: { onSuccess: () => void }) {
   const [vpnUsername, setVpnUsername] = useState("");
   const [vpnPassword, setVpnPassword] = useState("");
   const [vpnNotes, setVpnNotes] = useState("Profile requested from Armata");
+  
+  // Courier options
+  const [needsCourier, setNeedsCourier] = useState(false);
+  const [courierPlatform, setCourierPlatform] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -274,6 +279,9 @@ Graeme Smart`;
           requireMfa,
           needsRdp,
           needsVpn,
+          needsCourier,
+          courierPlatform: needsCourier ? courierPlatform : undefined,
+          deliveryAddress: needsCourier ? deliveryAddress : undefined,
         };
 
         const { data: emailResponse, error: emailError } = await supabase.functions.invoke(
@@ -345,6 +353,9 @@ Graeme Smart`;
       setRdpPassword("");
       setVpnUsername("");
       setVpnPassword("");
+      setNeedsCourier(false);
+      setCourierPlatform("");
+      setDeliveryAddress("");
       
       setOpen(false);
       onSuccess();
@@ -802,6 +813,51 @@ Graeme Smart`;
                     value={vpnNotes}
                     onChange={(e) => setVpnNotes(e.target.value)}
                     placeholder="Additional notes"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Courier Delivery */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="needsCourier"
+                checked={needsCourier}
+                onCheckedChange={(checked) => setNeedsCourier(checked as boolean)}
+              />
+              <Label htmlFor="needsCourier" className="font-semibold">Needs Courier Delivery</Label>
+            </div>
+
+            {needsCourier && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="courierPlatform">Preferred Courier *</Label>
+                  <Select value={courierPlatform} onValueChange={setCourierPlatform}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select courier service" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="courier_guy">The Courier Guy</SelectItem>
+                      <SelectItem value="aramex">Aramex</SelectItem>
+                      <SelectItem value="dhl">DHL</SelectItem>
+                      <SelectItem value="pargo">Pargo</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="deliveryAddress">Delivery Address *</Label>
+                  <Textarea
+                    id="deliveryAddress"
+                    value={deliveryAddress}
+                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    placeholder="Full delivery address including postal code"
+                    rows={3}
                   />
                 </div>
               </>
