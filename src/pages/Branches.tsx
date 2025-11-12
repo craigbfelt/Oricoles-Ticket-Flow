@@ -23,6 +23,9 @@ const Branches = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const usersFileInputRef = useRef<HTMLInputElement>(null);
+  const devicesFileInputRef = useRef<HTMLInputElement>(null);
+  const networkDevicesFileInputRef = useRef<HTMLInputElement>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -138,6 +141,45 @@ const Branches = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  const downloadUsersTemplate = () => {
+    const headers = ["branch_name", "display_name", "email", "user_principal_name", "job_title", "department", "account_enabled"];
+    const example = ["Durban", "John Doe", "john.doe@company.com", "john.doe@company.com", "Manager", "IT", "true"];
+    const csv = [headers.join(","), example.join(",")].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "users_template.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const downloadDevicesTemplate = () => {
+    const headers = ["branch_name", "device_name", "device_type", "manufacturer", "model", "serial_number", "os", "os_version", "processor", "ram_gb", "storage_gb", "location", "status"];
+    const example = ["Durban", "Laptop-001", "Laptop", "Dell", "Latitude 5520", "SN789456", "Windows 11", "23H2", "Intel Core i7", "16", "512", "Office", "active"];
+    const csv = [headers.join(","), example.join(",")].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "devices_template.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const downloadNetworkDevicesTemplate = () => {
+    const headers = ["branch_name", "device_name", "device_type", "manufacturer", "model", "serial_number", "ip_address", "mac_address", "location", "status", "notes"];
+    const example = ["Durban", "Office Printer 1", "printer", "HP", "LaserJet Pro", "SN123456", "192.168.1.100", "00:1A:2B:3C:4D:5E", "Floor 1", "active", "Main printer"];
+    const csv = [headers.join(","), example.join(",")].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "network_devices_template.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleCSVImport = async () => {
     const file = fileInputRef.current?.files?.[0];
     if (!file) return;
@@ -177,6 +219,164 @@ const Branches = () => {
     }
   };
 
+  const handleUsersImport = async () => {
+    const file = usersFileInputRef.current?.files?.[0];
+    if (!file) return;
+
+    const text = await file.text();
+    const lines = text.split("\n").filter((line) => line.trim());
+    const headers = lines[0].split(",").map((h) => h.trim());
+    const rows = lines.slice(1);
+
+    const data = rows.map((row) => {
+      const values = row.split(",").map((v) => v.trim());
+      const obj: any = {};
+      headers.forEach((header, i) => {
+        if (header === "account_enabled") {
+          obj[header] = values[i]?.toLowerCase() === "true";
+        } else {
+          obj[header] = values[i] || null;
+        }
+      });
+      return obj;
+    });
+
+    try {
+      // Remove branch_name from the data and use department field instead
+      const usersData = data.map(({ branch_name, ...rest }) => ({
+        ...rest,
+        department: branch_name,
+      }));
+
+      const { error } = await supabase.from("directory_users").insert(usersData);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["directory_users"] });
+      toast({
+        title: "Success",
+        description: `${data.length} users imported and assigned to branches successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to import users CSV",
+        variant: "destructive",
+      });
+    }
+
+    if (usersFileInputRef.current) {
+      usersFileInputRef.current.value = "";
+    }
+  };
+
+  const handleDevicesImport = async () => {
+    const file = devicesFileInputRef.current?.files?.[0];
+    if (!file) return;
+
+    const text = await file.text();
+    const lines = text.split("\n").filter((line) => line.trim());
+    const headers = lines[0].split(",").map((h) => h.trim());
+    const rows = lines.slice(1);
+
+    const data = rows.map((row) => {
+      const values = row.split(",").map((v) => v.trim());
+      const obj: any = {};
+      headers.forEach((header, i) => {
+        if (header === "ram_gb" || header === "storage_gb") {
+          obj[header] = values[i] ? parseInt(values[i]) : null;
+        } else {
+          obj[header] = values[i] || null;
+        }
+      });
+      return obj;
+    });
+
+    try {
+      // Remove branch_name from the data and use branch field instead
+      const devicesData = data.map(({ branch_name, ...rest }) => ({
+        ...rest,
+        branch: branch_name,
+      }));
+
+      const { error } = await supabase.from("hardware_inventory").insert(devicesData);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["hardware"] });
+      toast({
+        title: "Success",
+        description: `${data.length} devices imported and assigned to branches successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to import devices CSV",
+        variant: "destructive",
+      });
+    }
+
+    if (devicesFileInputRef.current) {
+      devicesFileInputRef.current.value = "";
+    }
+  };
+
+  const handleNetworkDevicesImport = async () => {
+    const file = networkDevicesFileInputRef.current?.files?.[0];
+    if (!file) return;
+
+    const text = await file.text();
+    const lines = text.split("\n").filter((line) => line.trim());
+    const headers = lines[0].split(",").map((h) => h.trim());
+    const rows = lines.slice(1);
+
+    const branchMap = new Map(branches?.map(b => [b.name, b.id]) || []);
+
+    const data = rows.map((row) => {
+      const values = row.split(",").map((v) => v.trim());
+      const obj: any = {};
+      headers.forEach((header, i) => {
+        obj[header] = values[i] || null;
+      });
+      return obj;
+    });
+
+    try {
+      // Map branch_name to branch_id
+      const networkDevicesData = data
+        .map(({ branch_name, ...rest }) => {
+          const branchId = branchMap.get(branch_name);
+          if (!branchId) {
+            console.warn(`Branch "${branch_name}" not found, skipping device`);
+            return null;
+          }
+          return {
+            ...rest,
+            branch_id: branchId,
+          };
+        })
+        .filter(item => item !== null);
+
+      if (networkDevicesData.length === 0) {
+        throw new Error("No valid devices to import. Please check branch names.");
+      }
+
+      const { error } = await supabase.from("network_devices").insert(networkDevicesData);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["network_devices"] });
+      toast({
+        title: "Success",
+        description: `${networkDevicesData.length} network devices imported and assigned to branches successfully`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to import network devices CSV",
+        variant: "destructive",
+      });
+    }
+
+    if (networkDevicesFileInputRef.current) {
+      networkDevicesFileInputRef.current.value = "";
+    }
+  };
+
   const exportToCSV = () => {
     if (!branches || branches.length === 0) {
       toast({
@@ -209,10 +409,10 @@ const Branches = () => {
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-foreground">Branches</h1>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={downloadCSVTemplate}>
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={downloadCSVTemplate}>
               <Download className="w-4 h-4 mr-2" />
-              Download Template
+              Branch Template
             </Button>
             <input
               ref={fileInputRef}
@@ -221,13 +421,62 @@ const Branches = () => {
               className="hidden"
               onChange={handleCSVImport}
             />
-            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+            <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
               <Upload className="w-4 h-4 mr-2" />
-              Import CSV
+              Import Branches
             </Button>
-            <Button variant="outline" onClick={exportToCSV}>
+            
+            <Button variant="outline" size="sm" onClick={downloadUsersTemplate}>
               <Download className="w-4 h-4 mr-2" />
-              Export CSV
+              Users Template
+            </Button>
+            <input
+              ref={usersFileInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleUsersImport}
+            />
+            <Button variant="outline" size="sm" onClick={() => usersFileInputRef.current?.click()}>
+              <Upload className="w-4 h-4 mr-2" />
+              Import Users
+            </Button>
+            
+            <Button variant="outline" size="sm" onClick={downloadDevicesTemplate}>
+              <Download className="w-4 h-4 mr-2" />
+              Devices Template
+            </Button>
+            <input
+              ref={devicesFileInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleDevicesImport}
+            />
+            <Button variant="outline" size="sm" onClick={() => devicesFileInputRef.current?.click()}>
+              <Upload className="w-4 h-4 mr-2" />
+              Import Devices
+            </Button>
+            
+            <Button variant="outline" size="sm" onClick={downloadNetworkDevicesTemplate}>
+              <Download className="w-4 h-4 mr-2" />
+              Network Template
+            </Button>
+            <input
+              ref={networkDevicesFileInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleNetworkDevicesImport}
+            />
+            <Button variant="outline" size="sm" onClick={() => networkDevicesFileInputRef.current?.click()}>
+              <Upload className="w-4 h-4 mr-2" />
+              Import Network
+            </Button>
+            
+            <Button variant="outline" size="sm" onClick={exportToCSV}>
+              <Download className="w-4 h-4 mr-2" />
+              Export Branches
             </Button>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
