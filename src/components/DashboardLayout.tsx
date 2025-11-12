@@ -94,7 +94,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <img src={oricolLogo} alt="Oricol Environmental Services" className="h-10 w-auto object-contain" />
           <img src={zerobitOneLogo} alt="Zero Bit One" className="h-10 w-auto object-contain" />
         </div>
-        <nav className="flex-1 px-4 py-6 space-y-1">
+        <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
@@ -129,7 +129,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="fixed inset-0 bg-background/80" onClick={() => setMobileMenuOpen(false)} />
-          <aside className="fixed top-0 left-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border">
+          <aside className="fixed top-0 left-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border flex flex-col">
             <div className="flex items-center justify-between h-20 px-4 border-b border-sidebar-border">
               <div className="flex items-center gap-2 flex-1">
                 <img src={oricolLogo} alt="Oricol Environmental Services" className="h-8 w-auto object-contain" />
@@ -144,7 +144,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <X className="w-5 h-5" />
               </Button>
             </div>
-            <nav className="px-4 py-6 space-y-1">
+            <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href;
                 return (
@@ -164,7 +164,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 );
               })}
             </nav>
-            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-sidebar-border">
+            <div className="p-4 border-t border-sidebar-border">
               <Button
                 variant="ghost"
                 className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/50"
