@@ -77,23 +77,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Maintenance", href: "/maintenance", icon: Wrench },
     { name: "Logistics", href: "/logistics", icon: Truck },
     { name: "Assets", href: "/assets", icon: Package },
-    ...(isAdmin || isCEO ? [
-      { name: "Branches", href: "/branches", icon: Building2 },
-      { name: "Microsoft 365", href: "/microsoft-365", icon: Cloud },
-      { name: "Hardware", href: "/hardware", icon: Monitor },
-      { name: "Software", href: "/software", icon: Code },
-      { name: "Licenses", href: "/licenses", icon: Key },
-      { name: "Provider Emails", href: "/provider-emails", icon: FileBarChart },
-    ] : []),
-    ...(isAdmin || isCEO || isSupportStaff ? [
-      { name: "Remote Support", href: "/remote-support", icon: Video },
-      { name: "VPN", href: "/vpn", icon: Key },
-      { name: "RDP", href: "/rdp", icon: Monitor },
-      { name: "Reports", href: "/reports", icon: FileBarChart },
-    ] : []),
-    ...(isAdmin || isCEO || isSupportStaff ? [
-      { name: "Users", href: "/users", icon: Users }
-    ] : []),
+    { name: "Branches", href: "/branches", icon: Building2 },
+    { name: "Microsoft 365", href: "/microsoft-365", icon: Cloud },
+    { name: "Hardware", href: "/hardware", icon: Monitor },
+    { name: "Software", href: "/software", icon: Code },
+    { name: "Licenses", href: "/licenses", icon: Key },
+    { name: "Provider Emails", href: "/provider-emails", icon: FileBarChart },
+    { name: "Remote Support", href: "/remote-support", icon: Video },
+    { name: "VPN", href: "/vpn", icon: Key },
+    { name: "RDP", href: "/rdp", icon: Monitor },
+    { name: "Reports", href: "/reports", icon: FileBarChart },
+    { name: "Users", href: "/users", icon: Users },
   ];
 
   return (
