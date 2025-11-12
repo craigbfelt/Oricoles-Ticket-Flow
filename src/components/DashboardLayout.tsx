@@ -91,18 +91,22 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   ];
 
   // Filter navigation based on user roles
-  // New structure: Regular users see Tickets + Remote Support, Admin sees everything, CEO sees everything except Users
-  const navigation = allNavigation.filter(item => {
-    // If no roles required, show to everyone
-    if (item.requiredRoles.length === 0) return true;
-    
-    // Check if user has any of the required roles
-    if (item.requiredRoles.includes('admin') && isAdmin) return true;
-    if (item.requiredRoles.includes('ceo') && isCEO) return true;
-    if (item.requiredRoles.includes('support_staff') && isSupportStaff) return true;
-    
-    return false;
-  });
+  // TEMPORARY: Show all navigation items to all users (requested by @craigfelt)
+  // TODO: Re-enable role-based filtering later
+  const navigation = allNavigation;
+  
+  // Original role-based filtering (disabled for now):
+  // const navigation = allNavigation.filter(item => {
+  //   // If no roles required, show to everyone
+  //   if (item.requiredRoles.length === 0) return true;
+  //   
+  //   // Check if user has any of the required roles
+  //   if (item.requiredRoles.includes('admin') && isAdmin) return true;
+  //   if (item.requiredRoles.includes('ceo') && isCEO) return true;
+  //   if (item.requiredRoles.includes('support_staff') && isSupportStaff) return true;
+  //   
+  //   return false;
+  // });
 
   return (
     <div className="flex h-screen bg-background">
