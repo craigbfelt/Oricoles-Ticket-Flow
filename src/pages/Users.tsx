@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
-import { Users as UsersIcon, Search, Upload, Download, Save } from "lucide-react";
+import { Users as UsersIcon, Search, Upload, Download, Save, Key } from "lucide-react";
 import { DataTable, type Column } from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import {
@@ -248,6 +248,36 @@ const Users = () => {
     setEditingSystemUser(false);
     fetchSystemUsers();
     setSheetOpen(false);
+  };
+
+  const handleResetPassword = async (user: SystemUser) => {
+    if (!user.email) {
+      toast({
+        title: "Error",
+        description: "User does not have an email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Password Reset Email Sent",
+        description: `A password reset link has been sent to ${user.email}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send password reset email",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEditSystemUser = (user: SystemUser) => {
@@ -776,12 +806,22 @@ const Users = () => {
                           </p>
                         </div>
 
-                        <Button 
-                          onClick={() => handleEditSystemUser(selectedUser)}
-                          className="w-full"
-                        >
-                          Edit User
-                        </Button>
+                        <div className="flex flex-col gap-2">
+                          <Button 
+                            onClick={() => handleEditSystemUser(selectedUser)}
+                            className="w-full"
+                          >
+                            Edit User
+                          </Button>
+                          <Button 
+                            onClick={() => handleResetPassword(selectedUser)}
+                            variant="outline"
+                            className="w-full"
+                          >
+                            <Key className="mr-2 h-4 w-4" />
+                            Reset Password
+                          </Button>
+                        </div>
                       </>
                     ) : (
                       <>
