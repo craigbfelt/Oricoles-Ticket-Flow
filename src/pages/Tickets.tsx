@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
@@ -11,10 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, CheckCircle, RotateCcw, Edit, Clock, AlertCircle } from "lucide-react";
+import { Plus, Trash2, CheckCircle, RotateCcw, Edit, Clock, AlertCircle, Ticket, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Tickets = () => {
   const navigate = useNavigate();
@@ -474,12 +475,20 @@ const Tickets = () => {
     );
   };
 
+  const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress');
+  const closedTickets = tickets.filter(t => t.status === 'closed');
+  const resolvedTickets = tickets.filter(t => t.status === 'resolved');
+  const pendingTickets = tickets.filter(t => t.status === 'pending');
+
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Tickets</h1>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Ticket className="w-8 h-8" />
+              Tickets
+            </h1>
             <p className="text-muted-foreground">Manage support tickets</p>
           </div>
           <div className="flex gap-2">
@@ -610,58 +619,264 @@ const Tickets = () => {
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>All Tickets</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {tickets.length === 0 ? (
-              <p className="text-muted-foreground">No tickets yet. Create your first ticket to get started.</p>
-            ) : (
-              <div className="space-y-4">
-                {tickets.map((ticket) => (
-                  <div
-                    key={ticket.id}
-                    className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors gap-4 cursor-pointer"
-                    onClick={() => handleTicketClick(ticket)}
-                  >
-                    <div className="flex-1">
-                      <h3 className="font-medium">{ticket.title}</h3>
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{ticket.description}</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {ticket.branch && (
-                          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
-                            📍 {ticket.branch}
-                          </Badge>
-                        )}
-                        {ticket.fault_type && (
-                          <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/20">
-                            🔧 {ticket.fault_type}
-                          </Badge>
-                        )}
-                        {ticket.category && (
-                          <Badge variant="secondary">{ticket.category}</Badge>
-                        )}
-                        {ticket.user_email && (
-                          <span className="text-xs text-muted-foreground">
-                            👤 {ticket.user_email}
-                          </span>
-                        )}
-                        <span className="text-xs text-muted-foreground">
-                          📅 {new Date(ticket.created_at).toLocaleDateString()}
-                        </span>
+        {/* Summary Cards */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{tickets.length}</div>
+              <p className="text-xs text-muted-foreground mt-1">All time</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
+              <AlertCircle className="h-4 w-4 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">{openTickets.length}</div>
+              <p className="text-xs text-muted-foreground mt-1">In progress & open</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Resolved</CardTitle>
+              <CheckCircle className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{resolvedTickets.length}</div>
+              <p className="text-xs text-muted-foreground mt-1">Resolved tickets</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Closed</CardTitle>
+              <CheckCircle className="h-4 w-4 text-gray-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-600">{closedTickets.length}</div>
+              <p className="text-xs text-muted-foreground mt-1">Closed tickets</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabbed View */}
+        <Tabs defaultValue="open" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="open">
+              Open ({openTickets.length})
+            </TabsTrigger>
+            <TabsTrigger value="pending">
+              Pending ({pendingTickets.length})
+            </TabsTrigger>
+            <TabsTrigger value="resolved">
+              Resolved ({resolvedTickets.length})
+            </TabsTrigger>
+            <TabsTrigger value="closed">
+              Closed ({closedTickets.length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="open">
+            <Card>
+              <CardHeader>
+                <CardTitle>Open Tickets</CardTitle>
+                <CardDescription>Currently active tickets requiring attention</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {openTickets.length === 0 ? (
+                  <p className="text-muted-foreground">No open tickets.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {openTickets.map((ticket) => (
+                      <div
+                        key={ticket.id}
+                        className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors gap-4 cursor-pointer"
+                        onClick={() => handleTicketClick(ticket)}
+                      >
+                        <div className="flex-1">
+                          <h3 className="font-medium">{ticket.title}</h3>
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{ticket.description}</p>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {ticket.branch && (
+                              <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+                                📍 {ticket.branch}
+                              </Badge>
+                            )}
+                            {ticket.fault_type && (
+                              <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/20">
+                                🔧 {ticket.fault_type}
+                              </Badge>
+                            )}
+                            {ticket.category && (
+                              <Badge variant="secondary">{ticket.category}</Badge>
+                            )}
+                            {ticket.user_email && (
+                              <span className="text-xs text-muted-foreground">
+                                👤 {ticket.user_email}
+                              </span>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              📅 {new Date(ticket.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                          {getPriorityBadge(ticket.priority)}
+                          {getStatusBadge(ticket.status)}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
-                      {getPriorityBadge(ticket.priority)}
-                      {getStatusBadge(ticket.status)}
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="pending">
+            <Card>
+              <CardHeader>
+                <CardTitle>Pending Tickets</CardTitle>
+                <CardDescription>Tickets waiting for action or response</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {pendingTickets.length === 0 ? (
+                  <p className="text-muted-foreground">No pending tickets.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {pendingTickets.map((ticket) => (
+                      <div
+                        key={ticket.id}
+                        className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors gap-4 cursor-pointer"
+                        onClick={() => handleTicketClick(ticket)}
+                      >
+                        <div className="flex-1">
+                          <h3 className="font-medium">{ticket.title}</h3>
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{ticket.description}</p>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {ticket.branch && (
+                              <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+                                📍 {ticket.branch}
+                              </Badge>
+                            )}
+                            {ticket.fault_type && (
+                              <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/20">
+                                🔧 {ticket.fault_type}
+                              </Badge>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              📅 {new Date(ticket.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                          {getPriorityBadge(ticket.priority)}
+                          {getStatusBadge(ticket.status)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="resolved">
+            <Card>
+              <CardHeader>
+                <CardTitle>Resolved Tickets</CardTitle>
+                <CardDescription>Tickets that have been resolved</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {resolvedTickets.length === 0 ? (
+                  <p className="text-muted-foreground">No resolved tickets.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {resolvedTickets.map((ticket) => (
+                      <div
+                        key={ticket.id}
+                        className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors gap-4 cursor-pointer"
+                        onClick={() => handleTicketClick(ticket)}
+                      >
+                        <div className="flex-1">
+                          <h3 className="font-medium">{ticket.title}</h3>
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{ticket.description}</p>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {ticket.branch && (
+                              <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+                                📍 {ticket.branch}
+                              </Badge>
+                            )}
+                            {ticket.resolved_at && (
+                              <span className="text-xs text-muted-foreground">
+                                ✅ Resolved {new Date(ticket.resolved_at).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                          {getPriorityBadge(ticket.priority)}
+                          {getStatusBadge(ticket.status)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="closed">
+            <Card>
+              <CardHeader>
+                <CardTitle>Closed Tickets</CardTitle>
+                <CardDescription>Completed and archived tickets</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {closedTickets.length === 0 ? (
+                  <p className="text-muted-foreground">No closed tickets.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {closedTickets.map((ticket) => (
+                      <div
+                        key={ticket.id}
+                        className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors gap-4 cursor-pointer"
+                        onClick={() => handleTicketClick(ticket)}
+                      >
+                        <div className="flex-1">
+                          <h3 className="font-medium">{ticket.title}</h3>
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{ticket.description}</p>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {ticket.branch && (
+                              <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+                                📍 {ticket.branch}
+                              </Badge>
+                            )}
+                            {ticket.resolved_at && (
+                              <span className="text-xs text-muted-foreground">
+                                🔒 Closed {new Date(ticket.resolved_at).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                          {getPriorityBadge(ticket.priority)}
+                          {getStatusBadge(ticket.status)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
