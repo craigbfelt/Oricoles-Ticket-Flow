@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
-import { Users as UsersIcon, Search, Upload, Download } from "lucide-react";
+import { Users as UsersIcon, Search, Upload, Download, Save } from "lucide-react";
 import { DataTable, type Column } from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +16,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AddStaffMemberDialog } from "@/components/AddStaffMemberDialog";
 import { ManageLicensesDialog } from "@/components/ManageLicensesDialog";
 
@@ -43,6 +45,17 @@ interface VpnRdpUser {
   updated_at: string;
 }
 
+interface SystemUser {
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  email: string | null;
+  role: string | null;
+  roles: string[];
+  created_at: string;
+  updated_at: string;
+}
+
 const Users = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -50,18 +63,23 @@ const Users = () => {
   const [rdpUsers, setRdpUsers] = useState<VpnRdpUser[]>([]);
   const [vpnUsers, setVpnUsers] = useState<VpnRdpUser[]>([]);
   const [staffUsers, setStaffUsers] = useState<VpnRdpUser[]>([]);
+  const [systemUsers, setSystemUsers] = useState<SystemUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState<DirectoryUser | VpnRdpUser | null>(null);
+  const [selectedUser, setSelectedUser] = useState<DirectoryUser | VpnRdpUser | SystemUser | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [userType, setUserType] = useState<"365" | "rdp" | "vpn" | "staff">("staff");
+  const [userType, setUserType] = useState<"365" | "rdp" | "vpn" | "staff" | "system">("staff");
   const [globalSearch, setGlobalSearch] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [currentTab, setCurrentTab] = useState("staff");
+  const [currentTab, setCurrentTab] = useState("system");
+  const [editingSystemUser, setEditingSystemUser] = useState(false);
+  const [editFullName, setEditFullName] = useState("");
+  const [editRoles, setEditRoles] = useState<string[]>([]);
 
   useEffect(() => {
     checkAccess();
     fetchUsers();
     fetchVpnRdpUsers();
+    fetchSystemUsers();
   }, [navigate]);
 
   const checkAccess = async () => {
@@ -127,7 +145,119 @@ const Users = () => {
     setLoading(false);
   };
 
-  const handleRowClick = (user: DirectoryUser | VpnRdpUser, type: "365" | "rdp" | "vpn" | "staff") => {
+  const fetchSystemUsers = async () => {
+    const { data: profilesData, error: profilesError } = await supabase
+      .from("profiles")
+      .select("*")
+      .order("full_name");
+
+    if (profilesError) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch system users",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Fetch roles for each user
+    const usersWithRoles = await Promise.all(
+      (profilesData || []).map(async (profile) => {
+        const { data: rolesData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", profile.user_id);
+
+        return {
+          ...profile,
+          roles: rolesData?.map(r => r.role) || [],
+        };
+      })
+    );
+
+    setSystemUsers(usersWithRoles);
+  };
+
+  const handleUpdateSystemUser = async () => {
+    if (!selectedUser || !('user_id' in selectedUser)) return;
+
+    const systemUser = selectedUser as SystemUser;
+
+    // Update profile
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({ full_name: editFullName })
+      .eq("user_id", systemUser.user_id);
+
+    if (profileError) {
+      toast({
+        title: "Error",
+        description: "Failed to update user profile",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Update roles - delete existing roles and insert new ones
+    const { error: deleteError } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", systemUser.user_id);
+
+    if (deleteError) {
+      toast({
+        title: "Error",
+        description: "Failed to update user roles",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (editRoles.length > 0) {
+      const rolesToInsert = editRoles.map(role => ({
+        user_id: systemUser.user_id,
+        role: role,
+      }));
+
+      const { error: insertError } = await supabase
+        .from("user_roles")
+        .insert(rolesToInsert);
+
+      if (insertError) {
+        toast({
+          title: "Error",
+          description: "Failed to assign user roles",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    toast({
+      title: "Success",
+      description: "User updated successfully",
+    });
+
+    setEditingSystemUser(false);
+    fetchSystemUsers();
+    setSheetOpen(false);
+  };
+
+  const handleEditSystemUser = (user: SystemUser) => {
+    setEditFullName(user.full_name || "");
+    setEditRoles(user.roles);
+    setEditingSystemUser(true);
+  };
+
+  const toggleRole = (role: string) => {
+    setEditRoles(prev =>
+      prev.includes(role)
+        ? prev.filter(r => r !== role)
+        : [...prev, role]
+    );
+  };
+
+  const handleRowClick = (user: DirectoryUser | VpnRdpUser | SystemUser, type: "365" | "rdp" | "vpn" | "staff" | "system") => {
     setSelectedUser(user);
     setUserType(type);
     setSheetOpen(true);
@@ -149,6 +279,7 @@ const Users = () => {
   const filteredRdpUsers = filterUsers(rdpUsers, ["username", "email", "notes"]);
   const filteredVpnUsers = filterUsers(vpnUsers, ["username", "email", "notes"]);
   const filteredStaffUsers = filterUsers(staffUsers, ["username", "email", "notes"]);
+  const filteredSystemUsers = filterUsers(systemUsers, ["full_name", "email"]);
 
   const downloadCSVTemplate = (type: string) => {
     let headers: string[];
@@ -284,6 +415,45 @@ const Users = () => {
     },
   ];
 
+  const systemUserColumns: Column<SystemUser>[] = [
+    {
+      key: "full_name",
+      label: "Full Name",
+      sortable: true,
+      filterPlaceholder: "Filter by name...",
+    },
+    {
+      key: "email",
+      label: "Email",
+      sortable: true,
+      filterPlaceholder: "Filter by email...",
+    },
+    {
+      key: "roles",
+      label: "Roles",
+      sortable: false,
+      render: (user) => (
+        <div className="flex gap-1 flex-wrap">
+          {user.roles.length > 0 ? (
+            user.roles.map((role) => (
+              <Badge key={role} variant={role === 'admin' ? 'default' : 'secondary'}>
+                {role}
+              </Badge>
+            ))
+          ) : (
+            <Badge variant="outline">No roles</Badge>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "created_at",
+      label: "Created",
+      sortable: true,
+      render: (user) => new Date(user.created_at).toLocaleDateString(),
+    },
+  ];
+
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
@@ -337,7 +507,10 @@ const Users = () => {
             </div>
 
             <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="system">
+                  System Users {globalSearch && `(${filteredSystemUsers.length})`}
+                </TabsTrigger>
                 <TabsTrigger value="staff">
                   Staff Users {globalSearch && `(${filteredStaffUsers.length})`}
                 </TabsTrigger>
@@ -351,6 +524,19 @@ const Users = () => {
                   VPN Users {globalSearch && `(${filteredVpnUsers.length})`}
                 </TabsTrigger>
               </TabsList>
+
+              <TabsContent value="system" className="mt-6">
+                <div className="mb-4">
+                  <h2 className="text-lg font-semibold">System Login Users</h2>
+                  <p className="text-sm text-muted-foreground">Users who can log into the helpdesk system</p>
+                </div>
+                <DataTable
+                  data={filteredSystemUsers}
+                  columns={systemUserColumns}
+                  onRowClick={(user) => handleRowClick(user, "system")}
+                  searchKeys={["full_name", "email"]}
+                />
+              </TabsContent>
 
               <TabsContent value="staff" className="mt-6">
                 <div className="mb-4">
@@ -528,6 +714,150 @@ const Users = () => {
                         {new Date(selectedUser.updated_at).toLocaleString()}
                       </p>
                     </div>
+                  </>
+                ) : userType === "system" && "user_id" in selectedUser ? (
+                  <>
+                    {!editingSystemUser ? (
+                      <>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Full Name</label>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedUser.full_name || "N/A"}
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Email</label>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedUser.email || "N/A"}
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Roles</label>
+                          <div className="flex gap-1 flex-wrap">
+                            {selectedUser.roles.length > 0 ? (
+                              selectedUser.roles.map((role) => (
+                                <Badge key={role} variant={role === 'admin' ? 'default' : 'secondary'}>
+                                  {role}
+                                </Badge>
+                              ))
+                            ) : (
+                              <Badge variant="outline">No roles</Badge>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">User ID</label>
+                          <p className="text-sm text-muted-foreground font-mono break-all">
+                            {selectedUser.user_id}
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Created</label>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(selectedUser.created_at).toLocaleString()}
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Last Updated</label>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(selectedUser.updated_at).toLocaleString()}
+                          </p>
+                        </div>
+
+                        <Button 
+                          onClick={() => handleEditSystemUser(selectedUser)}
+                          className="w-full"
+                        >
+                          Edit User
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-full-name">Full Name</Label>
+                          <Input
+                            id="edit-full-name"
+                            value={editFullName}
+                            onChange={(e) => setEditFullName(e.target.value)}
+                            placeholder="Enter full name"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Email (Read-only)</Label>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedUser.email || "N/A"}
+                          </p>
+                        </div>
+
+                        <div className="space-y-3">
+                          <Label>Roles</Label>
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="role-admin"
+                                checked={editRoles.includes('admin')}
+                                onCheckedChange={() => toggleRole('admin')}
+                              />
+                              <label
+                                htmlFor="role-admin"
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              >
+                                Admin
+                              </label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="role-support-staff"
+                                checked={editRoles.includes('support_staff')}
+                                onCheckedChange={() => toggleRole('support_staff')}
+                              />
+                              <label
+                                htmlFor="role-support-staff"
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              >
+                                Support Staff
+                              </label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="role-user"
+                                checked={editRoles.includes('user')}
+                                onCheckedChange={() => toggleRole('user')}
+                              />
+                              <label
+                                htmlFor="role-user"
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              >
+                                User
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={handleUpdateSystemUser}
+                            className="flex-1"
+                          >
+                            <Save className="mr-2 h-4 w-4" />
+                            Save Changes
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            onClick={() => setEditingSystemUser(false)}
+                            className="flex-1"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </>
                 ) : null}
               </div>
