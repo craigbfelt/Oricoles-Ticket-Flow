@@ -163,6 +163,11 @@ If you need to create an admin account or have lost access to your admin account
   - `admin@oricol.co.za`
   - `admin@zerobitone.co.za`
 
+### Troubleshooting "Access Denied" Errors
+If you can see tabs but get "Access Denied" when clicking them:
+- **Quick Fix:** See **[QUICK_FIX_ACCESS_DENIED.md](./QUICK_FIX_ACCESS_DENIED.md)** for instant solution
+- **Detailed Guide:** See **[FIXING_ACCESS_DENIED.md](./FIXING_ACCESS_DENIED.md)** for comprehensive troubleshooting
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
