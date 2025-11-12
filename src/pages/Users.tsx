@@ -16,6 +16,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { AddStaffMemberDialog } from "@/components/AddStaffMemberDialog";
+import { ManageLicensesDialog } from "@/components/ManageLicensesDialog";
 
 interface DirectoryUser {
   id: string;
@@ -294,6 +296,14 @@ const Users = () => {
             <p className="text-muted-foreground">View all users across different systems</p>
           </div>
           <div className="flex gap-2">
+            <ManageLicensesDialog onUpdate={() => {
+              fetchUsers();
+              fetchVpnRdpUsers();
+            }} />
+            <AddStaffMemberDialog onSuccess={() => {
+              fetchUsers();
+              fetchVpnRdpUsers();
+            }} />
             <Button variant="outline" onClick={() => downloadCSVTemplate(currentTab)}>
               <Download className="h-4 w-4 mr-2" />
               Download Template
