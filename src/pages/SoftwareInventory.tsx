@@ -40,8 +40,8 @@ const SoftwareInventory = () => {
         .from('user_roles')
         .select('role')
         .eq('user_id', session.user.id)
-        .eq('role', 'admin')
-        .single();
+        .in('role', ['admin', 'ceo'])
+        .maybeSingle();
       setIsAdmin(!!data);
     }
   };

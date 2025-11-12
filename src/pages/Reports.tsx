@@ -39,7 +39,7 @@ const Reports = () => {
       .from("user_roles")
       .select("role")
       .eq("user_id", session.user.id)
-      .in("role", ["admin", "support_staff"])
+      .in("role", ["admin", "support_staff", "ceo"])
       .maybeSingle();
 
     if (!data) {

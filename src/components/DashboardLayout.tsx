@@ -34,12 +34,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isCEO, setIsCEO] = useState(false);
 
   useEffect(() => {
-    checkAdminRole();
+    checkUserRoles();
   }, []);
 
-  const checkAdminRole = async () => {
+  const checkUserRoles = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
@@ -47,10 +48,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       .from("user_roles")
       .select("role")
       .eq("user_id", session.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
+      .in("role", ["admin", "ceo"]);
 
-    setIsAdmin(!!data);
+    if (data) {
+      const roles = data.map(r => r.role);
+      setIsAdmin(roles.includes('admin'));
+      setIsCEO(roles.includes('ceo'));
+    }
   };
 
   const handleSignOut = async () => {
@@ -71,7 +75,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Maintenance", href: "/maintenance", icon: Wrench },
     { name: "Logistics", href: "/logistics", icon: Truck },
     { name: "Assets", href: "/assets", icon: Package },
-    ...(isAdmin ? [
+    ...(isAdmin || isCEO ? [
       { name: "Branches", href: "/branches", icon: Building2 },
       { name: "Remote Support", href: "/remote-support", icon: Video },
       { name: "Microsoft 365", href: "/microsoft-365", icon: Cloud },
@@ -82,6 +86,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       { name: "RDP", href: "/rdp", icon: Monitor },
       { name: "Provider Emails", href: "/provider-emails", icon: FileBarChart },
       { name: "Reports", href: "/reports", icon: FileBarChart },
+    ] : []),
+    ...(isAdmin ? [
       { name: "Users", href: "/users", icon: Users }
     ] : []),
   ];

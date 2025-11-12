@@ -436,8 +436,8 @@ const Users = () => {
         <div className="flex gap-1 flex-wrap">
           {user.roles?.length > 0 ? (
             user.roles.map((role) => (
-              <Badge key={role} variant={role === 'admin' ? 'default' : 'secondary'}>
-                {role}
+              <Badge key={role} variant={role === 'admin' ? 'default' : role === 'ceo' ? 'default' : 'secondary'}>
+                {role.replace('_', ' ').toUpperCase()}
               </Badge>
             ))
           ) : (
@@ -738,8 +738,8 @@ const Users = () => {
                           <div className="flex gap-1 flex-wrap">
                             {selectedUser.roles.length > 0 ? (
                               selectedUser.roles.map((role) => (
-                                <Badge key={role} variant={role === 'admin' ? 'default' : 'secondary'}>
-                                  {role}
+                                <Badge key={role} variant={role === 'admin' ? 'default' : role === 'ceo' ? 'default' : 'secondary'}>
+                                  {role.replace('_', ' ').toUpperCase()}
                                 </Badge>
                               ))
                             ) : (
@@ -809,6 +809,19 @@ const Users = () => {
                                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                               >
                                 Admin
+                              </label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="role-ceo"
+                                checked={editRoles.includes('ceo')}
+                                onCheckedChange={() => toggleRole('ceo')}
+                              />
+                              <label
+                                htmlFor="role-ceo"
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              >
+                                CEO
                               </label>
                             </div>
                             <div className="flex items-center space-x-2">
