@@ -273,7 +273,7 @@ const Users = () => {
       sortable: true,
       render: (user) => (
         <Badge variant="outline">
-          {user.service_type.toUpperCase()}
+          {user.service_type?.toUpperCase() || 'N/A'}
         </Badge>
       ),
     },
@@ -490,7 +490,7 @@ const Users = () => {
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Service Type</label>
                       <Badge variant="outline">
-                        {selectedUser.service_type.toUpperCase()}
+                        {selectedUser.service_type?.toUpperCase() || 'N/A'}
                       </Badge>
                     </div>
 
