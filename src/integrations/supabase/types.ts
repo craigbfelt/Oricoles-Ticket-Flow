@@ -118,6 +118,36 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_support_reply: boolean | null
+          message: string
+          user_email: string | null
+          user_id: string | null
+          user_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_support_reply?: boolean | null
+          message: string
+          user_email?: string | null
+          user_id?: string | null
+          user_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_support_reply?: boolean | null
+          message?: string
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string
+        }
+        Relationships: []
+      }
       directory_users: {
         Row: {
           aad_id: string | null
@@ -308,6 +338,122 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      job_update_requests: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          job_id: string
+          notes: string | null
+          requested_by: string | null
+          requested_by_email: string | null
+          requested_by_name: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          update_type: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          job_id: string
+          notes?: string | null
+          requested_by?: string | null
+          requested_by_email?: string | null
+          requested_by_name?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          update_type: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          job_id?: string
+          notes?: string | null
+          requested_by?: string | null
+          requested_by_email?: string | null
+          requested_by_name?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          update_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_update_requests_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          actual_hours: number | null
+          assigned_to: string | null
+          branch_id: string | null
+          client_name: string | null
+          completed_date: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          estimated_hours: number | null
+          id: string
+          job_type: string
+          notes: string | null
+          priority: string | null
+          start_date: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          actual_hours?: number | null
+          assigned_to?: string | null
+          branch_id?: string | null
+          client_name?: string | null
+          completed_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          job_type?: string
+          notes?: string | null
+          priority?: string | null
+          start_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          actual_hours?: number | null
+          assigned_to?: string | null
+          branch_id?: string | null
+          client_name?: string | null
+          completed_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          job_type?: string
+          notes?: string | null
+          priority?: string | null
+          start_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       licenses: {
         Row: {

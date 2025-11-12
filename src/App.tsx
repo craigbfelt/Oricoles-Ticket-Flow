@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { LiveChat } from "@/components/LiveChat";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -22,6 +23,7 @@ import Branches from "./pages/Branches";
 import BranchDetails from "./pages/BranchDetails";
 import ProviderEmails from "./pages/ProviderEmails";
 import ProviderConfirm from "./pages/ProviderConfirm";
+import Jobs from "./pages/Jobs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,9 +55,11 @@ const App = () => (
           <Route path="/branches/:branchId" element={<BranchDetails />} />
           <Route path="/provider-emails" element={<ProviderEmails />} />
           <Route path="/provider-confirm" element={<ProviderConfirm />} />
+          <Route path="/jobs" element={<Jobs />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
+      <LiveChat />
     </TooltipProvider>
   </QueryClientProvider>
 );
