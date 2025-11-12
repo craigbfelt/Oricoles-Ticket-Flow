@@ -29,7 +29,23 @@ const BranchDetails = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const devicesFileInputRef = useRef<HTMLInputElement>(null);
   const usersFileInputRef = useRef<HTMLInputElement>(null);
+  const internetFileInputRef = useRef<HTMLInputElement>(null);
   const [isNetworkDeviceDialogOpen, setIsNetworkDeviceDialogOpen] = useState(false);
+  const [isInternetDialogOpen, setIsInternetDialogOpen] = useState(false);
+  const [internetForm, setInternetForm] = useState({
+    isp: "VOX",
+    connection_type: "",
+    bandwidth_mbps: "",
+    static_ip: "",
+    account_number: "",
+    support_contact: "",
+    support_phone: "",
+    support_email: "",
+    router_model: "",
+    router_serial: "",
+    monthly_cost: "",
+    notes: "",
+  });
   const [networkDeviceForm, setNetworkDeviceForm] = useState({
     device_name: "",
     device_type: "printer",
@@ -111,6 +127,19 @@ const BranchDetails = () => {
     },
   });
 
+  // Fetch internet connectivity
+  const { data: internetConnectivity } = useQuery({
+    queryKey: ["internet_connectivity", branchId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("internet_connectivity")
+        .select("*")
+        .eq("branch_id", branchId);
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const createNetworkDevice = useMutation({
     mutationFn: async (data: typeof networkDeviceForm) => {
       const { error } = await supabase.from("network_devices").insert([
@@ -143,6 +172,41 @@ const BranchDetails = () => {
     },
   });
 
+  const createInternetConnectivity = useMutation({
+    mutationFn: async (data: typeof internetForm) => {
+      const { error } = await supabase.from("internet_connectivity").insert([
+        {
+          ...data,
+          branch_id: branchId,
+          monthly_cost: data.monthly_cost ? parseFloat(data.monthly_cost) : null,
+        },
+      ]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["internet_connectivity", branchId] });
+      setIsInternetDialogOpen(false);
+      setInternetForm({
+        isp: "VOX",
+        connection_type: "",
+        bandwidth_mbps: "",
+        static_ip: "",
+        account_number: "",
+        support_contact: "",
+        support_phone: "",
+        support_email: "",
+        router_model: "",
+        router_serial: "",
+        monthly_cost: "",
+        notes: "",
+      });
+      toast({
+        title: "Success",
+        description: "Internet connectivity added successfully",
+      });
+    },
+  });
+
   const downloadCSVTemplate = (type: string) => {
     let headers: string[];
     let example: string[];
@@ -156,6 +220,9 @@ const BranchDetails = () => {
     } else if (type === "devices") {
       headers = ["device_name", "device_type", "manufacturer", "model", "serial_number", "os", "os_version", "processor", "ram_gb", "storage_gb", "branch", "location", "status"];
       example = ["Laptop-001", "Laptop", "Dell", "Latitude 5520", "SN789456", "Windows 11", "23H2", "Intel Core i7", "16", "512", branch?.name || "", "Office", "active"];
+    } else if (type === "internet") {
+      headers = ["isp", "connection_type", "bandwidth_mbps", "static_ip", "account_number", "support_contact", "support_phone", "support_email", "router_model", "router_serial", "monthly_cost", "notes"];
+      example = ["VOX", "Fiber", "100/100", "192.168.1.1", "VOX123456", "VOX Support", "+27 11 123 4567", "support@vox.co.za", "MikroTik RB4011", "SN123456789", "1500", "Main connection"];
     } else {
       headers = ["device_name", "manufacturer", "model", "serial_number", "ip_address", "mac_address"];
       example = ["Device 1", "Dell", "Model X", "SN123", "192.168.1.1", "00:1A:2B:3C:4D:5E"];
@@ -180,6 +247,8 @@ const BranchDetails = () => {
       file = usersFileInputRef.current?.files?.[0];
     } else if (type === "devices") {
       file = devicesFileInputRef.current?.files?.[0];
+    } else if (type === "internet") {
+      file = internetFileInputRef.current?.files?.[0];
     }
     
     if (!file) return;
@@ -197,6 +266,8 @@ const BranchDetails = () => {
           obj[header] = values[i]?.toLowerCase() === "true";
         } else if (header === "ram_gb" || header === "storage_gb") {
           obj[header] = values[i] ? parseInt(values[i]) : null;
+        } else if (header === "monthly_cost") {
+          obj[header] = values[i] ? parseFloat(values[i]) : null;
         } else {
           obj[header] = values[i] || null;
         }
@@ -208,6 +279,8 @@ const BranchDetails = () => {
         obj.department = branch?.name;
       } else if (type === "devices") {
         obj.branch = branch?.name;
+      } else if (type === "internet") {
+        obj.branch_id = branchId;
       }
       
       return obj;
@@ -226,6 +299,10 @@ const BranchDetails = () => {
         const { error } = await supabase.from("hardware_inventory").insert(data);
         if (error) throw error;
         queryClient.invalidateQueries({ queryKey: ["hardware", branchId] });
+      } else if (type === "internet") {
+        const { error } = await supabase.from("internet_connectivity").insert(data);
+        if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ["internet_connectivity", branchId] });
       }
       
       toast({
@@ -244,6 +321,7 @@ const BranchDetails = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
     if (usersFileInputRef.current) usersFileInputRef.current.value = "";
     if (devicesFileInputRef.current) devicesFileInputRef.current.value = "";
+    if (internetFileInputRef.current) internetFileInputRef.current.value = "";
   };
 
   const exportToCSV = (data: any[], filename: string) => {
@@ -312,6 +390,7 @@ const BranchDetails = () => {
         <Tabs value={currentTab} onValueChange={setCurrentTab}>
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="internet">Internet</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="devices">Devices</TabsTrigger>
             <TabsTrigger value="network">Network Equipment</TabsTrigger>
@@ -332,6 +411,228 @@ const BranchDetails = () => {
                 {branch?.phone && <p><strong>Phone:</strong> {branch.phone}</p>}
                 {branch?.email && <p><strong>Email:</strong> {branch.email}</p>}
                 {branch?.notes && <p><strong>Notes:</strong> {branch.notes}</p>}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="internet">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Internet Connectivity ({internetConnectivity?.length || 0})</CardTitle>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => downloadCSVTemplate("internet")}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Download Template
+                    </Button>
+                    <input
+                      ref={internetFileInputRef}
+                      type="file"
+                      accept=".csv"
+                      className="hidden"
+                      onChange={() => handleCSVImport("internet")}
+                    />
+                    <Button variant="outline" onClick={() => internetFileInputRef.current?.click()}>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Import CSV
+                    </Button>
+                    <Button variant="outline" onClick={() => exportToCSV(internetConnectivity || [], `${branch?.name}_internet`)}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Export CSV
+                    </Button>
+                    <Dialog open={isInternetDialogOpen} onOpenChange={setIsInternetDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Connection
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>Add Internet Connection</DialogTitle>
+                        </DialogHeader>
+                        <form onSubmit={(e) => { e.preventDefault(); createInternetConnectivity.mutate(internetForm); }} className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="isp">ISP *</Label>
+                              <Input
+                                id="isp"
+                                value={internetForm.isp}
+                                onChange={(e) => setInternetForm({ ...internetForm, isp: e.target.value })}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="connection_type">Connection Type</Label>
+                              <Input
+                                id="connection_type"
+                                value={internetForm.connection_type}
+                                onChange={(e) => setInternetForm({ ...internetForm, connection_type: e.target.value })}
+                                placeholder="e.g., Fiber, DSL, Wireless"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="bandwidth_mbps">Bandwidth (Mbps)</Label>
+                              <Input
+                                id="bandwidth_mbps"
+                                value={internetForm.bandwidth_mbps}
+                                onChange={(e) => setInternetForm({ ...internetForm, bandwidth_mbps: e.target.value })}
+                                placeholder="e.g., 100/100"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="static_ip">Static IP</Label>
+                              <Input
+                                id="static_ip"
+                                value={internetForm.static_ip}
+                                onChange={(e) => setInternetForm({ ...internetForm, static_ip: e.target.value })}
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="account_number">Account Number</Label>
+                              <Input
+                                id="account_number"
+                                value={internetForm.account_number}
+                                onChange={(e) => setInternetForm({ ...internetForm, account_number: e.target.value })}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="monthly_cost">Monthly Cost (ZAR)</Label>
+                              <Input
+                                id="monthly_cost"
+                                type="number"
+                                step="0.01"
+                                value={internetForm.monthly_cost}
+                                onChange={(e) => setInternetForm({ ...internetForm, monthly_cost: e.target.value })}
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 gap-4">
+                            <div>
+                              <Label htmlFor="support_contact">Support Contact</Label>
+                              <Input
+                                id="support_contact"
+                                value={internetForm.support_contact}
+                                onChange={(e) => setInternetForm({ ...internetForm, support_contact: e.target.value })}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="support_phone">Support Phone</Label>
+                              <Input
+                                id="support_phone"
+                                value={internetForm.support_phone}
+                                onChange={(e) => setInternetForm({ ...internetForm, support_phone: e.target.value })}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="support_email">Support Email</Label>
+                              <Input
+                                id="support_email"
+                                type="email"
+                                value={internetForm.support_email}
+                                onChange={(e) => setInternetForm({ ...internetForm, support_email: e.target.value })}
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="router_model">Router Model</Label>
+                              <Input
+                                id="router_model"
+                                value={internetForm.router_model}
+                                onChange={(e) => setInternetForm({ ...internetForm, router_model: e.target.value })}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="router_serial">Router Serial</Label>
+                              <Input
+                                id="router_serial"
+                                value={internetForm.router_serial}
+                                onChange={(e) => setInternetForm({ ...internetForm, router_serial: e.target.value })}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <Label htmlFor="notes">Notes</Label>
+                            <Textarea
+                              id="notes"
+                              value={internetForm.notes}
+                              onChange={(e) => setInternetForm({ ...internetForm, notes: e.target.value })}
+                            />
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button type="button" variant="outline" onClick={() => setIsInternetDialogOpen(false)}>
+                              Cancel
+                            </Button>
+                            <Button type="submit">Add Connection</Button>
+                          </div>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {internetConnectivity && internetConnectivity.length > 0 ? (
+                  <div className="space-y-4">
+                    {internetConnectivity.map((conn) => (
+                      <Card key={conn.id}>
+                        <CardContent className="p-4">
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div>
+                              <p className="text-sm text-muted-foreground">ISP</p>
+                              <p className="font-semibold">{conn.isp}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Connection Type</p>
+                              <p className="font-semibold">{conn.connection_type || "N/A"}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Bandwidth</p>
+                              <p className="font-semibold">{conn.bandwidth_mbps || "N/A"} Mbps</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Static IP</p>
+                              <p className="font-semibold">{conn.static_ip || "N/A"}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Account Number</p>
+                              <p className="font-semibold">{conn.account_number || "N/A"}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Monthly Cost</p>
+                              <p className="font-semibold">R {conn.monthly_cost || "N/A"}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Support Contact</p>
+                              <p className="font-semibold">{conn.support_contact || "N/A"}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Support Phone</p>
+                              <p className="font-semibold">{conn.support_phone || "N/A"}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Router Model</p>
+                              <p className="font-semibold">{conn.router_model || "N/A"}</p>
+                            </div>
+                            {conn.notes && (
+                              <div className="col-span-3">
+                                <p className="text-sm text-muted-foreground">Notes</p>
+                                <p className="text-sm">{conn.notes}</p>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No internet connectivity configured yet.</p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

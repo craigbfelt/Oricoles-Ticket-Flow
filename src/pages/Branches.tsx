@@ -26,6 +26,7 @@ const Branches = () => {
   const usersFileInputRef = useRef<HTMLInputElement>(null);
   const devicesFileInputRef = useRef<HTMLInputElement>(null);
   const networkDevicesFileInputRef = useRef<HTMLInputElement>(null);
+  const internetFileInputRef = useRef<HTMLInputElement>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -176,6 +177,19 @@ const Branches = () => {
     const a = document.createElement("a");
     a.href = url;
     a.download = "network_devices_template.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const downloadInternetTemplate = () => {
+    const headers = ["branch_name", "isp", "connection_type", "bandwidth_mbps", "static_ip", "account_number", "support_contact", "support_phone", "support_email", "router_model", "router_serial", "monthly_cost", "notes"];
+    const example = ["Durban", "VOX", "Fiber", "100/100", "192.168.1.1", "VOX123456", "VOX Support", "+27 11 123 4567", "support@vox.co.za", "MikroTik RB4011", "SN123456789", "1500", "Main connection"];
+    const csv = [headers.join(","), example.join(",")].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "internet_connectivity_template.csv";
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -377,6 +391,70 @@ const Branches = () => {
     }
   };
 
+  const handleInternetImport = async () => {
+    const file = internetFileInputRef.current?.files?.[0];
+    if (!file) return;
+
+    const text = await file.text();
+    const lines = text.split("\n").filter((line) => line.trim());
+    const headers = lines[0].split(",").map((h) => h.trim());
+    const rows = lines.slice(1);
+
+    const branchMap = new Map(branches?.map(b => [b.name, b.id]) || []);
+
+    const data = rows.map((row) => {
+      const values = row.split(",").map((v) => v.trim());
+      const obj: any = {};
+      headers.forEach((header, i) => {
+        if (header === "monthly_cost") {
+          obj[header] = values[i] ? parseFloat(values[i]) : null;
+        } else {
+          obj[header] = values[i] || null;
+        }
+      });
+      return obj;
+    });
+
+    try {
+      // Map branch_name to branch_id
+      const internetData = data
+        .map(({ branch_name, ...rest }) => {
+          const branchId = branchMap.get(branch_name);
+          if (!branchId) {
+            console.warn(`Branch "${branch_name}" not found, skipping internet connection`);
+            return null;
+          }
+          return {
+            ...rest,
+            branch_id: branchId,
+          };
+        })
+        .filter(item => item !== null);
+
+      if (internetData.length === 0) {
+        throw new Error("No valid internet connections to import. Please check branch names.");
+      }
+
+      const { error } = await supabase.from("internet_connectivity").insert(internetData);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["internet_connectivity"] });
+      toast({
+        title: "Success",
+        description: `${internetData.length} internet connections imported and assigned to branches successfully`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to import internet connectivity CSV",
+        variant: "destructive",
+      });
+    }
+
+    if (internetFileInputRef.current) {
+      internetFileInputRef.current.value = "";
+    }
+  };
+
   const exportToCSV = () => {
     if (!branches || branches.length === 0) {
       toast({
@@ -472,6 +550,22 @@ const Branches = () => {
             <Button variant="outline" size="sm" onClick={() => networkDevicesFileInputRef.current?.click()}>
               <Upload className="w-4 h-4 mr-2" />
               Import Network
+            </Button>
+            
+            <Button variant="outline" size="sm" onClick={downloadInternetTemplate}>
+              <Download className="w-4 h-4 mr-2" />
+              Internet Template
+            </Button>
+            <input
+              ref={internetFileInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleInternetImport}
+            />
+            <Button variant="outline" size="sm" onClick={() => internetFileInputRef.current?.click()}>
+              <Upload className="w-4 h-4 mr-2" />
+              Import Internet
             </Button>
             
             <Button variant="outline" size="sm" onClick={exportToCSV}>

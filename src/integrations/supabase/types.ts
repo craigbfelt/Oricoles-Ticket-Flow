@@ -235,6 +235,80 @@ export type Database = {
         }
         Relationships: []
       }
+      internet_connectivity: {
+        Row: {
+          account_number: string | null
+          bandwidth_mbps: string | null
+          branch_id: string
+          connection_type: string | null
+          contract_end_date: string | null
+          contract_start_date: string | null
+          created_at: string
+          id: string
+          isp: string
+          monthly_cost: number | null
+          notes: string | null
+          router_model: string | null
+          router_serial: string | null
+          static_ip: string | null
+          status: string
+          support_contact: string | null
+          support_email: string | null
+          support_phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_number?: string | null
+          bandwidth_mbps?: string | null
+          branch_id: string
+          connection_type?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          id?: string
+          isp?: string
+          monthly_cost?: number | null
+          notes?: string | null
+          router_model?: string | null
+          router_serial?: string | null
+          static_ip?: string | null
+          status?: string
+          support_contact?: string | null
+          support_email?: string | null
+          support_phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string | null
+          bandwidth_mbps?: string | null
+          branch_id?: string
+          connection_type?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          id?: string
+          isp?: string
+          monthly_cost?: number | null
+          notes?: string | null
+          router_model?: string | null
+          router_serial?: string | null
+          static_ip?: string | null
+          status?: string
+          support_contact?: string | null
+          support_email?: string | null
+          support_phone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internet_connectivity_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       licenses: {
         Row: {
           assigned_to: string | null
