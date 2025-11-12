@@ -11,6 +11,7 @@ import { RefreshCw, Laptop, Monitor, Key, Users, Shield, Activity, Cloud, Lock, 
 import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import ContentSearchPanel from "@/components/ContentSearchPanel";
 
 const Microsoft365Dashboard = () => {
   const navigate = useNavigate();
@@ -575,7 +576,7 @@ const Microsoft365Dashboard = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="security">
+          <TabsContent value="security" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>Security & Antivirus</CardTitle>
@@ -603,6 +604,8 @@ const Microsoft365Dashboard = () => {
                 </div>
               </CardContent>
             </Card>
+            
+            {isAdmin && <ContentSearchPanel />}
           </TabsContent>
 
           <TabsContent value="entra">
