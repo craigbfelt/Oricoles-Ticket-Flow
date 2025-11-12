@@ -251,19 +251,70 @@ Graeme Smart`;
         if (vpnError) throw vpnError;
       }
 
-      // 5. Generate and copy email to clipboard
-      const qwertiEmail = generateQwertiEmail();
-      
-      if (navigator.clipboard) {
+      // 5. Send automated emails to providers
+      try {
+        const emailData = {
+          displayName,
+          email,
+          password,
+          cellPhone,
+          location,
+          jobTitle,
+          department,
+          isReplacement,
+          oldUserName,
+          oldUserEmail,
+          deleteOldProfile,
+          createEmailAlias,
+          aliasForwardTo,
+          copyAccessFrom,
+          folderAccess,
+          emailDistributions,
+          printerAccess,
+          requireMfa,
+          needsRdp,
+          needsVpn,
+        };
+
+        const { data: emailResponse, error: emailError } = await supabase.functions.invoke(
+          'send-staff-onboarding-email',
+          { body: emailData }
+        );
+
+        if (emailError) {
+          console.error("Email sending error:", emailError);
+          // Generate email for clipboard as fallback
+          const qwertiEmail = generateQwertiEmail();
+          await navigator.clipboard.writeText(qwertiEmail);
+          
+          toast({
+            title: "Staff Member Added",
+            description: "Staff member created, but automated emails failed. Email copied to clipboard as fallback.",
+            variant: "destructive",
+          });
+        } else {
+          console.log("Emails sent successfully:", emailResponse);
+          
+          // Also copy to clipboard as backup
+          const qwertiEmail = generateQwertiEmail();
+          if (navigator.clipboard) {
+            await navigator.clipboard.writeText(qwertiEmail);
+          }
+          
+          toast({
+            title: "Success!",
+            description: `Staff member added and emails sent to ${emailResponse?.sentTo?.join(', ') || 'providers'}. Email also copied to clipboard.`,
+          });
+        }
+      } catch (emailErr) {
+        console.error("Email error:", emailErr);
+        // Fallback to clipboard
+        const qwertiEmail = generateQwertiEmail();
         await navigator.clipboard.writeText(qwertiEmail);
+        
         toast({
-          title: "Success",
-          description: "Staff member added and email copied to clipboard!",
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Staff member added successfully",
+          title: "Partial Success",
+          description: "Staff member added. Email copied to clipboard (automated sending unavailable).",
         });
       }
 
@@ -323,7 +374,7 @@ Graeme Smart`;
         <DialogHeader>
           <DialogTitle>Add New Staff Member</DialogTitle>
           <DialogDescription>
-            Complete the form below. An email will be generated and copied to your clipboard for provider notifications.
+            Complete the form below. Emails will be automatically sent to providers, and also copied to your clipboard.
           </DialogDescription>
         </DialogHeader>
 
@@ -782,7 +833,7 @@ Graeme Smart`;
           <Alert>
             <Copy className="h-4 w-4" />
             <AlertDescription>
-              After clicking "Add Staff & Generate Email", the provider notification email will be automatically copied to your clipboard. You can then paste and send it to Qwerti.
+              After clicking "Add Staff & Generate Email", automated emails will be sent to Qwerti (and other providers as needed). The email will also be copied to your clipboard as a backup.
             </AlertDescription>
           </Alert>
         </div>
