@@ -1209,7 +1209,7 @@ export type Database = {
       remove_user_duplicates: { Args: never; Returns: number }
     }
     Enums: {
-      app_role: "admin" | "support_staff" | "user"
+      app_role: "admin" | "ceo" | "support_staff" | "user"
       asset_status: "active" | "maintenance" | "retired" | "disposed"
       ticket_priority: "low" | "medium" | "high" | "urgent"
       ticket_status: "open" | "in_progress" | "pending" | "resolved" | "closed"
@@ -1340,7 +1340,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "support_staff", "user"],
+      app_role: ["admin", "ceo", "support_staff", "user"],
       asset_status: ["active", "maintenance", "retired", "disposed"],
       ticket_priority: ["low", "medium", "high", "urgent"],
       ticket_status: ["open", "in_progress", "pending", "resolved", "closed"],
