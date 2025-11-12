@@ -512,6 +512,117 @@ export type Database = {
         }
         Relationships: []
       }
+      maintenance_requests: {
+        Row: {
+          assigned_to: string | null
+          courier_booking_reference: string | null
+          courier_cost: number | null
+          courier_platform: string | null
+          courier_status: string | null
+          courier_tracking_number: string | null
+          created_at: string
+          current_user_id: string | null
+          current_user_name: string | null
+          delivery_address: string | null
+          delivery_date: string | null
+          description: string | null
+          device_id: string | null
+          device_model: string | null
+          device_serial: string | null
+          id: string
+          internal_notes: string | null
+          new_user_id: string | null
+          new_user_name: string | null
+          notes: string | null
+          pickup_address: string | null
+          pickup_date: string | null
+          priority: string | null
+          request_type: string
+          requested_by: string | null
+          requested_by_email: string | null
+          requested_by_name: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          title: string
+          updated_at: string
+          zapier_response: Json | null
+          zapier_webhook_triggered: boolean | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          courier_booking_reference?: string | null
+          courier_cost?: number | null
+          courier_platform?: string | null
+          courier_status?: string | null
+          courier_tracking_number?: string | null
+          created_at?: string
+          current_user_id?: string | null
+          current_user_name?: string | null
+          delivery_address?: string | null
+          delivery_date?: string | null
+          description?: string | null
+          device_id?: string | null
+          device_model?: string | null
+          device_serial?: string | null
+          id?: string
+          internal_notes?: string | null
+          new_user_id?: string | null
+          new_user_name?: string | null
+          notes?: string | null
+          pickup_address?: string | null
+          pickup_date?: string | null
+          priority?: string | null
+          request_type: string
+          requested_by?: string | null
+          requested_by_email?: string | null
+          requested_by_name?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          zapier_response?: Json | null
+          zapier_webhook_triggered?: boolean | null
+        }
+        Update: {
+          assigned_to?: string | null
+          courier_booking_reference?: string | null
+          courier_cost?: number | null
+          courier_platform?: string | null
+          courier_status?: string | null
+          courier_tracking_number?: string | null
+          created_at?: string
+          current_user_id?: string | null
+          current_user_name?: string | null
+          delivery_address?: string | null
+          delivery_date?: string | null
+          description?: string | null
+          device_id?: string | null
+          device_model?: string | null
+          device_serial?: string | null
+          id?: string
+          internal_notes?: string | null
+          new_user_id?: string | null
+          new_user_name?: string | null
+          notes?: string | null
+          pickup_address?: string | null
+          pickup_date?: string | null
+          priority?: string | null
+          request_type?: string
+          requested_by?: string | null
+          requested_by_email?: string | null
+          requested_by_name?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          zapier_response?: Json | null
+          zapier_webhook_triggered?: boolean | null
+        }
+        Relationships: []
+      }
       network_devices: {
         Row: {
           branch_id: string | null

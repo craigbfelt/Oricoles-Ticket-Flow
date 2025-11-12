@@ -24,6 +24,7 @@ import BranchDetails from "./pages/BranchDetails";
 import ProviderEmails from "./pages/ProviderEmails";
 import ProviderConfirm from "./pages/ProviderConfirm";
 import Jobs from "./pages/Jobs";
+import Maintenance from "./pages/Maintenance";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const App = () => (
           <Route path="/provider-emails" element={<ProviderEmails />} />
           <Route path="/provider-confirm" element={<ProviderConfirm />} />
           <Route path="/jobs" element={<Jobs />} />
+          <Route path="/maintenance" element={<Maintenance />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

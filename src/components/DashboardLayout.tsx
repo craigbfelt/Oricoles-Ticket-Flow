@@ -15,7 +15,8 @@ import {
   Cloud, 
   Video, 
   Building2, 
-  Briefcase 
+  Briefcase,
+  Wrench
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -66,6 +67,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Tickets", href: "/tickets", icon: Ticket },
     { name: "Jobs", href: "/jobs", icon: Briefcase },
+    { name: "Maintenance", href: "/maintenance", icon: Wrench },
     { name: "Assets", href: "/assets", icon: Package },
     ...(isAdmin ? [
       { name: "Branches", href: "/branches", icon: Building2 },
