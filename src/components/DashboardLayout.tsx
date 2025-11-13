@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, 
   Ticket, 
@@ -31,6 +31,7 @@ interface DashboardLayoutProps {
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -60,11 +61,29 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   };
 
   const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Sign out error:", error);
+        toast({
+          title: "Error",
+          description: error.message || "Failed to sign out",
+          variant: "destructive",
+        });
+      } else {
+        // Clear any local state and redirect to auth page
+        toast({
+          title: "Signed out",
+          description: "You have been successfully signed out",
+        });
+        navigate("/auth");
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred";
+      console.error("Unexpected sign out error:", err);
       toast({
         title: "Error",
-        description: "Failed to sign out",
+        description: errorMessage,
         variant: "destructive",
       });
     }

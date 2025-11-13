@@ -176,9 +176,10 @@ const Users = () => {
         .eq("user_id", systemUser.user_id);
 
       if (profileError) {
+        console.error("Update profile error:", profileError);
         toast({
           title: "Error",
-          description: "Failed to update user profile",
+          description: `Failed to update user profile: ${profileError.message}`,
           variant: "destructive",
         });
         return;
@@ -195,9 +196,10 @@ const Users = () => {
         .eq("user_id", systemUser.user_id);
 
       if (deleteError) {
+        console.error("Delete roles error:", deleteError);
         toast({
           title: "Error",
-          description: "Failed to update user roles",
+          description: `Failed to update user roles: ${deleteError.message}`,
           variant: "destructive",
         });
         return;
@@ -214,9 +216,10 @@ const Users = () => {
           .insert(rolesToInsert);
 
         if (insertError) {
+          console.error("Insert roles error:", insertError);
           toast({
             title: "Error",
-            description: "Failed to assign user roles",
+            description: `Failed to assign user roles: ${insertError.message}`,
             variant: "destructive",
           });
           return;
