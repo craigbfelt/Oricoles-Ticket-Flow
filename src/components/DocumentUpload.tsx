@@ -224,6 +224,61 @@ export const DocumentUpload = ({
     setIsProcessing(true);
 
     try {
+      // Step 1: Save the original document file to Document Hub
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        try {
+          // Generate unique filename for document storage
+          const timestamp = Date.now();
+          const fileExt = file.name.split('.').pop();
+          const storedFilename = `${timestamp}_${file.name}`;
+          const documentPath = `documents/${storedFilename}`;
+
+          // Determine category based on file type
+          let category = 'general';
+          if (file.type.startsWith('image/')) category = 'image';
+          else if (file.type === 'application/pdf') category = 'pdf';
+          else if (file.type.includes('word')) category = 'word';
+          else if (file.type.includes('excel') || file.type.includes('spreadsheet')) category = 'excel';
+          else if (file.type.includes('powerpoint') || file.type.includes('presentation')) category = 'powerpoint';
+
+          // Upload the original document to storage
+          const { error: uploadError } = await supabase.storage
+            .from('documents')
+            .upload(documentPath, file);
+
+          if (uploadError) {
+            console.error('Error uploading document to storage:', uploadError);
+            // Continue with processing even if storage upload fails
+          } else {
+            // Save document metadata to database
+            const { error: dbError } = await supabase
+              .from('documents')
+              .insert({
+                filename: storedFilename,
+                original_filename: file.name,
+                file_type: file.type,
+                file_size: file.size,
+                storage_path: documentPath,
+                storage_bucket: 'documents',
+                category: category,
+                description: `Uploaded via Document Import on ${new Date().toLocaleDateString()}`,
+                uploaded_by: session.user.id,
+              });
+
+            if (dbError) {
+              console.error('Error saving document metadata:', dbError);
+            } else {
+              toast.success('Document saved to Document Hub');
+            }
+          }
+        } catch (error) {
+          console.error('Error saving document to hub:', error);
+          // Continue with processing even if hub save fails
+        }
+      }
+
+      // Step 2: Parse the document and extract data
       let parsed: ParsedData;
       
       // Handle different file types

@@ -19,7 +19,8 @@ import {
   Wrench,
   Truck,
   Network,
-  FileText
+  FileText,
+  FolderOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -95,6 +96,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, requiredRoles: [] }, // Everyone
     { name: "Tickets", href: "/tickets", icon: Ticket, requiredRoles: [] }, // Everyone
     { name: "Remote Support", href: "/remote-support", icon: Video, requiredRoles: [] }, // Everyone
+    { name: "Document Hub", href: "/document-hub", icon: FolderOpen, requiredRoles: [] }, // Everyone
     { name: "Jobs", href: "/jobs", icon: Briefcase, requiredRoles: ['admin', 'ceo', 'support_staff'] },
     { name: "Maintenance", href: "/maintenance", icon: Wrench, requiredRoles: ['admin', 'ceo', 'support_staff'] },
     { name: "Logistics", href: "/logistics", icon: Truck, requiredRoles: ['admin', 'ceo', 'support_staff'] },
