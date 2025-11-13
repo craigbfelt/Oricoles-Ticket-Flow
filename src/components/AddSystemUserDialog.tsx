@@ -103,10 +103,11 @@ export function AddSystemUserDialog({ onSuccess }: { onSuccess: () => void }) {
         setOpen(false);
         onSuccess();
       }
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to create system user";
       toast({
         title: "Error",
-        description: error.message || "Failed to create system user",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
