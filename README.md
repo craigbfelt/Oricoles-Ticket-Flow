@@ -178,8 +178,14 @@ If you can see tabs but get "Access Denied" when clicking them:
 - **Quick Fix:** See **[QUICK_FIX_ACCESS_DENIED.md](./QUICK_FIX_ACCESS_DENIED.md)** for instant solution
 - **Detailed Guide:** See **[FIXING_ACCESS_DENIED.md](./FIXING_ACCESS_DENIED.md)** for comprehensive troubleshooting
 
-### Troubleshooting "Bucket Not Found" Errors
-If you get "bucket not found" when uploading images:
+### Troubleshooting Storage and RLS Errors
+If you encounter storage-related errors when uploading files:
+
+**"new row violates row-level security policy"**:
+- **Comprehensive Guide:** See **[SUPABASE_STORAGE_RLS_GUIDE.md](./SUPABASE_STORAGE_RLS_GUIDE.md)** for complete RLS troubleshooting
+- **Quick Fix:** See **[DOCUMENT_UPLOAD_RLS_FIX.md](./DOCUMENT_UPLOAD_RLS_FIX.md)** for this project's specific solution
+
+**"bucket not found" errors**:
 - **Solution:** See **[STORAGE_BUCKET_FIX.md](./STORAGE_BUCKET_FIX.md)** for migration instructions
 - This affects image uploads in:
   - Company Network Diagrams
