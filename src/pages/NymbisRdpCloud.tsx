@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Upload, Download, Cloud, Network, Image as ImageIcon, Trash2, Server, HardDrive } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Tables } from "@/integrations/supabase/types";
 import {
   Dialog,
   DialogContent,
@@ -29,20 +30,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface CloudNetwork {
-  id: string;
-  name: string;
-  provider: string;
-  network_type: string | null;
-  description: string | null;
-  diagram_json: Record<string, unknown>;
-  image_path: string | null;
-  metadata: Record<string, unknown>;
-  branch_id: string | null;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-}
+type CloudNetwork = Tables<"cloud_networks">;
 
 const NymbisRdpCloud = () => {
   const navigate = useNavigate();
@@ -82,7 +70,7 @@ const NymbisRdpCloud = () => {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as CloudNetwork[];
+      return data;
     },
   });
 

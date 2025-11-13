@@ -1325,10 +1325,10 @@ const BranchDiagramCard = ({ diagram }: { diagram: any }) => {
 
   useEffect(() => {
     if (diagram.image_path) {
-      supabase.storage
+      const { data } = supabase.storage
         .from('diagrams')
-        .getPublicUrl(diagram.image_path)
-        .then(({ data }) => setImageUrl(data.publicUrl));
+        .getPublicUrl(diagram.image_path);
+      setImageUrl(data.publicUrl);
     }
   }, [diagram.image_path]);
 

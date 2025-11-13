@@ -3,20 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FileText, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Tables } from "@/integrations/supabase/types";
 
-interface ImportJob {
-  id: string;
-  branch_id: string | null;
-  uploader: string | null;
-  import_type: string;
-  resource_type: string | null;
-  status: string;
-  file_path: string | null;
-  result_summary: Record<string, unknown>;
-  error_details: string | null;
-  created_at: string;
-  updated_at: string;
-}
+type ImportJob = Tables<"import_jobs">;
 
 interface ImportHistoryProps {
   branchId?: string;
@@ -38,7 +27,7 @@ export const ImportHistory = ({ branchId }: ImportHistoryProps) => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as ImportJob[];
+      return data;
     },
   });
 
