@@ -1,13 +1,18 @@
 import { useState, useRef } from "react";
 import mammoth from "mammoth";
+import * as pdfjsLib from "pdfjs-dist";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FileText, Upload, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { FileText, Upload, Loader2, CheckCircle, AlertCircle, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 interface ParsedData {
   text: string;
@@ -15,16 +20,23 @@ interface ParsedData {
     headers: string[];
     rows: string[][];
   }>;
+  images: Array<{
+    name: string;
+    dataUrl: string;
+    storagePath?: string;
+  }>;
 }
 
 interface DocumentUploadProps {
   onDataParsed?: (data: ParsedData) => void;
   acceptedFormats?: string;
+  enableImageExtraction?: boolean;
 }
 
 export const DocumentUpload = ({ 
   onDataParsed, 
-  acceptedFormats = ".docx,.doc" 
+  acceptedFormats = ".docx,.doc,.pdf,image/*",
+  enableImageExtraction = true
 }: DocumentUploadProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
@@ -76,6 +88,95 @@ export const DocumentUpload = ({
     return extractedTables;
   };
 
+  const extractImagesFromWordDoc = async (arrayBuffer: ArrayBuffer): Promise<Array<{name: string; dataUrl: string}>> => {
+    const images: Array<{name: string; dataUrl: string}> = [];
+    
+    try {
+      const result = await mammoth.convertToHtml(
+        { arrayBuffer },
+        {
+          convertImage: mammoth.images.imgElement((image) => {
+            return image.read("base64").then((imageBuffer) => {
+              const base64String = imageBuffer;
+              const contentType = image.contentType || 'image/png';
+              const dataUrl = `data:${contentType};base64,${base64String}`;
+              
+              images.push({
+                name: `image_${images.length + 1}.${contentType.split('/')[1]}`,
+                dataUrl
+              });
+              
+              return { src: dataUrl };
+            });
+          })
+        }
+      );
+    } catch (error) {
+      console.error('Error extracting images from Word doc:', error);
+    }
+    
+    return images;
+  };
+
+  const uploadImageToStorage = async (dataUrl: string, fileName: string): Promise<string | null> => {
+    try {
+      // Convert data URL to blob
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      
+      const filePath = `document-images/${Date.now()}_${fileName}`;
+      
+      const { error } = await supabase.storage
+        .from('diagrams')
+        .upload(filePath, blob);
+      
+      if (error) {
+        console.error('Error uploading image:', error);
+        return null;
+      }
+      
+      return filePath;
+    } catch (error) {
+      console.error('Error uploading image to storage:', error);
+      return null;
+    }
+  };
+
+  const parsePDF = async (file: File): Promise<{ text: string; images: Array<{name: string; dataUrl: string}> }> => {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    
+    let fullText = '';
+    const images: Array<{name: string; dataUrl: string}> = [];
+    
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map((item: any) => item.str).join(' ');
+      fullText += pageText + '\n';
+    }
+    
+    return { text: fullText.trim(), images };
+  };
+
+  const handleImageFile = async (file: File): Promise<ParsedData> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        resolve({
+          text: '',
+          tables: [],
+          images: [{
+            name: file.name,
+            dataUrl
+          }]
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -84,24 +185,61 @@ export const DocumentUpload = ({
     setIsProcessing(true);
 
     try {
-      const arrayBuffer = await file.arrayBuffer();
+      let parsed: ParsedData;
       
-      // Parse the Word document
-      const result = await mammoth.convertToHtml({ arrayBuffer });
-      const html = result.value;
-      
-      // Extract text (strip HTML tags)
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = html;
-      const text = tempDiv.textContent || tempDiv.innerText || '';
-      
-      // Extract tables
-      const tables = extractTablesFromHtml(html);
-      
-      const parsed: ParsedData = {
-        text,
-        tables
-      };
+      // Handle different file types
+      if (file.type === 'application/pdf') {
+        // Parse PDF
+        const { text, images } = await parsePDF(file);
+        parsed = {
+          text,
+          tables: [],
+          images
+        };
+      } else if (file.type.startsWith('image/')) {
+        // Handle direct image upload
+        parsed = await handleImageFile(file);
+      } else {
+        // Handle Word documents
+        const arrayBuffer = await file.arrayBuffer();
+        
+        // Parse the Word document
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        const html = result.value;
+        
+        // Extract text (strip HTML tags)
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        const text = tempDiv.textContent || tempDiv.innerText || '';
+        
+        // Extract tables
+        const tables = extractTablesFromHtml(html);
+        
+        // Extract images if enabled
+        let images: Array<{name: string; dataUrl: string; storagePath?: string}> = [];
+        if (enableImageExtraction) {
+          images = await extractImagesFromWordDoc(arrayBuffer);
+          
+          // Upload images to storage
+          toast.info('Uploading extracted images...');
+          for (const image of images) {
+            const storagePath = await uploadImageToStorage(image.dataUrl, image.name);
+            if (storagePath) {
+              image.storagePath = storagePath;
+            }
+          }
+        }
+        
+        parsed = {
+          text,
+          tables,
+          images
+        };
+        
+        if (result.messages.length > 0) {
+          console.log('Parsing messages:', result.messages);
+        }
+      }
       
       setParsedData(parsed);
       
@@ -109,13 +247,12 @@ export const DocumentUpload = ({
         onDataParsed(parsed);
       }
       
-      toast.success('Document parsed successfully', {
-        description: `Found ${tables.length} table(s) in the document`
-      });
+      const imageCount = parsed.images?.length || 0;
+      const tableCount = parsed.tables?.length || 0;
       
-      if (result.messages.length > 0) {
-        console.log('Parsing messages:', result.messages);
-      }
+      toast.success('Document parsed successfully', {
+        description: `Found ${tableCount} table(s) and ${imageCount} image(s) in the document`
+      });
     } catch (error) {
       console.error('Error parsing document:', error);
       toast.error('Failed to parse document', {
@@ -140,15 +277,15 @@ export const DocumentUpload = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Upload Word Document
+            Upload Document or Image
           </CardTitle>
           <CardDescription>
-            Upload a Word document (.docx or .doc) to extract and analyze data
+            Upload Word (.docx, .doc), PDF, or image files to extract and analyze data
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="document-upload">Select Document</Label>
+            <Label htmlFor="document-upload">Select File</Label>
             <div className="flex gap-2">
               <Input
                 id="document-upload"
@@ -166,7 +303,7 @@ export const DocumentUpload = ({
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Supported formats: Word documents (.docx, .doc)
+              Supported formats: Word (.docx, .doc), PDF (.pdf), Images (PNG, JPG, JPEG)
             </p>
           </div>
 
@@ -175,7 +312,7 @@ export const DocumentUpload = ({
               <Loader2 className="h-4 w-4 animate-spin" />
               <AlertTitle>Processing</AlertTitle>
               <AlertDescription>
-                Parsing document... This may take a moment.
+                Parsing document and extracting images... This may take a moment.
               </AlertDescription>
             </Alert>
           )}
@@ -186,7 +323,7 @@ export const DocumentUpload = ({
               <AlertTitle>Success</AlertTitle>
               <AlertDescription>
                 Document "{fileName}" parsed successfully. 
-                Found {parsedData.tables.length} table(s).
+                Found {parsedData.tables.length} table(s) and {parsedData.images?.length || 0} image(s).
               </AlertDescription>
             </Alert>
           )}
@@ -237,6 +374,44 @@ export const DocumentUpload = ({
                     </div>
                   </div>
                 ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {parsedData.images && parsedData.images.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5" />
+                  Extracted Images
+                </CardTitle>
+                <CardDescription>
+                  {parsedData.images.length} image(s) found and uploaded to storage
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {parsedData.images.map((image, index) => (
+                    <div key={index} className="border rounded-lg overflow-hidden">
+                      <div className="aspect-video bg-muted flex items-center justify-center">
+                        <img 
+                          src={image.dataUrl} 
+                          alt={image.name}
+                          className="max-w-full max-h-full object-contain"
+                        />
+                      </div>
+                      <div className="p-2 bg-muted/50">
+                        <p className="text-xs font-medium truncate">{image.name}</p>
+                        {image.storagePath && (
+                          <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
+                            <CheckCircle className="h-3 w-3" />
+                            Uploaded to storage
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}

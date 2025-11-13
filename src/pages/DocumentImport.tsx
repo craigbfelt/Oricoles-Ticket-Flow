@@ -18,6 +18,11 @@ interface ParsedData {
     headers: string[];
     rows: string[][];
   }>;
+  images?: Array<{
+    name: string;
+    dataUrl: string;
+    storagePath?: string;
+  }>;
 }
 
 const DocumentImport = () => {

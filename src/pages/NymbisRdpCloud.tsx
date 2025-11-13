@@ -52,7 +52,7 @@ const NymbisRdpCloud = () => {
   const csvInputRef = useRef<HTMLInputElement>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedNetwork, setSelectedNetwork] = useState<CloudNetwork | null>(null);
-  const [currentTab, setCurrentTab] = useState("networks");
+  const [currentTab, setCurrentTab] = useState("servers");
   const [formData, setFormData] = useState({
     name: "",
     provider: "nymbis",
@@ -481,11 +481,60 @@ const NymbisRdpCloud = () => {
 
         <Tabs value={currentTab} onValueChange={setCurrentTab}>
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="networks">Cloud Networks</TabsTrigger>
             <TabsTrigger value="servers">Servers</TabsTrigger>
+            <TabsTrigger value="networks">Cloud Networks</TabsTrigger>
             <TabsTrigger value="devices">Network Devices</TabsTrigger>
             <TabsTrigger value="diagrams">Network Diagrams</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="servers">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Server className="w-5 h-5" />
+                  Virtual Servers (VMs)
+                </CardTitle>
+                <CardDescription>
+                  Nymbis Cloud virtual machine infrastructure
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {virtualServers.map((server) => (
+                    <Card key={server.id} className="border-2">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <HardDrive className="w-4 h-4" />
+                          {server.name}
+                        </CardTitle>
+                        <Badge className="w-fit" variant={server.status === 'active' ? 'default' : 'secondary'}>
+                          {server.status.toUpperCase()}
+                        </Badge>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Type</p>
+                          <p className="text-sm">{server.type}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Description</p>
+                          <p className="text-sm">{server.description}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Specifications</p>
+                          <p className="text-sm">{server.specs}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">IP Address</p>
+                          <p className="text-sm font-mono">{server.ip}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="networks">
             {isLoading ? (
@@ -536,55 +585,6 @@ const NymbisRdpCloud = () => {
                 )}
               </div>
             )}
-          </TabsContent>
-
-          <TabsContent value="servers">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Server className="w-5 h-5" />
-                  Virtual Servers (VMs)
-                </CardTitle>
-                <CardDescription>
-                  Nymbis Cloud virtual machine infrastructure
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {virtualServers.map((server) => (
-                    <Card key={server.id} className="border-2">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <HardDrive className="w-4 h-4" />
-                          {server.name}
-                        </CardTitle>
-                        <Badge className="w-fit" variant={server.status === 'active' ? 'default' : 'secondary'}>
-                          {server.status.toUpperCase()}
-                        </Badge>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Type</p>
-                          <p className="text-sm">{server.type}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Description</p>
-                          <p className="text-sm">{server.description}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Specifications</p>
-                          <p className="text-sm">{server.specs}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">IP Address</p>
-                          <p className="text-sm font-mono">{server.ip}</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           <TabsContent value="devices">
