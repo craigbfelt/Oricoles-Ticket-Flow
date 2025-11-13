@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.confirm-provider-task]
 verify_jwt = false
+
+[functions.storage-admin-operations]
+verify_jwt = false

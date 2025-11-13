@@ -193,6 +193,11 @@ If you encounter storage-related errors when uploading files:
   - Document Import
   - Nymbis RDP Cloud
 
+**Bypassing RLS for trusted server-side operations**:
+- **Advanced Guide:** See **[BYPASS_ACCESS_CONTROLS_GUIDE.md](./BYPASS_ACCESS_CONTROLS_GUIDE.md)** for using service keys to bypass RLS policies
+- Use this when you need unrestricted storage access from Edge Functions or backend services
+- ⚠️ **Security Warning:** Only use in trusted server environments, never expose service keys to client-side code
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
