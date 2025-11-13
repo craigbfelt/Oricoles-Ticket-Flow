@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Network, Download, Upload, Plus, Save } from "lucide-react";
+import { Network, Download, Upload, Plus, Save, Image as ImageIcon, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ImportHistory } from "@/components/ImportHistory";
 import {
@@ -20,12 +20,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface NetworkDiagram {
   id: string;
   name: string;
   description: string | null;
   diagram_json: Record<string, unknown>;
+  image_path: string | null;
   is_company_wide: boolean;
   created_by: string | null;
   created_at: string;
@@ -50,8 +52,18 @@ const CompanyNetworkDiagram = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isImageUploadDialogOpen, setIsImageUploadDialogOpen] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [currentTab, setCurrentTab] = useState("diagrams");
   const [formData, setFormData] = useState({
     name: "Company Network Overview",
+    description: "",
+  });
+  const [imageFormData, setImageFormData] = useState({
+    name: "",
     description: "",
   });
 
@@ -159,16 +171,216 @@ const CompanyNetworkDiagram = () => {
     },
   });
 
+  const uploadImageDiagram = useMutation({
+    mutationFn: async (data: typeof imageFormData & { imagePath: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from("network_diagrams").insert([{
+        name: data.name,
+        description: data.description || null,
+        is_company_wide: true,
+        image_path: data.imagePath,
+        diagram_json: {},
+        created_by: user?.id,
+      }]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["network-diagrams-company"] });
+      toast({
+        title: "Success",
+        description: "Network diagram image uploaded successfully",
+      });
+      setIsImageUploadDialogOpen(false);
+      setImageFormData({ name: "", description: "" });
+      setSelectedImage(null);
+      setImagePreview(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteDiagram = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("network_diagrams")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["network-diagrams-company"] });
+      toast({
+        title: "Success",
+        description: "Network diagram deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a PNG, JPG, or JPEG image",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSelectedImage(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedImage) {
+      toast({
+        title: "Error",
+        description: "Please select an image to upload",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const fileExt = selectedImage.name.split('.').pop();
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `company-network/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('diagrams')
+      .upload(filePath, selectedImage);
+
+    if (uploadError) {
+      toast({
+        title: "Error",
+        description: `Failed to upload image: ${uploadError.message}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    uploadImageDiagram.mutate({ ...imageFormData, imagePath: filePath });
+  };
+
+  const handleCSVImport = async () => {
+    const file = csvInputRef.current?.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const lines = text.split("\n").filter((line) => line.trim());
+      const headers = lines[0].split(",").map((h) => h.trim());
+      const rows = lines.slice(1);
+
+      const data = rows.map((row) => {
+        const values = row.split(",").map((v) => v.trim());
+        const obj: any = {};
+        headers.forEach((header, i) => {
+          obj[header] = values[i] || null;
+        });
+        return obj;
+      });
+
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Create import job record
+      const { data: importJob, error: jobError } = await supabase
+        .from("import_jobs")
+        .insert([{
+          uploader: user?.id,
+          import_type: "csv",
+          resource_type: "network_topology",
+          status: "processing",
+        }])
+        .select()
+        .single();
+
+      if (jobError) {
+        console.error("Failed to create import job:", jobError);
+      }
+
+      // Import the network topology data (this would need proper schema)
+      const diagrams = data.map(item => ({
+        name: item.diagram_name || item.name || "Imported Network Diagram",
+        description: item.description || null,
+        is_company_wide: true,
+        diagram_json: item,
+        created_by: user?.id,
+      }));
+
+      const { error } = await supabase.from("network_diagrams").insert(diagrams);
+      if (error) throw error;
+
+      // Update import job status
+      if (importJob) {
+        await supabase
+          .from("import_jobs")
+          .update({
+            status: "completed",
+            result_summary: { records_imported: diagrams.length },
+          })
+          .eq("id", importJob.id);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["network-diagrams-company"] });
+      toast({
+        title: "Success",
+        description: `${diagrams.length} network diagram(s) imported successfully`,
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to import CSV";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+
+    if (csvInputRef.current) {
+      csvInputRef.current.value = "";
+    }
+  };
+
+  const getImageUrl = async (path: string) => {
+    const { data } = await supabase.storage
+      .from('diagrams')
+      .getPublicUrl(path);
+    return data.publicUrl;
+  };
+
   const handleDownloadTemplate = () => {
-    const headers = ['branch_name', 'device_name', 'device_type', 'ip_address', 'connection_type'];
-    const example = 'Head Office,Core Switch,switch,192.168.1.1,direct';
+    const headers = ['diagram_name', 'description', 'branch_name', 'device_name', 'device_type', 'ip_address'];
+    const example = 'Company Network Q4 2024,Main network topology,Head Office,Core Switch,switch,192.168.1.1';
     const csv = headers.join(',') + '\n' + example;
     
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'network_topology_template.csv';
+    a.download = 'company_network_topology_template.csv';
     a.click();
     window.URL.revokeObjectURL(url);
     
@@ -222,11 +434,92 @@ const CompanyNetworkDiagram = () => {
               Visualize and manage your entire company network topology
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
-              Download Template
+              CSV Template
             </Button>
+            <input
+              ref={csvInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleCSVImport}
+            />
+            <Button variant="outline" onClick={() => csvInputRef.current?.click()}>
+              <Upload className="h-4 w-4 mr-2" />
+              Import CSV
+            </Button>
+            <Dialog open={isImageUploadDialogOpen} onOpenChange={setIsImageUploadDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Image
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Upload Network Diagram Image</DialogTitle>
+                  <DialogDescription>
+                    Upload a network diagram image (PNG, JPG, JPEG supported)
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleImageUpload} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="image_name">Diagram Name</Label>
+                    <Input
+                      id="image_name"
+                      value={imageFormData.name}
+                      onChange={(e) => setImageFormData({ ...imageFormData, name: e.target.value })}
+                      placeholder="e.g., Company Network Diagram"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="image_description">Description</Label>
+                    <Textarea
+                      id="image_description"
+                      value={imageFormData.description}
+                      onChange={(e) => setImageFormData({ ...imageFormData, description: e.target.value })}
+                      placeholder="Describe this network diagram..."
+                      rows={3}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="diagram_image">Network Diagram Image (PNG/JPG/JPEG)</Label>
+                    <Input
+                      id="diagram_image"
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg"
+                      onChange={handleImageSelect}
+                      ref={imageInputRef}
+                      required
+                    />
+                    {imagePreview && (
+                      <div className="mt-2 border rounded-lg p-2">
+                        <img 
+                          src={imagePreview} 
+                          alt="Preview" 
+                          className="max-h-64 mx-auto object-contain"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => {
+                      setIsImageUploadDialogOpen(false);
+                      setSelectedImage(null);
+                      setImagePreview(null);
+                    }}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={uploadImageDiagram.isPending}>
+                      {uploadImageDiagram.isPending ? "Uploading..." : "Upload"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
@@ -310,68 +603,133 @@ const CompanyNetworkDiagram = () => {
           </Card>
         </div>
 
-        {/* Saved Diagrams */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Saved Network Diagrams</CardTitle>
-            <CardDescription>
-              Previously generated network topology diagrams
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <p className="text-sm text-muted-foreground">Loading diagrams...</p>
-            ) : diagrams && diagrams.length > 0 ? (
-              <div className="space-y-3">
-                {diagrams.map((diagram) => (
-                  <div
-                    key={diagram.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="flex-1">
-                      <h3 className="font-semibold">{diagram.name}</h3>
-                      {diagram.description && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {diagram.description}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Created {new Date(diagram.created_at).toLocaleString()}
-                      </p>
-                      <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-                        <span>
-                          Nodes: {(diagram.diagram_json as any)?.nodes?.length || 0}
-                        </span>
-                        <span>
-                          Edges: {(diagram.diagram_json as any)?.edges?.length || 0}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleExportDiagram(diagram)}
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Export JSON
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No diagrams yet. Click "Generate Diagram" to create one.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        <Tabs value={currentTab} onValueChange={setCurrentTab}>
+          <TabsList>
+            <TabsTrigger value="diagrams">Network Diagrams</TabsTrigger>
+            <TabsTrigger value="history">Import History</TabsTrigger>
+          </TabsList>
 
-        {/* Import History */}
-        <ImportHistory />
+          <TabsContent value="diagrams">
+            {/* Saved Diagrams */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Saved Network Diagrams</CardTitle>
+                <CardDescription>
+                  Network topology diagrams and uploaded images
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading diagrams...</p>
+                ) : diagrams && diagrams.length > 0 ? (
+                  <div className="space-y-3">
+                    {diagrams.map((diagram) => (
+                      <DiagramCard 
+                        key={diagram.id} 
+                        diagram={diagram} 
+                        onDelete={() => deleteDiagram.mutate(diagram.id)}
+                        onExport={() => handleExportDiagram(diagram)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No diagrams yet. Click "Generate Diagram" or "Upload Image" to create one.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="history">
+            <ImportHistory />
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
+  );
+};
+
+// DiagramCard component to display network diagrams with images
+const DiagramCard = ({ 
+  diagram, 
+  onDelete, 
+  onExport 
+}: { 
+  diagram: NetworkDiagram; 
+  onDelete: () => void; 
+  onExport: () => void;
+}) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (diagram.image_path) {
+      supabase.storage
+        .from('diagrams')
+        .getPublicUrl(diagram.image_path)
+        .then(({ data }) => setImageUrl(data.publicUrl));
+    }
+  }, [diagram.image_path]);
+
+  return (
+    <div className="flex items-start gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+      {imageUrl && (
+        <div className="flex-shrink-0 w-48 h-32 border rounded-lg overflow-hidden bg-muted">
+          <img 
+            src={imageUrl} 
+            alt={diagram.name} 
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold flex items-center gap-2">
+              {diagram.image_path && <ImageIcon className="h-4 w-4 text-primary" />}
+              {diagram.name}
+            </h3>
+            {diagram.description && (
+              <p className="text-sm text-muted-foreground mt-1">
+                {diagram.description}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground mt-2">
+              Created {new Date(diagram.created_at).toLocaleString()}
+            </p>
+            {!diagram.image_path && (
+              <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+                <span>
+                  Nodes: {(diagram.diagram_json as any)?.nodes?.length || 0}
+                </span>
+                <span>
+                  Edges: {(diagram.diagram_json as any)?.edges?.length || 0}
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            {!diagram.image_path && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onExport}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export JSON
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onDelete}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

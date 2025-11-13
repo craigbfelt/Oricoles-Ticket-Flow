@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Upload, Download, Cloud, Network, Image as ImageIcon, Trash2 } from "lucide-react";
+import { Plus, Upload, Download, Cloud, Network, Image as ImageIcon, Trash2, Server, HardDrive } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface CloudNetwork {
   id: string;
@@ -48,8 +49,10 @@ const NymbisRdpCloud = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedNetwork, setSelectedNetwork] = useState<CloudNetwork | null>(null);
+  const [currentTab, setCurrentTab] = useState("networks");
   const [formData, setFormData] = useState({
     name: "",
     provider: "nymbis",
@@ -219,6 +222,97 @@ const NymbisRdpCloud = () => {
     });
   };
 
+  const handleCSVImport = async () => {
+    const file = csvInputRef.current?.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const lines = text.split("\n").filter((line) => line.trim());
+      const headers = lines[0].split(",").map((h) => h.trim());
+      const rows = lines.slice(1);
+
+      const data = rows.map((row) => {
+        const values = row.split(",").map((v) => v.trim());
+        const obj: any = {};
+        headers.forEach((header, i) => {
+          obj[header] = values[i] || null;
+        });
+        return obj;
+      });
+
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const networks = data.map(item => ({
+        name: item.name,
+        provider: item.provider || 'nymbis',
+        network_type: item.network_type || 'rdp',
+        description: item.description || null,
+        created_by: user?.id,
+      }));
+
+      const { error } = await supabase.from("cloud_networks").insert(networks);
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ["cloud-networks"] });
+      toast({
+        title: "Success",
+        description: `${networks.length} cloud network(s) imported successfully`,
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to import CSV";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+
+    if (csvInputRef.current) {
+      csvInputRef.current.value = "";
+    }
+  };
+
+  // Virtual Servers data for Nymbis Cloud
+  const virtualServers = [
+    {
+      id: "vm-rdp-main",
+      name: "RDP Main Server",
+      type: "RDP Main",
+      status: "active",
+      description: "Primary RDP server for remote access",
+      specs: "8 vCPU, 32GB RAM, 500GB Storage",
+      ip: "10.0.1.10",
+    },
+    {
+      id: "vm-rdp-dialin",
+      name: "RDP Dial-in Server",
+      type: "RDP Dial-in",
+      status: "active",
+      description: "Dial-in server for external RDP connections",
+      specs: "4 vCPU, 16GB RAM, 250GB Storage",
+      ip: "10.0.1.11",
+    },
+    {
+      id: "vm-ad",
+      name: "Active Directory Server",
+      type: "Active Directory",
+      status: "active",
+      description: "Domain controller and user authentication",
+      specs: "4 vCPU, 16GB RAM, 500GB Storage",
+      ip: "10.0.1.20",
+    },
+    {
+      id: "vm-rds",
+      name: "Remote Desktop Services Server",
+      type: "Remote Desktop Services",
+      status: "active",
+      description: "RDS licensing and session management",
+      specs: "8 vCPU, 32GB RAM, 250GB Storage",
+      ip: "10.0.1.30",
+    },
+  ];
+
   const getProviderColor = (provider: string) => {
     const colors: Record<string, string> = {
       nymbis: "bg-blue-500",
@@ -241,12 +335,23 @@ const NymbisRdpCloud = () => {
               <Cloud className="w-8 h-8" />
               Nymbis RDP Cloud Network
             </h1>
-            <p className="text-muted-foreground">Manage cloud network configurations and diagrams</p>
+            <p className="text-muted-foreground">Manage cloud network configurations, servers, and diagrams</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
-              Download Template
+              CSV Template
+            </Button>
+            <input
+              ref={csvInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleCSVImport}
+            />
+            <Button variant="outline" onClick={() => csvInputRef.current?.click()}>
+              <Upload className="h-4 w-4 mr-2" />
+              Import CSV
             </Button>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
@@ -259,7 +364,7 @@ const NymbisRdpCloud = () => {
                 <DialogHeader>
                   <DialogTitle>Add Cloud Network</DialogTitle>
                   <DialogDescription>
-                    Create a new cloud network configuration with optional diagram image
+                    Create a new cloud network configuration with optional diagram image (PNG, JPG, JPEG)
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -374,136 +479,262 @@ const NymbisRdpCloud = () => {
           </div>
         </div>
 
-        {isLoading ? (
-          <p>Loading cloud networks...</p>
-        ) : (
-          <div className="space-y-6">
-            {/* Nymbis Networks Section */}
-            <div>
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <Network className="w-5 h-5" />
-                Nymbis RDP Networks ({nymbisNetworks.length})
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {nymbisNetworks.map((network) => (
-                  <Card key={network.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg">{network.name}</CardTitle>
-                          <CardDescription className="mt-1">
-                            <div className="flex gap-2 mt-2">
-                              <Badge className={getProviderColor(network.provider)}>
-                                {network.provider.toUpperCase()}
-                              </Badge>
-                              {network.network_type && (
-                                <Badge variant="outline">
-                                  {network.network_type.toUpperCase()}
-                                </Badge>
-                              )}
-                            </div>
-                          </CardDescription>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteNetwork.mutate(network.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+        <Tabs value={currentTab} onValueChange={setCurrentTab}>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="networks">Cloud Networks</TabsTrigger>
+            <TabsTrigger value="servers">Servers</TabsTrigger>
+            <TabsTrigger value="devices">Network Devices</TabsTrigger>
+            <TabsTrigger value="diagrams">Network Diagrams</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="networks">
+            {isLoading ? (
+              <p>Loading cloud networks...</p>
+            ) : (
+              <div className="space-y-6">
+                {/* Nymbis Networks Section */}
+                <div>
+                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <Network className="w-5 h-5" />
+                    Nymbis RDP Networks ({nymbisNetworks.length})
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {nymbisNetworks.map((network) => (
+                      <CloudNetworkCard 
+                        key={network.id} 
+                        network={network} 
+                        onDelete={() => deleteNetwork.mutate(network.id)}
+                        getProviderColor={getProviderColor}
+                      />
+                    ))}
+                    {nymbisNetworks.length === 0 && (
+                      <div className="col-span-full text-center py-12 text-muted-foreground">
+                        No Nymbis networks yet. Click "Add Network" to create one.
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      {network.image_path && (
-                        <div className="mb-3 border rounded-lg p-2 bg-muted">
-                          <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground" />
-                          <p className="text-xs text-center mt-1 text-muted-foreground">
-                            Diagram attached
-                          </p>
-                        </div>
-                      )}
-                      {network.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-3">
-                          {network.description}
-                        </p>
-                      )}
-                      <div className="mt-3 text-xs text-muted-foreground">
-                        Created {new Date(network.created_at).toLocaleDateString()}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-                {nymbisNetworks.length === 0 && (
-                  <div className="col-span-full text-center py-12 text-muted-foreground">
-                    No Nymbis networks yet. Click "Add Network" to create one.
+                    )}
+                  </div>
+                </div>
+
+                {/* Other Cloud Networks Section */}
+                {otherNetworks.length > 0 && (
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                      <Cloud className="w-5 h-5" />
+                      Other Cloud Networks ({otherNetworks.length})
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {otherNetworks.map((network) => (
+                        <CloudNetworkCard 
+                          key={network.id} 
+                          network={network} 
+                          onDelete={() => deleteNetwork.mutate(network.id)}
+                          getProviderColor={getProviderColor}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
-            </div>
+            )}
+          </TabsContent>
 
-            {/* Other Cloud Networks Section */}
-            {otherNetworks.length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <Cloud className="w-5 h-5" />
-                  Other Cloud Networks ({otherNetworks.length})
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {otherNetworks.map((network) => (
-                    <Card key={network.id} className="hover:shadow-lg transition-shadow">
-                      <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <CardTitle className="text-lg">{network.name}</CardTitle>
-                            <CardDescription className="mt-1">
-                              <div className="flex gap-2 mt-2">
-                                <Badge className={getProviderColor(network.provider)}>
-                                  {network.provider.toUpperCase()}
-                                </Badge>
-                                {network.network_type && (
-                                  <Badge variant="outline">
-                                    {network.network_type.toUpperCase()}
-                                  </Badge>
-                                )}
-                              </div>
-                            </CardDescription>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteNetwork.mutate(network.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
+          <TabsContent value="servers">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Server className="w-5 h-5" />
+                  Virtual Servers (VMs)
+                </CardTitle>
+                <CardDescription>
+                  Nymbis Cloud virtual machine infrastructure
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {virtualServers.map((server) => (
+                    <Card key={server.id} className="border-2">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <HardDrive className="w-4 h-4" />
+                          {server.name}
+                        </CardTitle>
+                        <Badge className="w-fit" variant={server.status === 'active' ? 'default' : 'secondary'}>
+                          {server.status.toUpperCase()}
+                        </Badge>
                       </CardHeader>
-                      <CardContent>
-                        {network.image_path && (
-                          <div className="mb-3 border rounded-lg p-2 bg-muted">
-                            <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground" />
-                            <p className="text-xs text-center mt-1 text-muted-foreground">
-                              Diagram attached
-                            </p>
-                          </div>
-                        )}
-                        {network.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-3">
-                            {network.description}
-                          </p>
-                        )}
-                        <div className="mt-3 text-xs text-muted-foreground">
-                          Created {new Date(network.created_at).toLocaleDateString()}
+                      <CardContent className="space-y-2">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Type</p>
+                          <p className="text-sm">{server.type}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Description</p>
+                          <p className="text-sm">{server.description}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Specifications</p>
+                          <p className="text-sm">{server.specs}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">IP Address</p>
+                          <p className="text-sm font-mono">{server.ip}</p>
                         </div>
                       </CardContent>
                     </Card>
                   ))}
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="devices">
+            <Card>
+              <CardHeader>
+                <CardTitle>Network Devices</CardTitle>
+                <CardDescription>
+                  Network equipment and infrastructure in Nymbis Cloud
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Network devices configuration coming soon. Use the Networks tab to manage cloud networks.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="diagrams">
+            <Card>
+              <CardHeader>
+                <CardTitle>Network Diagrams</CardTitle>
+                <CardDescription>
+                  Visual representations of Nymbis Cloud network topology
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {nymbisNetworks.filter(n => n.image_path).map((network) => (
+                    <NetworkDiagramCard 
+                      key={network.id} 
+                      network={network}
+                    />
+                  ))}
+                  {nymbisNetworks.filter(n => n.image_path).length === 0 && (
+                    <div className="col-span-full text-center py-12 text-muted-foreground">
+                      No network diagrams yet. Add a network with an image to see diagrams here.
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
+  );
+};
+
+// Cloud Network Card Component
+const CloudNetworkCard = ({ 
+  network, 
+  onDelete,
+  getProviderColor 
+}: { 
+  network: CloudNetwork; 
+  onDelete: () => void;
+  getProviderColor: (provider: string) => string;
+}) => {
+  return (
+    <Card className="hover:shadow-lg transition-shadow">
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-lg">{network.name}</CardTitle>
+            <CardDescription className="mt-1">
+              <div className="flex gap-2 mt-2">
+                <Badge className={getProviderColor(network.provider)}>
+                  {network.provider.toUpperCase()}
+                </Badge>
+                {network.network_type && (
+                  <Badge variant="outline">
+                    {network.network_type.toUpperCase()}
+                  </Badge>
+                )}
+              </div>
+            </CardDescription>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onDelete}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {network.image_path && (
+          <div className="mb-3 border rounded-lg p-2 bg-muted">
+            <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground" />
+            <p className="text-xs text-center mt-1 text-muted-foreground">
+              Diagram attached
+            </p>
+          </div>
+        )}
+        {network.description && (
+          <p className="text-sm text-muted-foreground line-clamp-3">
+            {network.description}
+          </p>
+        )}
+        <div className="mt-3 text-xs text-muted-foreground">
+          Created {new Date(network.created_at).toLocaleDateString()}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Network Diagram Card Component
+const NetworkDiagramCard = ({ network }: { network: CloudNetwork }) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (network.image_path) {
+      supabase.storage
+        .from('diagrams')
+        .getPublicUrl(network.image_path)
+        .then(({ data }) => setImageUrl(data.publicUrl));
+    }
+  }, [network.image_path]);
+
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <ImageIcon className="w-4 h-4 text-primary" />
+          {network.name}
+        </CardTitle>
+        {network.description && (
+          <CardDescription>{network.description}</CardDescription>
+        )}
+      </CardHeader>
+      {imageUrl && (
+        <div className="px-6 pb-4">
+          <div className="border rounded-lg overflow-hidden bg-muted">
+            <img 
+              src={imageUrl} 
+              alt={network.name} 
+              className="w-full h-48 object-cover"
+            />
+          </div>
+        </div>
+      )}
+      <CardContent>
+        <p className="text-xs text-muted-foreground">
+          Created {new Date(network.created_at).toLocaleString()}
+        </p>
+      </CardContent>
+    </Card>
   );
 };
 
