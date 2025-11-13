@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Database } from "@/integrations/supabase/types";
 import {
   Dialog,
   DialogContent,
@@ -78,7 +79,7 @@ export function AddSystemUserDialog({ onSuccess }: { onSuccess: () => void }) {
         if (roles.length > 0) {
           const rolesToInsert = roles.map(role => ({
             user_id: authData.user.id,
-            role: role,
+            role: role as Database["public"]["Enums"]["app_role"],
           }));
 
           const { error: rolesError } = await supabase

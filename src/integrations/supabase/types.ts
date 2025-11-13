@@ -118,6 +118,59 @@ export type Database = {
         }
         Relationships: []
       }
+      cloud_networks: {
+        Row: {
+          branch_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          diagram_json: Json
+          id: string
+          image_path: string | null
+          metadata: Json
+          name: string
+          network_type: string | null
+          provider: string
+          updated_at: string
+        }
+        Insert: {
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          diagram_json?: Json
+          id?: string
+          image_path?: string | null
+          metadata?: Json
+          name: string
+          network_type?: string | null
+          provider?: string
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          diagram_json?: Json
+          id?: string
+          image_path?: string | null
+          metadata?: Json
+          name?: string
+          network_type?: string | null
+          provider?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cloud_networks_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           created_at: string
@@ -264,6 +317,56 @@ export type Database = {
           warranty_expires?: string | null
         }
         Relationships: []
+      }
+      import_jobs: {
+        Row: {
+          branch_id: string | null
+          created_at: string
+          error_details: string | null
+          file_path: string | null
+          id: string
+          import_type: string
+          resource_type: string | null
+          result_summary: Json
+          status: string
+          updated_at: string
+          uploader: string | null
+        }
+        Insert: {
+          branch_id?: string | null
+          created_at?: string
+          error_details?: string | null
+          file_path?: string | null
+          id?: string
+          import_type: string
+          resource_type?: string | null
+          result_summary?: Json
+          status?: string
+          updated_at?: string
+          uploader?: string | null
+        }
+        Update: {
+          branch_id?: string | null
+          created_at?: string
+          error_details?: string | null
+          file_path?: string | null
+          id?: string
+          import_type?: string
+          resource_type?: string | null
+          result_summary?: Json
+          status?: string
+          updated_at?: string
+          uploader?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_jobs_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       internet_connectivity: {
         Row: {
@@ -690,30 +793,39 @@ export type Database = {
       }
       network_diagrams: {
         Row: {
-          branch_id: string
+          branch_id: string | null
           created_at: string
+          created_by: string | null
           description: string | null
-          diagram_name: string
-          diagram_url: string
+          diagram_json: Json
           id: string
+          image_path: string | null
+          is_company_wide: boolean
+          name: string
           updated_at: string
         }
         Insert: {
-          branch_id: string
+          branch_id?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
-          diagram_name: string
-          diagram_url: string
+          diagram_json?: Json
           id?: string
+          image_path?: string | null
+          is_company_wide?: boolean
+          name: string
           updated_at?: string
         }
         Update: {
-          branch_id?: string
+          branch_id?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
-          diagram_name?: string
-          diagram_url?: string
+          diagram_json?: Json
           id?: string
+          image_path?: string | null
+          is_company_wide?: boolean
+          name?: string
           updated_at?: string
         }
         Relationships: [
@@ -1209,7 +1321,7 @@ export type Database = {
       remove_user_duplicates: { Args: never; Returns: number }
     }
     Enums: {
-      app_role: "admin" | "support_staff" | "user"
+      app_role: "admin" | "ceo" | "support_staff" | "user"
       asset_status: "active" | "maintenance" | "retired" | "disposed"
       ticket_priority: "low" | "medium" | "high" | "urgent"
       ticket_status: "open" | "in_progress" | "pending" | "resolved" | "closed"

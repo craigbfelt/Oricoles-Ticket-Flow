@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Network, Download, Upload, Plus, Save, Image as ImageIcon, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ImportHistory } from "@/components/ImportHistory";
+import { Tables } from "@/integrations/supabase/types";
 import {
   Dialog,
   DialogContent,
@@ -22,16 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface NetworkDiagram {
-  id: string;
-  name: string;
-  description: string | null;
-  diagram_json: Record<string, unknown>;
-  image_path: string | null;
-  is_company_wide: boolean;
-  created_by: string | null;
-  created_at: string;
-}
+type NetworkDiagram = Tables<"network_diagrams">;
 
 interface Branch {
   id: string;
@@ -114,7 +106,7 @@ const CompanyNetworkDiagram = () => {
         .eq("is_company_wide", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as NetworkDiagram[];
+      return data;
     },
   });
 
@@ -664,10 +656,10 @@ const DiagramCard = ({
 
   useEffect(() => {
     if (diagram.image_path) {
-      supabase.storage
+      const { data } = supabase.storage
         .from('diagrams')
-        .getPublicUrl(diagram.image_path)
-        .then(({ data }) => setImageUrl(data.publicUrl));
+        .getPublicUrl(diagram.image_path);
+      setImageUrl(data.publicUrl);
     }
   }, [diagram.image_path]);
 
