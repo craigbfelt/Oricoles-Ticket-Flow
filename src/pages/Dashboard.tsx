@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
+import { CopilotPrompt } from "@/components/CopilotPrompt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ticket, Package, AlertCircle, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -143,34 +145,47 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Tickets</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {recentTickets.length === 0 ? (
-              <p className="text-muted-foreground">No tickets yet</p>
-            ) : (
-              <div className="space-y-4">
-                {recentTickets.map((ticket) => (
-                  <div
-                    key={ticket.id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => navigate("/tickets")}
-                  >
-                    <div className="flex-1">
-                      <h3 className="font-medium">{ticket.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(ticket.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    {getStatusBadge(ticket.status)}
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="copilot">GitHub Copilot</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Tickets</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {recentTickets.length === 0 ? (
+                  <p className="text-muted-foreground">No tickets yet</p>
+                ) : (
+                  <div className="space-y-4">
+                    {recentTickets.map((ticket) => (
+                      <div
+                        key={ticket.id}
+                        className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => navigate("/tickets")}
+                      >
+                        <div className="flex-1">
+                          <h3 className="font-medium">{ticket.title}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(ticket.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        {getStatusBadge(ticket.status)}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="copilot" className="space-y-6">
+            <CopilotPrompt />
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );

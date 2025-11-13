@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { DocumentUpload } from "@/components/DocumentUpload";
@@ -26,15 +27,76 @@ interface ParsedData {
 }
 
 const DocumentImport = () => {
+  const navigate = useNavigate();
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
   const [selectedTable, setSelectedTable] = useState<number>(0);
   const [targetEntity, setTargetEntity] = useState<string>("");
   const [isImporting, setIsImporting] = useState(false);
 
+  // Smart routing: suggest target page based on document content
+  const suggestTargetPage = (data: ParsedData): { page: string; reason: string } | null => {
+    const text = data.text.toLowerCase();
+    const hasImages = (data.images?.length || 0) > 0;
+    
+    // Check for network-related keywords
+    if (text.includes('network') || text.includes('server') || text.includes('cloud') || 
+        text.includes('nymbis') || text.includes('rdp') || text.includes('ip address')) {
+      if (text.includes('nymbis') || text.includes('rdp')) {
+        return { 
+          page: '/nymbis-rdp-cloud', 
+          reason: 'Document contains Nymbis/RDP network information'
+        };
+      }
+      if (text.includes('company') || text.includes('topology') || text.includes('diagram')) {
+        return { 
+          page: '/company-network', 
+          reason: 'Document contains company network topology information'
+        };
+      }
+    }
+    
+    // Check for branch-related keywords
+    if (text.includes('branch') || text.includes('office') || text.includes('location')) {
+      return { 
+        page: '/branches', 
+        reason: 'Document contains branch/office information'
+      };
+    }
+    
+    // Check for images - suggest network diagram pages
+    if (hasImages) {
+      if (text.includes('network') || text.includes('diagram')) {
+        return { 
+          page: '/company-network', 
+          reason: 'Document contains network diagram images'
+        };
+      }
+      return { 
+        page: '/branches', 
+        reason: 'Document contains images that can be added to branch pages'
+      };
+    }
+    
+    return null;
+  };
+
   const handleDataParsed = (data: ParsedData) => {
     setParsedData(data);
     setSelectedTable(0);
     setTargetEntity("");
+    
+    // Suggest target page if applicable
+    const suggestion = suggestTargetPage(data);
+    if (suggestion) {
+      toast.info("Smart Routing Suggestion", {
+        description: `${suggestion.reason}. Click here to navigate to ${suggestion.page}`,
+        action: {
+          label: "Go there",
+          onClick: () => navigate(suggestion.page)
+        },
+        duration: 10000
+      });
+    }
   };
 
   const mapTableToEntity = (
@@ -235,7 +297,7 @@ const DocumentImport = () => {
         <div>
           <h1 className="text-3xl font-bold mb-2">Document Import</h1>
           <p className="text-muted-foreground">
-            Upload Word documents to extract and import data into the system
+            Upload Word (.docx), PDF, or image files to extract and import data. Smart routing will suggest the best destination for your content.
           </p>
         </div>
 
