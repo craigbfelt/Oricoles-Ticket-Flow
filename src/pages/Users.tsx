@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddStaffMemberDialog } from "@/components/AddStaffMemberDialog";
 import { ManageLicensesDialog } from "@/components/ManageLicensesDialog";
+import { AddSystemUserDialog } from "@/components/AddSystemUserDialog";
 
 interface DirectoryUser {
   id: string;
@@ -490,6 +491,9 @@ const Users = () => {
             <p className="text-muted-foreground">View all users across different systems</p>
           </div>
           <div className="flex gap-2">
+            <AddSystemUserDialog onSuccess={() => {
+              fetchSystemUsers();
+            }} />
             <ManageLicensesDialog onUpdate={() => {
               fetchUsers();
               fetchVpnRdpUsers();

@@ -31,8 +31,10 @@ const BranchDetails = () => {
   const devicesFileInputRef = useRef<HTMLInputElement>(null);
   const usersFileInputRef = useRef<HTMLInputElement>(null);
   const internetFileInputRef = useRef<HTMLInputElement>(null);
+  const diagramFileInputRef = useRef<HTMLInputElement>(null);
   const [isNetworkDeviceDialogOpen, setIsNetworkDeviceDialogOpen] = useState(false);
   const [isInternetDialogOpen, setIsInternetDialogOpen] = useState(false);
+  const [isAddDiagramDialogOpen, setIsAddDiagramDialogOpen] = useState(false);
   const [internetForm, setInternetForm] = useState({
     isp: "VOX",
     connection_type: "",
@@ -58,6 +60,10 @@ const BranchDetails = () => {
     location: "",
     status: "active",
     notes: "",
+  });
+  const [diagramForm, setDiagramForm] = useState({
+    diagram_name: "",
+    description: "",
   });
 
   // Fetch branch details
@@ -204,6 +210,35 @@ const BranchDetails = () => {
       toast({
         title: "Success",
         description: "Internet connectivity added successfully",
+      });
+    },
+  });
+
+  const createNetworkDiagram = useMutation({
+    mutationFn: async (data: typeof diagramForm) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from("network_diagrams").insert([
+        {
+          branch_id: branchId,
+          name: data.diagram_name,
+          description: data.description || null,
+          diagram_json: {},
+          is_company_wide: false,
+          created_by: user?.id,
+        },
+      ]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["network_diagrams", branchId] });
+      setIsAddDiagramDialogOpen(false);
+      setDiagramForm({
+        diagram_name: "",
+        description: "",
+      });
+      toast({
+        title: "Success",
+        description: "Network diagram added successfully",
       });
     },
   });
@@ -376,6 +411,130 @@ const BranchDetails = () => {
     if (usersFileInputRef.current) usersFileInputRef.current.value = "";
     if (devicesFileInputRef.current) devicesFileInputRef.current.value = "";
     if (internetFileInputRef.current) internetFileInputRef.current.value = "";
+  };
+
+  const handleDiagramImport = async () => {
+    const file = diagramFileInputRef.current?.files?.[0];
+    if (!file) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Create import job record
+      const { data: importJob, error: jobError } = await supabase
+        .from("import_jobs")
+        .insert([{
+          branch_id: branchId,
+          uploader: user?.id,
+          import_type: "network_json",
+          resource_type: "network_diagram",
+          status: "processing",
+        }])
+        .select()
+        .single();
+
+      if (jobError) {
+        console.error("Failed to create import job:", jobError);
+      }
+
+      const text = await file.text();
+      const diagramData = JSON.parse(text);
+
+      // Insert the diagram
+      const { error } = await supabase.from("network_diagrams").insert([
+        {
+          branch_id: branchId,
+          name: diagramData.name || file.name.replace('.json', ''),
+          description: diagramData.description || null,
+          diagram_json: diagramData.diagram_json || diagramData,
+          is_company_wide: false,
+          created_by: user?.id,
+        },
+      ]);
+
+      if (error) throw error;
+
+      // Update import job status to completed
+      if (importJob) {
+        await supabase
+          .from("import_jobs")
+          .update({
+            status: "completed",
+            result_summary: { diagram_imported: true },
+          })
+          .eq("id", importJob.id);
+        queryClient.invalidateQueries({ queryKey: ["import-jobs", branchId] });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["network_diagrams", branchId] });
+      toast({
+        title: "Success",
+        description: "Network diagram imported successfully",
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to import diagram";
+      
+      // Update import job status to failed
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: failedJobs } = await supabase
+        .from("import_jobs")
+        .select("*")
+        .eq("uploader", user?.id)
+        .eq("status", "processing")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (failedJobs && failedJobs.length > 0) {
+        await supabase
+          .from("import_jobs")
+          .update({
+            status: "failed",
+            error_details: errorMessage,
+          })
+          .eq("id", failedJobs[0].id);
+        queryClient.invalidateQueries({ queryKey: ["import-jobs", branchId] });
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+
+    if (diagramFileInputRef.current) {
+      diagramFileInputRef.current.value = "";
+    }
+  };
+
+  const downloadDiagramTemplate = () => {
+    const template = {
+      name: "Sample Network Diagram",
+      description: "Example network diagram for this branch",
+      diagram_json: {
+        nodes: [
+          { id: "node1", label: "Router", type: "router", x: 100, y: 100 },
+          { id: "node2", label: "Switch", type: "switch", x: 200, y: 100 },
+        ],
+        edges: [
+          { from: "node1", to: "node2" },
+        ],
+      },
+    };
+    
+    const dataStr = JSON.stringify(template, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "network_diagram_template.json";
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Template downloaded",
+      description: "Network diagram template has been downloaded",
+    });
   };
 
   const exportToCSV = (data: any[], filename: string) => {
@@ -913,11 +1072,71 @@ const BranchDetails = () => {
           <TabsContent value="diagram">
             <Card>
               <CardHeader>
-                <CardTitle>Network Diagrams</CardTitle>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Network Diagrams</CardTitle>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={downloadDiagramTemplate}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Download Template
+                    </Button>
+                    <input
+                      ref={diagramFileInputRef}
+                      type="file"
+                      accept=".json"
+                      className="hidden"
+                      onChange={handleDiagramImport}
+                    />
+                    <Button variant="outline" size="sm" onClick={() => diagramFileInputRef.current?.click()}>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Import Diagram
+                    </Button>
+                    <Dialog open={isAddDiagramDialogOpen} onOpenChange={setIsAddDiagramDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Diagram
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add Network Diagram</DialogTitle>
+                        </DialogHeader>
+                        <form onSubmit={(e) => { e.preventDefault(); createNetworkDiagram.mutate(diagramForm); }} className="space-y-4">
+                          <div>
+                            <Label htmlFor="diagram_name">Diagram Name *</Label>
+                            <Input
+                              id="diagram_name"
+                              value={diagramForm.diagram_name}
+                              onChange={(e) => setDiagramForm({ ...diagramForm, diagram_name: e.target.value })}
+                              placeholder="e.g., Main Office Network"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="description">Description</Label>
+                            <Textarea
+                              id="description"
+                              value={diagramForm.description}
+                              onChange={(e) => setDiagramForm({ ...diagramForm, description: e.target.value })}
+                              placeholder="Describe this network diagram..."
+                              rows={3}
+                            />
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button type="button" variant="outline" onClick={() => setIsAddDiagramDialogOpen(false)}>
+                              Cancel
+                            </Button>
+                            <Button type="submit">Add Diagram</Button>
+                          </div>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Upload network diagram images manually. Supported formats: PNG, JPG, PDF
+                  Network diagrams for this branch. Import JSON files or create new diagrams.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {networkDiagrams?.map((diagram) => (
@@ -925,16 +1144,19 @@ const BranchDetails = () => {
                       <CardContent className="p-4">
                         <div className="flex items-center gap-2">
                           <ImageIcon className="w-4 h-4 text-primary" />
-                          <span className="font-medium">{diagram.diagram_name}</span>
+                          <span className="font-medium">{diagram.name}</span>
                         </div>
                         {diagram.description && (
                           <p className="text-sm text-muted-foreground mt-2">{diagram.description}</p>
                         )}
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Created {new Date(diagram.created_at).toLocaleDateString()}
+                        </p>
                       </CardContent>
                     </Card>
                   ))}
                   {(!networkDiagrams || networkDiagrams.length === 0) && (
-                    <p className="text-muted-foreground col-span-2">No network diagrams uploaded yet.</p>
+                    <p className="text-muted-foreground col-span-2">No network diagrams yet. Use "Import Diagram" or "Add Diagram" to get started.</p>
                   )}
                 </div>
               </CardContent>

@@ -27,6 +27,7 @@ const Branches = () => {
   const devicesFileInputRef = useRef<HTMLInputElement>(null);
   const networkDevicesFileInputRef = useRef<HTMLInputElement>(null);
   const internetFileInputRef = useRef<HTMLInputElement>(null);
+  const diagramFileInputRef = useRef<HTMLInputElement>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -455,6 +456,83 @@ const Branches = () => {
     }
   };
 
+  const handleDiagramImport = async () => {
+    const file = diagramFileInputRef.current?.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const lines = text.split("\n").filter((line) => line.trim());
+      const headers = lines[0].split(",").map((h) => h.trim());
+      const rows = lines.slice(1);
+
+      const branchMap = new Map(branches?.map(b => [b.name, b.id]) || []);
+
+      const data = rows.map((row) => {
+        const values = row.split(",").map((v) => v.trim());
+        const obj: any = {};
+        headers.forEach((header, i) => {
+          obj[header] = values[i] || null;
+        });
+        return obj;
+      });
+
+      const { data: { user } } = await supabase.auth.getUser();
+      const diagrams = data
+        .map(({ branch_name, diagram_name, description, ...rest }) => {
+          const branchId = branchMap.get(branch_name);
+          if (!branchId) {
+            console.warn(`Branch "${branch_name}" not found, skipping diagram`);
+            return null;
+          }
+          return {
+            branch_id: branchId,
+            name: diagram_name,
+            description: description || null,
+            diagram_json: rest,
+            is_company_wide: false,
+            created_by: user?.id,
+          };
+        })
+        .filter(item => item !== null);
+
+      if (diagrams.length === 0) {
+        throw new Error("No valid diagrams to import. Please check branch names.");
+      }
+
+      const { error } = await supabase.from("network_diagrams").insert(diagrams);
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `${diagrams.length} network diagrams imported successfully`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to import network diagrams",
+        variant: "destructive",
+      });
+    }
+
+    if (diagramFileInputRef.current) {
+      diagramFileInputRef.current.value = "";
+    }
+  };
+
+  const downloadDiagramTemplate = () => {
+    const headers = ["branch_name", "diagram_name", "description"];
+    const example = ["Durban", "Main Office Network", "Network topology for main office"];
+    const csv = [headers.join(","), example.join(",")].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "network_diagrams_template.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   const exportToCSV = () => {
     if (!branches || branches.length === 0) {
       toast({
@@ -566,6 +644,22 @@ const Branches = () => {
             <Button variant="outline" size="sm" onClick={() => internetFileInputRef.current?.click()}>
               <Upload className="w-4 h-4 mr-2" />
               Import Internet
+            </Button>
+            
+            <Button variant="outline" size="sm" onClick={downloadDiagramTemplate}>
+              <Download className="w-4 h-4 mr-2" />
+              Diagram Template
+            </Button>
+            <input
+              ref={diagramFileInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleDiagramImport}
+            />
+            <Button variant="outline" size="sm" onClick={() => diagramFileInputRef.current?.click()}>
+              <Upload className="w-4 h-4 mr-2" />
+              Import Diagrams
             </Button>
             
             <Button variant="outline" size="sm" onClick={exportToCSV}>
