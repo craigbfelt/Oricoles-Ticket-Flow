@@ -21,7 +21,7 @@ This approach can fail in certain environments due to:
 ## Solution
 Changed the configuration to use a local worker file instead:
 
-1. **Added postinstall script** in `package.json` to automatically copy the worker file from `node_modules/pdfjs-dist/build/` to the `public/` directory after installing dependencies.
+1. **Added postinstall script** in `package.json` and created `scripts/postinstall.cjs` to automatically copy the worker file from `node_modules/pdfjs-dist/build/` to the `public/` directory after installing dependencies. The script is cross-platform compatible (works on Windows, macOS, and Linux).
 
 2. **Updated worker configuration** in `src/components/DocumentUpload.tsx` to reference the local worker file:
 ```javascript
@@ -41,6 +41,7 @@ The worker file is automatically copied during `npm install` via the postinstall
 ## Files Changed
 - `src/components/DocumentUpload.tsx` - Updated worker source path
 - `package.json` - Added postinstall script to copy worker file
+- `scripts/postinstall.cjs` - Cross-platform script to copy worker file
 - `public/pdf.worker.min.mjs` - Worker file (automatically copied, not committed to git)
 
 ## Testing
