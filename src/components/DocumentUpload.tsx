@@ -163,7 +163,9 @@ export const DocumentUpload = ({
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
-      const pageText = textContent.items.map((item: { str: string }) => item.str).join(' ');
+      const pageText = textContent.items
+        .map((item: any) => ('str' in item ? item.str : ''))
+        .join(' ');
       fullText += pageText + '\n';
       
       // If page mode is enabled, capture page-specific data
@@ -178,7 +180,8 @@ export const DocumentUpload = ({
         if (context) {
           await page.render({
             canvasContext: context,
-            viewport: viewport
+            viewport: viewport,
+            canvas: canvas
           }).promise;
           
           const pageDataUrl = canvas.toDataURL('image/png');
