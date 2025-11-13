@@ -50,6 +50,8 @@ A modern, professional helpdesk and asset management system built with React, Ty
 - Smart field mapping for tickets, assets, and licenses
 - Template downloads for easy data entry
 - Import tracking and history
+- **Image extraction and upload from documents**
+- **Network diagram image uploads**
 - See [DOCUMENT_IMPORT.md](./DOCUMENT_IMPORT.md) for detailed instructions
 
 ### 🎨 User Interface
@@ -176,6 +178,15 @@ If you can see tabs but get "Access Denied" when clicking them:
 - **Quick Fix:** See **[QUICK_FIX_ACCESS_DENIED.md](./QUICK_FIX_ACCESS_DENIED.md)** for instant solution
 - **Detailed Guide:** See **[FIXING_ACCESS_DENIED.md](./FIXING_ACCESS_DENIED.md)** for comprehensive troubleshooting
 
+### Troubleshooting "Bucket Not Found" Errors
+If you get "bucket not found" when uploading images:
+- **Solution:** See **[STORAGE_BUCKET_FIX.md](./STORAGE_BUCKET_FIX.md)** for migration instructions
+- This affects image uploads in:
+  - Company Network Diagrams
+  - Branch Details
+  - Document Import
+  - Nymbis RDP Cloud
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
@@ -301,6 +312,12 @@ The application includes two migrations:
    - Auto-assigns admin role to admin@oricol.co.za
    - Ensures admin permissions are properly configured
    - See [ADMIN_ACCOUNT_SETUP.md](./ADMIN_ACCOUNT_SETUP.md) for details
+
+4. **Storage Bucket Setup** (20251113111200)
+   - Creates 'diagrams' storage bucket for image uploads
+   - Enables image uploads for network diagrams, documents, and more
+   - Sets up RLS policies for secure image storage
+   - See [STORAGE_BUCKET_FIX.md](./STORAGE_BUCKET_FIX.md) for details
 
 ## Security
 
