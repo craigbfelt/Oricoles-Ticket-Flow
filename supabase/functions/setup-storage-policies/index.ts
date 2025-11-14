@@ -1,6 +1,10 @@
 /**
- * One-time setup function to create storage RLS policies
- * Uses service role to bypass permission restrictions
+ * Verification function to check storage RLS policies
+ * 
+ * This function verifies that storage policies exist for documents and diagrams buckets.
+ * Policies should be created via database migrations, not through this edge function.
+ * 
+ * Uses service role to query system catalogs and check policy existence.
  */
 
 import { createServiceRoleClient } from '../_shared/supabase.ts';
@@ -17,145 +21,38 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('Setting up storage policies...');
+    console.log('Checking storage policies...');
     
     const supabase = createServiceRoleClient();
 
-    // SQL to create storage policies
-    const policySQL = `
-      -- Drop any existing policies first
-      DROP POLICY IF EXISTS "documents_storage_insert" ON storage.objects;
-      DROP POLICY IF EXISTS "documents_storage_select" ON storage.objects;
-      DROP POLICY IF EXISTS "documents_storage_update" ON storage.objects;
-      DROP POLICY IF EXISTS "documents_storage_delete" ON storage.objects;
-      DROP POLICY IF EXISTS "diagrams_storage_insert" ON storage.objects;
-      DROP POLICY IF EXISTS "diagrams_storage_select" ON storage.objects;
-      DROP POLICY IF EXISTS "diagrams_storage_update" ON storage.objects;
-      DROP POLICY IF EXISTS "diagrams_storage_delete" ON storage.objects;
+    // Expected policies for documents and diagrams buckets
+    const expectedPolicies = [
+      'Authenticated users can upload documents to storage',
+      'Public users can view documents in storage',
+      'Authenticated users can update documents in storage',
+      'Authenticated users can delete documents from storage',
+      'Authenticated users can upload diagrams',
+      'Public users can view diagrams',
+      'Authenticated users can update diagrams',
+      'Authenticated users can delete diagrams'
+    ];
 
-      -- Enable RLS on storage.objects
-      ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+    // Query to check if policies exist in pg_policies view
+    const { data: existingPolicies, error: queryError } = await supabase
+      .from('pg_policies')
+      .select('policyname')
+      .eq('schemaname', 'storage')
+      .eq('tablename', 'objects')
+      .in('policyname', expectedPolicies);
 
-      -- Create storage policies for documents bucket
-      CREATE POLICY "documents_storage_insert"
-      ON storage.objects FOR INSERT
-      TO authenticated
-      WITH CHECK (bucket_id = 'documents');
-
-      CREATE POLICY "documents_storage_select"
-      ON storage.objects FOR SELECT
-      TO public
-      USING (bucket_id = 'documents');
-
-      CREATE POLICY "documents_storage_update"
-      ON storage.objects FOR UPDATE
-      TO authenticated
-      USING (bucket_id = 'documents')
-      WITH CHECK (bucket_id = 'documents');
-
-      CREATE POLICY "documents_storage_delete"
-      ON storage.objects FOR DELETE
-      TO authenticated
-      USING (bucket_id = 'documents');
-
-      -- Create storage policies for diagrams bucket
-      CREATE POLICY "diagrams_storage_insert"
-      ON storage.objects FOR INSERT
-      TO authenticated
-      WITH CHECK (bucket_id = 'diagrams');
-
-      CREATE POLICY "diagrams_storage_select"
-      ON storage.objects FOR SELECT
-      TO public
-      USING (bucket_id = 'diagrams');
-
-      CREATE POLICY "diagrams_storage_update"
-      ON storage.objects FOR UPDATE
-      TO authenticated
-      USING (bucket_id = 'diagrams')
-      WITH CHECK (bucket_id = 'diagrams');
-
-      CREATE POLICY "diagrams_storage_delete"
-      ON storage.objects FOR DELETE
-      TO authenticated
-      USING (bucket_id = 'diagrams');
-    `;
-
-    // Execute the SQL using service role client
-    const { error } = await supabase.rpc('exec_sql', { sql: policySQL }).single();
-
-    if (error) {
-      // If the exec_sql function doesn't exist, try direct query
-      console.error('RPC exec_sql failed, trying direct approach:', error);
-      
-      // Try creating policies one by one
-      const policies = [
-        {
-          name: 'documents_storage_insert',
-          table: 'storage.objects',
-          type: 'INSERT',
-          role: 'authenticated',
-          check: "bucket_id = 'documents'"
-        },
-        {
-          name: 'documents_storage_select', 
-          table: 'storage.objects',
-          type: 'SELECT',
-          role: 'public',
-          using: "bucket_id = 'documents'"
-        },
-        {
-          name: 'documents_storage_update',
-          table: 'storage.objects', 
-          type: 'UPDATE',
-          role: 'authenticated',
-          using: "bucket_id = 'documents'",
-          check: "bucket_id = 'documents'"
-        },
-        {
-          name: 'documents_storage_delete',
-          table: 'storage.objects',
-          type: 'DELETE', 
-          role: 'authenticated',
-          using: "bucket_id = 'documents'"
-        },
-        {
-          name: 'diagrams_storage_insert',
-          table: 'storage.objects',
-          type: 'INSERT',
-          role: 'authenticated',
-          check: "bucket_id = 'diagrams'"
-        },
-        {
-          name: 'diagrams_storage_select',
-          table: 'storage.objects',
-          type: 'SELECT',
-          role: 'public',
-          using: "bucket_id = 'diagrams'"
-        },
-        {
-          name: 'diagrams_storage_update',
-          table: 'storage.objects',
-          type: 'UPDATE',
-          role: 'authenticated',
-          using: "bucket_id = 'diagrams'",
-          check: "bucket_id = 'diagrams'"
-        },
-        {
-          name: 'diagrams_storage_delete',
-          table: 'storage.objects',
-          type: 'DELETE',
-          role: 'authenticated',
-          using: "bucket_id = 'diagrams'"
-        }
-      ];
-
+    if (queryError) {
+      console.error('Error querying policies:', queryError);
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'Could not create policies via RPC. Policies need to be created manually in Supabase Dashboard.',
-          message: 'Go to: Storage → Settings → Policies and create the policies for documents and diagrams buckets',
-          policies: policies
+          error: 'Could not query existing policies',
+          message: 'Storage policies should be created via database migrations. Check supabase/migrations/ for policy creation scripts.',
+          hint: 'Ensure migrations have been applied: supabase db push'
         }),
         {
           status: 500,
@@ -164,22 +61,40 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Storage policies created successfully');
+    // Check if all expected policies exist
+    const foundPolicyNames = existingPolicies?.map(p => p.policyname) || [];
+    const missingPolicies = expectedPolicies.filter(p => !foundPolicyNames.includes(p));
+
+    if (missingPolicies.length > 0) {
+      console.log('Missing policies:', missingPolicies);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Some storage policies are missing',
+          message: 'Storage policies should be created via database migrations, not via this edge function.',
+          instructions: [
+            '1. Ensure all migrations in supabase/migrations/ have been applied',
+            '2. Run: supabase db push',
+            '3. Check migrations: 20251113151700_fix_documents_storage_policies.sql and 20251113111200_create_diagrams_storage_bucket.sql'
+          ],
+          missingPolicies,
+          foundPolicies: foundPolicyNames
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    console.log('All storage policies exist');
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Storage policies created successfully',
-        policies: [
-          'documents_storage_insert',
-          'documents_storage_select', 
-          'documents_storage_update',
-          'documents_storage_delete',
-          'diagrams_storage_insert',
-          'diagrams_storage_select',
-          'diagrams_storage_update', 
-          'diagrams_storage_delete'
-        ]
+        message: 'Storage policies verified successfully',
+        policies: foundPolicyNames,
+        note: 'Policies are managed via database migrations in supabase/migrations/'
       }),
       {
         status: 200,
