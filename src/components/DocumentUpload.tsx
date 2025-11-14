@@ -247,7 +247,7 @@ export const DocumentUpload = ({
 
           // Upload the original document to storage
           const { error: uploadError } = await supabase.storage
-            .from('documents')
+            .from('documents' as any)
             .upload(documentPath, file);
 
           if (uploadError) {
@@ -255,7 +255,7 @@ export const DocumentUpload = ({
             // Continue with processing even if storage upload fails
           } else {
             // Save document metadata to database
-            const { error: dbError } = await supabase
+            const { error: dbError } = await (supabase as any)
               .from('documents')
               .insert({
                 filename: storedFilename,

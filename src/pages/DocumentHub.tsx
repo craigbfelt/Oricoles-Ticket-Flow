@@ -87,13 +87,13 @@ const DocumentHub = () => {
   const fetchDocuments = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("documents")
         .select("*")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setDocuments(data || []);
+      setDocuments(data as Document[] || []);
     } catch (error) {
       console.error("Error fetching documents:", error);
       toast.error("Failed to fetch documents");
@@ -207,7 +207,7 @@ const DocumentHub = () => {
     try {
       // Delete from storage
       const { error: storageError } = await supabase.storage
-        .from(doc.storage_bucket)
+        .from(doc.storage_bucket as any)
         .remove([doc.storage_path]);
 
       if (storageError) throw storageError;

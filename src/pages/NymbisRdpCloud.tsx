@@ -688,10 +688,10 @@ const NetworkDiagramCard = ({ network }: { network: CloudNetwork }) => {
 
   useEffect(() => {
     if (network.image_path) {
-      supabase.storage
-        .from('diagrams')
-        .getPublicUrl(network.image_path)
-        .then(({ data }) => setImageUrl(data.publicUrl));
+      const { data } = supabase.storage
+        .from('diagrams' as any)
+        .getPublicUrl(network.image_path);
+      setImageUrl(data.publicUrl);
     }
   }, [network.image_path]);
 

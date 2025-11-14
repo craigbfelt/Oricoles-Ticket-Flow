@@ -342,7 +342,7 @@ const DocumentImport = () => {
       const records = mapTableToEntity(table, targetEntity);
 
       // Import the data
-      const { error: importError } = await supabase.from(targetEntity).insert(records);
+      const { error: importError } = await (supabase as any).from(targetEntity).insert(records);
 
       if (importError) {
         // Update job status to failed
