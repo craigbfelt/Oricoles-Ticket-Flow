@@ -306,33 +306,17 @@ export async function uploadFile(
       return { success: false, error };
     }
     
-    // Step 3: Check bucket access
+    // Step 3: Check bucket access (non-blocking)
+    // Note: getBucket() requires admin permissions, so we make this check non-blocking
+    // Regular users with INSERT policies can still upload even if this check fails
     const bucketInfo = await checkBucketAccess(bucket);
     
     if (DEBUG_MODE) {
       console.log('[UploadService] Bucket info:', bucketInfo);
-    }
-    
-    if (!bucketInfo.accessible) {
-      const error: UploadError = {
-        type: UploadErrorType.STORAGE,
-        message: `Bucket '${bucket}' is not accessible`,
-        details: { 
-          bucket, 
-          path, 
-          timestamp: new Date().toISOString(),
-          sessionInfo,
-          bucketInfo
-        },
-        suggestion: `The bucket '${bucket}' may not exist or you may not have access. Check Supabase Storage settings.`
-      };
-      
-      if (DEBUG_MODE) {
-        console.error('[UploadService] Bucket access error:', error);
-        console.groupEnd();
+      if (!bucketInfo.accessible) {
+        console.warn('[UploadService] Bucket access check failed, but continuing with upload attempt');
+        console.warn('[UploadService] This is normal for users without bucket query permissions');
       }
-      
-      return { success: false, error };
     }
     
     // Step 4: Attempt upload
