@@ -160,7 +160,7 @@ const Users = () => {
       })
     );
 
-    setSystemUsers(usersWithRoles);
+    setSystemUsers(usersWithRoles as any);
   };
 
   const handleUpdateSystemUser = async () => {
@@ -212,7 +212,7 @@ const Users = () => {
           role: role,
         }));
 
-        const { error: insertError } = await supabase
+        const { error: insertError } = await (supabase as any)
           .from("user_roles")
           .insert(rolesToInsert);
 
@@ -304,7 +304,7 @@ const Users = () => {
   const filteredRdpUsers = filterUsers(rdpUsers, ["username", "email", "notes"]);
   const filteredVpnUsers = filterUsers(vpnUsers, ["username", "email", "notes"]);
   const filteredStaffUsers = filterUsers(staffUsers, ["username", "email", "notes"]);
-  const filteredSystemUsers = filterUsers(systemUsers, ["full_name", "email"]);
+  const filteredSystemUsers = (filterUsers as any)(systemUsers, ["full_name", "email"]);
 
   const downloadCSVTemplate = (type: string) => {
     let headers: string[];
@@ -559,10 +559,10 @@ const Users = () => {
                   <p className="text-sm text-muted-foreground">Users who can log into the helpdesk system</p>
                 </div>
                 <DataTable
-                  data={filteredSystemUsers}
-                  columns={systemUserColumns}
-                  onRowClick={(user) => handleRowClick(user, "system")}
-                  searchKeys={["full_name", "email"]}
+                  data={filteredSystemUsers as any}
+                  columns={systemUserColumns as any}
+                  onRowClick={(user: any) => handleRowClick(user, "system")}
+                  searchKeys={["full_name", "email"] as any}
                 />
               </TabsContent>
 
