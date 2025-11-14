@@ -1,11 +1,9 @@
 /**
- * Information function for storage RLS policies
- * 
- * This function provides information about storage policies for documents and diagrams buckets.
- * Policies are created via database migrations, not through this edge function.
- * 
- * Returns success with details about which migrations manage the policies.
+ * One-time setup function to create storage RLS policies
+ * Uses service role to bypass permission restrictions
  */
+
+import { createServiceRoleClient } from '../_shared/supabase.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,94 +17,169 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('Verifying storage policies setup...');
+    console.log('Setting up storage policies...');
     
-    // This function used to attempt to create storage policies programmatically,
-    // but that approach is problematic because:
-    // 1. It requires an RPC function that doesn't exist in standard Supabase
-    // 2. Storage policies should be managed via database migrations for proper version control
-    // 3. The policies already exist in migrations
-    
-    // The storage policies are created and managed via these migrations:
-    // - 20251113142600_create_documents_table_and_bucket.sql
-    // - 20251113151700_fix_documents_storage_policies.sql  
-    // - 20251113111200_create_diagrams_storage_bucket.sql
-    
-    // These migrations create the following policies:
-    const policiesInfo = [
-      {
-        name: 'Authenticated users can upload documents to storage',
-        bucket: 'documents',
-        operation: 'INSERT',
-        role: 'authenticated'
-      },
-      {
-        name: 'Public users can view documents in storage',
-        bucket: 'documents',
-        operation: 'SELECT',
-        role: 'public'
-      },
-      {
-        name: 'Authenticated users can update documents in storage',
-        bucket: 'documents',
-        operation: 'UPDATE',
-        role: 'authenticated'
-      },
-      {
-        name: 'Authenticated users can delete documents from storage',
-        bucket: 'documents',
-        operation: 'DELETE',
-        role: 'authenticated'
-      },
-      {
-        name: 'Authenticated users can upload diagrams',
-        bucket: 'diagrams',
-        operation: 'INSERT',
-        role: 'authenticated'
-      },
-      {
-        name: 'Public users can view diagrams',
-        bucket: 'diagrams',
-        operation: 'SELECT',
-        role: 'public'
-      },
-      {
-        name: 'Authenticated users can update diagrams',
-        bucket: 'diagrams',
-        operation: 'UPDATE',
-        role: 'authenticated'
-      },
-      {
-        name: 'Authenticated users can delete diagrams',
-        bucket: 'diagrams',
-        operation: 'DELETE',
-        role: 'authenticated'
-      }
-    ];
+    const supabase = createServiceRoleClient();
 
-    console.log('Storage policies are managed via database migrations');
+    // SQL to create storage policies
+    const policySQL = `
+      -- Drop any existing policies first
+      DROP POLICY IF EXISTS "documents_storage_insert" ON storage.objects;
+      DROP POLICY IF EXISTS "documents_storage_select" ON storage.objects;
+      DROP POLICY IF EXISTS "documents_storage_update" ON storage.objects;
+      DROP POLICY IF EXISTS "documents_storage_delete" ON storage.objects;
+      DROP POLICY IF EXISTS "diagrams_storage_insert" ON storage.objects;
+      DROP POLICY IF EXISTS "diagrams_storage_select" ON storage.objects;
+      DROP POLICY IF EXISTS "diagrams_storage_update" ON storage.objects;
+      DROP POLICY IF EXISTS "diagrams_storage_delete" ON storage.objects;
+
+      -- Enable RLS on storage.objects
+      ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
+      -- Create storage policies for documents bucket
+      CREATE POLICY "documents_storage_insert"
+      ON storage.objects FOR INSERT
+      TO authenticated
+      WITH CHECK (bucket_id = 'documents');
+
+      CREATE POLICY "documents_storage_select"
+      ON storage.objects FOR SELECT
+      TO public
+      USING (bucket_id = 'documents');
+
+      CREATE POLICY "documents_storage_update"
+      ON storage.objects FOR UPDATE
+      TO authenticated
+      USING (bucket_id = 'documents')
+      WITH CHECK (bucket_id = 'documents');
+
+      CREATE POLICY "documents_storage_delete"
+      ON storage.objects FOR DELETE
+      TO authenticated
+      USING (bucket_id = 'documents');
+
+      -- Create storage policies for diagrams bucket
+      CREATE POLICY "diagrams_storage_insert"
+      ON storage.objects FOR INSERT
+      TO authenticated
+      WITH CHECK (bucket_id = 'diagrams');
+
+      CREATE POLICY "diagrams_storage_select"
+      ON storage.objects FOR SELECT
+      TO public
+      USING (bucket_id = 'diagrams');
+
+      CREATE POLICY "diagrams_storage_update"
+      ON storage.objects FOR UPDATE
+      TO authenticated
+      USING (bucket_id = 'diagrams')
+      WITH CHECK (bucket_id = 'diagrams');
+
+      CREATE POLICY "diagrams_storage_delete"
+      ON storage.objects FOR DELETE
+      TO authenticated
+      USING (bucket_id = 'diagrams');
+    `;
+
+    // Execute the SQL using service role client
+    const { error } = await supabase.rpc('exec_sql', { sql: policySQL }).single();
+
+    if (error) {
+      // If the exec_sql function doesn't exist, try direct query
+      console.error('RPC exec_sql failed, trying direct approach:', error);
+      
+      // Try creating policies one by one
+      const policies = [
+        {
+          name: 'documents_storage_insert',
+          table: 'storage.objects',
+          type: 'INSERT',
+          role: 'authenticated',
+          check: "bucket_id = 'documents'"
+        },
+        {
+          name: 'documents_storage_select', 
+          table: 'storage.objects',
+          type: 'SELECT',
+          role: 'public',
+          using: "bucket_id = 'documents'"
+        },
+        {
+          name: 'documents_storage_update',
+          table: 'storage.objects', 
+          type: 'UPDATE',
+          role: 'authenticated',
+          using: "bucket_id = 'documents'",
+          check: "bucket_id = 'documents'"
+        },
+        {
+          name: 'documents_storage_delete',
+          table: 'storage.objects',
+          type: 'DELETE', 
+          role: 'authenticated',
+          using: "bucket_id = 'documents'"
+        },
+        {
+          name: 'diagrams_storage_insert',
+          table: 'storage.objects',
+          type: 'INSERT',
+          role: 'authenticated',
+          check: "bucket_id = 'diagrams'"
+        },
+        {
+          name: 'diagrams_storage_select',
+          table: 'storage.objects',
+          type: 'SELECT',
+          role: 'public',
+          using: "bucket_id = 'diagrams'"
+        },
+        {
+          name: 'diagrams_storage_update',
+          table: 'storage.objects',
+          type: 'UPDATE',
+          role: 'authenticated',
+          using: "bucket_id = 'diagrams'",
+          check: "bucket_id = 'diagrams'"
+        },
+        {
+          name: 'diagrams_storage_delete',
+          table: 'storage.objects',
+          type: 'DELETE',
+          role: 'authenticated',
+          using: "bucket_id = 'diagrams'"
+        }
+      ];
+
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Could not create policies via RPC. Policies need to be created manually in Supabase Dashboard.',
+          message: 'Go to: Storage → Settings → Policies and create the policies for documents and diagrams buckets',
+          policies: policies
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    console.log('Storage policies created successfully');
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Storage policies are managed via database migrations',
-        note: 'Policies are created automatically when migrations are applied',
-        migrations: [
-          '20251113142600_create_documents_table_and_bucket.sql',
-          '20251113151700_fix_documents_storage_policies.sql',
-          '20251113111200_create_diagrams_storage_bucket.sql'
-        ],
-        policies: policiesInfo,
-        instructions: {
-          title: 'If you are experiencing storage permission errors:',
-          steps: [
-            '1. Ensure all migrations have been applied to your database',
-            '2. Run: supabase db push (for local development)',
-            '3. For production: migrations are applied automatically on deployment',
-            '4. Verify policies exist in Supabase Dashboard: Storage → Policies',
-            '5. Check that RLS is disabled on storage.buckets table (should be disabled per migration 20251114072100_disable_storage_buckets_rls.sql)'
-          ]
-        }
+        message: 'Storage policies created successfully',
+        policies: [
+          'documents_storage_insert',
+          'documents_storage_select', 
+          'documents_storage_update',
+          'documents_storage_delete',
+          'diagrams_storage_insert',
+          'diagrams_storage_select',
+          'diagrams_storage_update', 
+          'diagrams_storage_delete'
+        ]
       }),
       {
         status: 200,

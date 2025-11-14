@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Network, Download, Upload, Plus, Save, Image as ImageIcon, Trash2, Bug } from "lucide-react";
+import { Network, Download, Upload, Plus, Save, Image as ImageIcon, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ImportHistory } from "@/components/ImportHistory";
 import { Tables } from "@/integrations/supabase/types";
@@ -22,9 +22,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { uploadFile, setDebugMode, UploadError } from "@/lib/uploadService";
-import { UploadDebugPanel } from "@/components/UploadDebugPanel";
 
 type NetworkDiagram = Tables<"network_diagrams">;
 
@@ -53,9 +50,6 @@ const CompanyNetworkDiagram = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [currentTab, setCurrentTab] = useState("diagrams");
-  const [debugEnabled, setDebugEnabled] = useState(false);
-  const [uploadError, setUploadError] = useState<UploadError | undefined>();
-  const [debugInfo, setDebugInfo] = useState<any>(undefined);
   const [formData, setFormData] = useState({
     name: "Company Network Overview",
     description: "",
@@ -64,18 +58,6 @@ const CompanyNetworkDiagram = () => {
     name: "",
     description: "",
   });
-
-  // Handle debug mode toggle
-  const handleDebugToggle = (enabled: boolean) => {
-    setDebugEnabled(enabled);
-    setDebugMode(enabled);
-    if (enabled) {
-      toast({
-        title: "Debug Mode Enabled",
-        description: "Detailed error information will be displayed"
-      });
-    }
-  };
 
   useEffect(() => {
     checkAccess();
@@ -279,18 +261,14 @@ const CompanyNetworkDiagram = () => {
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
     const filePath = `company-network/${fileName}`;
 
-    // Use new upload service
-    const result = await uploadFile('diagrams', filePath, selectedImage);
+    const { error: uploadError } = await supabase.storage
+      .from('diagrams')
+      .upload(filePath, selectedImage);
 
-    if (!result.success) {
-      if (debugEnabled && result.error) {
-        setUploadError(result.error);
-        setDebugInfo(result.debugInfo);
-      }
-      
+    if (uploadError) {
       toast({
         title: "Error",
-        description: result.error?.message || "Failed to upload image",
+        description: `Failed to upload image: ${uploadError.message}`,
         variant: "destructive",
       });
       return;
@@ -448,18 +426,7 @@ const CompanyNetworkDiagram = () => {
               Visualize and manage your entire company network topology
             </p>
           </div>
-          <div className="flex gap-4 flex-wrap items-center">
-            <div className="flex items-center gap-2 border rounded-md px-3 py-2">
-              <Bug className="h-4 w-4 text-muted-foreground" />
-              <Label htmlFor="debug-mode-network" className="text-sm cursor-pointer">
-                Debug Mode
-              </Label>
-              <Switch
-                id="debug-mode-network"
-                checked={debugEnabled}
-                onCheckedChange={handleDebugToggle}
-              />
-            </div>
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
               CSV Template
@@ -530,21 +497,6 @@ const CompanyNetworkDiagram = () => {
                       </div>
                     )}
                   </div>
-                  
-                  {/* Debug Panel for Upload Errors */}
-                  {uploadError && debugEnabled && (
-                    <div className="mt-4">
-                      <UploadDebugPanel
-                        error={uploadError}
-                        debugInfo={debugInfo}
-                        onDismiss={() => {
-                          setUploadError(undefined);
-                          setDebugInfo(undefined);
-                        }}
-                      />
-                    </div>
-                  )}
-                  
                   <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => {
                       setIsImageUploadDialogOpen(false);

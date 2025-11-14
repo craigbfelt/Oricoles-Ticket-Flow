@@ -4,80 +4,19 @@ A modern, professional helpdesk and asset management system built with React, Ty
 
 ![Oricol Helpdesk](https://github.com/user-attachments/assets/43b833f0-e11c-4776-a0ad-cba268f6aa18)
 
-## 🚀 Deployment Options
+## 🚀 Working with this project
 
-### ⚡ NEW: Fully Automated Local Setup
+**This app runs on Lovable** - All code changes sync automatically between GitHub and Lovable.
 
-**Get running in under 5 minutes with our automated setup scripts!**
+### Making Changes:
+1. **Edit code on GitHub** - Make changes here and commit them
+2. **Lovable syncs automatically** - Your changes appear in Lovable
+3. **App updates live** - The app running on Lovable updates with your changes
 
-#### Universal Setup (Recommended)
-```bash
-# One command for all platforms
-./setup.sh
-```
-
-#### Platform-Specific Setup
-```bash
-# macOS/Linux - Interactive wizard with all options
-./setup-local.sh
-
-# Windows - Interactive wizard with all options
-setup-local.bat
-
-# Simple quick-start (original)
-./quick-start.sh        # macOS/Linux
-quick-start.bat         # Windows
-```
-
-#### Using Make (macOS/Linux)
-```bash
-make setup-interactive  # Interactive wizard
-make setup-docker       # Automated Docker Compose setup
-make setup-local        # Automated local Supabase setup
-make prereqs            # Check prerequisites only
-```
-
-**What you get:**
-- ✅ Automatic prerequisite checking
-- ✅ Interactive setup wizard
-- ✅ Choice of Docker Compose, Local Supabase, or Native Node.js
-- ✅ Automatic environment configuration
-- ✅ Port conflict detection and resolution
-- ✅ Comprehensive error handling
-
-Then open http://localhost:8080 in your browser!
-
-📚 **See [AUTOMATED_SETUP.md](./AUTOMATED_SETUP.md) for complete automation guide**  
-📚 **See [QUICK_START_LOCAL.md](./QUICK_START_LOCAL.md) for manual setup details**  
-🤖 **Using GitHub Copilot?** See [GITHUB_COPILOT_WITH_LOCAL_DEV.md](./GITHUB_COPILOT_WITH_LOCAL_DEV.md) to learn how to use Copilot with your local app
-
-🖼️ **Want to embed in your website?** See [IFRAME_EMBEDDING.md](./IFRAME_EMBEDDING.md) and check out working examples in `examples/`
-
----
-
-### ⭐ Recommended: Self-Hosted (No Cloud Dependencies)
-
-**Run your own Supabase instance with Docker - completely free, no limits!**
-
-- ✅ **Full control** of your data and infrastructure
-- ✅ **No account limits** - unlimited storage, bandwidth, and API requests
-- ✅ **Free forever** - only costs are your hosting infrastructure
-- ✅ **Easy setup** with Docker Compose
-
-**[📚 Self-Hosted Setup Guide](./SELF_HOSTED_SETUP.md)** - Complete guide to running your own Supabase
-
-Quick start:
-```bash
-./scripts/setup.sh  # Start self-hosted Supabase
-npm run dev         # Start the app
-```
-
-### Alternative Options:
-- **Lovable Cloud** - All code changes sync automatically between GitHub and Lovable
-- **Local Development** - See [LOCAL_SETUP.md](./LOCAL_SETUP.md)
-- **Cloud Deployment** - See [DEPLOYMENT.md](./DEPLOYMENT.md)
+### Additional Setup Options:
+- **Local Development** (optional) - See [LOCAL_SETUP.md](./LOCAL_SETUP.md)
+- **Alternative Deployment** (optional) - See [DEPLOYMENT.md](./DEPLOYMENT.md)
 - **Quick Reference** - See [QUICKSTART.md](./QUICKSTART.md)
-- **🔄 Preserve Lovable & Run Local** - See [LOVABLE_PRESERVE_GUIDE.md](./LOVABLE_PRESERVE_GUIDE.md) for running both simultaneously
 
 ## Features
 
@@ -125,25 +64,6 @@ npm run dev         # Start the app
 ## Project info
 
 **URL**: https://lovable.dev/projects/c75c70a7-c13d-4879-a8af-bbb8cc076141
-
-## 📖 Documentation
-
-### 🆕 Local Development & Iframe Embedding
-- **[SETUP_SUMMARY.md](./SETUP_SUMMARY.md)** - 📋 Overview of local setup and iframe embedding
-- **[QUICK_START_LOCAL.md](./QUICK_START_LOCAL.md)** - ⚡ 5-minute quick start guide
-- **[LOCAL_DEV_GUIDE.md](./LOCAL_DEV_GUIDE.md)** - 📘 Complete local development setup
-- **[IFRAME_EMBEDDING.md](./IFRAME_EMBEDDING.md)** - 🖼️ Comprehensive iframe embedding guide
-- **[examples/](./examples/)** - 🎨 Working iframe examples (HTML files)
-
-### Deployment & Setup
-- **[LOVABLE_PRESERVE_GUIDE.md](./LOVABLE_PRESERVE_GUIDE.md)** - 🔄 Preserve lovable deployment & run local copy
-- **[SELF_HOSTED_SETUP.md](./SELF_HOSTED_SETUP.md)** - Complete self-hosted Supabase setup guide
-- **[MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)** - Migrate from cloud Supabase to self-hosted
-- **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - Common commands and operations
-- **[INSTALLATION_OPTIONS.md](./INSTALLATION_OPTIONS.md)** - Compare all deployment options
-- **[LOCAL_SETUP.md](./LOCAL_SETUP.md)** - Local development setup
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Cloud deployment options
-- **[QUICKSTART.md](./QUICKSTART.md)** - Quick start guide
 
 ## Getting Started
 
@@ -260,12 +180,6 @@ If you can see tabs but get "Access Denied" when clicking them:
 
 ### Troubleshooting Storage and RLS Errors
 If you encounter storage-related errors when uploading files:
-
-**"you do not have access to perform this function" or permission errors**:
-- **✅ FINAL FIX (Nov 2025):** See **[PERMISSIONS_ERROR_FIX_FINAL.md](./PERMISSIONS_ERROR_FIX_FINAL.md)** for the complete solution
-- Disables RLS on storage.buckets system table (correct approach)
-- Migration: `20251114072100_disable_storage_buckets_rls.sql`
-- This supersedes previous RLS fixes on storage.buckets
 
 **"new row violates row-level security policy"**:
 - **Comprehensive Guide:** See **[SUPABASE_STORAGE_RLS_GUIDE.md](./SUPABASE_STORAGE_RLS_GUIDE.md)** for complete RLS troubleshooting
@@ -415,12 +329,6 @@ The application includes two migrations:
    - Enables image uploads for network diagrams, documents, and more
    - Sets up RLS policies for secure image storage
    - See [STORAGE_BUCKET_FIX.md](./STORAGE_BUCKET_FIX.md) for details
-
-5. **Storage Buckets RLS Policy Fix** (20251114070500)
-   - Fixes "you do not have access to perform this function" errors
-   - Adds RLS policy on storage.buckets table to allow bucket queries
-   - Required for upload operations to check bucket accessibility
-   - See [RLS_PERMISSION_FIX.md](./RLS_PERMISSION_FIX.md) for details
 
 ## Security
 

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Upload, Download, Plus, Trash2, Image as ImageIcon, Bug } from "lucide-react";
+import { ArrowLeft, Upload, Download, Plus, Trash2, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DataTable, Column } from "@/components/DataTable";
 import { ImportHistory } from "@/components/ImportHistory";
@@ -20,9 +20,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { uploadFile, setDebugMode, UploadError } from "@/lib/uploadService";
-import { UploadDebugPanel } from "@/components/UploadDebugPanel";
 
 const BranchDetails = () => {
   const { branchId } = useParams();
@@ -30,9 +27,6 @@ const BranchDetails = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [currentTab, setCurrentTab] = useState("overview");
-  const [debugEnabled, setDebugEnabled] = useState(false);
-  const [uploadError, setUploadError] = useState<UploadError | undefined>();
-  const [debugInfo, setDebugInfo] = useState<any>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const devicesFileInputRef = useRef<HTMLInputElement>(null);
   const usersFileInputRef = useRef<HTMLInputElement>(null);
@@ -45,19 +39,6 @@ const BranchDetails = () => {
   const [isImageUploadDialogOpen, setIsImageUploadDialogOpen] = useState(false);
   const [selectedDiagramImage, setSelectedDiagramImage] = useState<File | null>(null);
   const [diagramImagePreview, setDiagramImagePreview] = useState<string | null>(null);
-  
-  // Handle debug mode toggle
-  const handleDebugToggle = (enabled: boolean) => {
-    setDebugEnabled(enabled);
-    setDebugMode(enabled);
-    if (enabled) {
-      toast({
-        title: "Debug Mode Enabled",
-        description: "Detailed error information will be displayed"
-      });
-    }
-  };
-  
   const [internetForm, setInternetForm] = useState({
     isp: "VOX",
     connection_type: "",
@@ -343,18 +324,14 @@ const BranchDetails = () => {
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
     const filePath = `branch-diagrams/${branchId}/${fileName}`;
 
-    // Use new upload service
-    const result = await uploadFile('diagrams', filePath, selectedDiagramImage);
+    const { error: uploadError } = await supabase.storage
+      .from('diagrams')
+      .upload(filePath, selectedDiagramImage);
 
-    if (!result.success) {
-      if (debugEnabled && result.error) {
-        setUploadError(result.error);
-        setDebugInfo(result.debugInfo);
-      }
-      
+    if (uploadError) {
       toast({
         title: "Error",
-        description: result.error?.message || "Failed to upload image",
+        description: `Failed to upload image: ${uploadError.message}`,
         variant: "destructive",
       });
       return;
