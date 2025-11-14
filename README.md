@@ -6,21 +6,50 @@ A modern, professional helpdesk and asset management system built with React, Ty
 
 ## 🚀 Deployment Options
 
-### ⚡ NEW: Quick Start for Local Development
+### ⚡ NEW: Fully Automated Local Setup
 
-**Get running in under 5 minutes!**
+**Get running in under 5 minutes with our automated setup scripts!**
 
+#### Universal Setup (Recommended)
 ```bash
-# Automated setup (macOS/Linux)
-./quick-start.sh
-
-# Or Windows
-quick-start.bat
+# One command for all platforms
+./setup.sh
 ```
+
+#### Platform-Specific Setup
+```bash
+# macOS/Linux - Interactive wizard with all options
+./setup-local.sh
+
+# Windows - Interactive wizard with all options
+setup-local.bat
+
+# Simple quick-start (original)
+./quick-start.sh        # macOS/Linux
+quick-start.bat         # Windows
+```
+
+#### Using Make (macOS/Linux)
+```bash
+make setup-interactive  # Interactive wizard
+make setup-docker       # Automated Docker Compose setup
+make setup-local        # Automated local Supabase setup
+make prereqs            # Check prerequisites only
+```
+
+**What you get:**
+- ✅ Automatic prerequisite checking
+- ✅ Interactive setup wizard
+- ✅ Choice of Docker Compose, Local Supabase, or Native Node.js
+- ✅ Automatic environment configuration
+- ✅ Port conflict detection and resolution
+- ✅ Comprehensive error handling
 
 Then open http://localhost:8080 in your browser!
 
-📚 **See [QUICK_START_LOCAL.md](./QUICK_START_LOCAL.md) for details**
+📚 **See [AUTOMATED_SETUP.md](./AUTOMATED_SETUP.md) for complete automation guide**  
+📚 **See [QUICK_START_LOCAL.md](./QUICK_START_LOCAL.md) for manual setup details**  
+🤖 **Using GitHub Copilot?** See [GITHUB_COPILOT_WITH_LOCAL_DEV.md](./GITHUB_COPILOT_WITH_LOCAL_DEV.md) to learn how to use Copilot with your local app
 
 🖼️ **Want to embed in your website?** See [IFRAME_EMBEDDING.md](./IFRAME_EMBEDDING.md) and check out working examples in `examples/`
 
