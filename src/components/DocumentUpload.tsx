@@ -5,11 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FileText, Upload, Loader2, CheckCircle, AlertCircle, Image as ImageIcon } from "lucide-react";
+import { FileText, Upload, Loader2, CheckCircle, AlertCircle, Image as ImageIcon, Bug } from "lucide-react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadFile, uploadFileWithMetadata, setDebugMode, isDebugMode, UploadError } from "@/lib/uploadService";
+import { UploadDebugPanel } from "@/components/UploadDebugPanel";
 
 // Configure PDF.js worker - use local worker file from public directory
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
@@ -51,7 +54,21 @@ export const DocumentUpload = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
   const [fileName, setFileName] = useState<string>("");
+  const [debugEnabled, setDebugEnabled] = useState(false);
+  const [uploadError, setUploadError] = useState<UploadError | undefined>();
+  const [debugInfo, setDebugInfo] = useState<any>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Handle debug mode toggle
+  const handleDebugToggle = (enabled: boolean) => {
+    setDebugEnabled(enabled);
+    setDebugMode(enabled);
+    if (enabled) {
+      toast.info('Debug mode enabled - detailed error information will be displayed');
+    } else {
+      toast.info('Debug mode disabled');
+    }
+  };
 
   const extractTablesFromHtml = (html: string): Array<{ headers: string[]; rows: string[][] }> => {
     const parser = new DOMParser();
@@ -136,16 +153,19 @@ export const DocumentUpload = ({
       
       const filePath = `document-images/${Date.now()}_${fileName}`;
       
-      const { error } = await supabase.storage
-        .from('diagrams')
-        .upload(filePath, blob);
+      // Use new upload service
+      const result = await uploadFile('diagrams', filePath, blob);
       
-      if (error) {
-        console.error('Error uploading image:', error);
+      if (!result.success) {
+        console.error('Error uploading image:', result.error);
+        if (debugEnabled && result.error) {
+          setUploadError(result.error);
+          setDebugInfo(result.debugInfo);
+        }
         return null;
       }
       
-      return filePath;
+      return result.path || filePath;
     } catch (error) {
       console.error('Error uploading image to storage:', error);
       return null;
@@ -225,6 +245,8 @@ export const DocumentUpload = ({
 
     setFileName(file.name);
     setIsProcessing(true);
+    setUploadError(undefined); // Clear previous errors
+    setDebugInfo(undefined); // Clear previous debug info
 
     try {
       // Step 1: Save the original document file to Document Hub
@@ -245,19 +267,14 @@ export const DocumentUpload = ({
           else if (file.type.includes('excel') || file.type.includes('spreadsheet')) category = 'excel';
           else if (file.type.includes('powerpoint') || file.type.includes('presentation')) category = 'powerpoint';
 
-          // Upload the original document to storage
-          const { error: uploadError } = await supabase.storage
-            .from('documents' as any)
-            .upload(documentPath, file);
-
-          if (uploadError) {
-            console.error('Error uploading document to storage:', uploadError);
-            // Continue with processing even if storage upload fails
-          } else {
-            // Save document metadata to database
-            const { error: dbError } = await (supabase as any)
-              .from('documents')
-              .insert({
+          // Use new upload service for combined upload
+          const uploadResult = await uploadFileWithMetadata(
+            'documents',
+            documentPath,
+            file,
+            {
+              table: 'documents',
+              data: {
                 filename: storedFilename,
                 original_filename: file.name,
                 file_type: file.type,
@@ -267,16 +284,35 @@ export const DocumentUpload = ({
                 category: category,
                 description: `Uploaded via Document Import on ${new Date().toLocaleDateString()}`,
                 uploaded_by: session.user.id,
-              });
-
-            if (dbError) {
-              console.error('Error saving document metadata:', dbError);
-            } else {
-              toast.success('Document saved to Document Hub');
+              }
             }
+          );
+
+          if (!uploadResult.success) {
+            // Handle upload failure with detailed error
+            const error = uploadResult.error;
+            console.error('Error uploading document:', error);
+            
+            if (debugEnabled && error) {
+              setUploadError(error);
+              setDebugInfo({
+                uploadResult: uploadResult.uploadResult?.debugInfo,
+                dbResult: uploadResult.dbResult?.debugInfo
+              });
+            }
+            
+            toast.error('Failed to save document to Document Hub', {
+              description: error?.message || 'Unknown error occurred'
+            });
+            // Continue with processing even if hub save fails
+          } else {
+            toast.success('Document saved to Document Hub');
           }
         } catch (error) {
           console.error('Error saving document to hub:', error);
+          toast.error('Failed to save to Document Hub', {
+            description: 'Continuing with document parsing...'
+          });
           // Continue with processing even if hub save fails
         }
       }
@@ -364,6 +400,8 @@ export const DocumentUpload = ({
   const handleReset = () => {
     setParsedData(null);
     setFileName("");
+    setUploadError(undefined);
+    setDebugInfo(undefined);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -373,13 +411,28 @@ export const DocumentUpload = ({
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Upload Document or Image
-          </CardTitle>
-          <CardDescription>
-            Upload Word (.docx, .doc), PDF, or image files to extract and analyze data
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Upload Document or Image
+              </CardTitle>
+              <CardDescription>
+                Upload Word (.docx, .doc), PDF, or image files to extract and analyze data
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Bug className="h-4 w-4 text-muted-foreground" />
+              <Label htmlFor="debug-mode" className="text-sm cursor-pointer">
+                Debug Mode
+              </Label>
+              <Switch
+                id="debug-mode"
+                checked={debugEnabled}
+                onCheckedChange={handleDebugToggle}
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -413,6 +466,18 @@ export const DocumentUpload = ({
                 Parsing document and extracting images... This may take a moment.
               </AlertDescription>
             </Alert>
+          )}
+
+          {/* Debug Panel for Upload Errors */}
+          {uploadError && debugEnabled && (
+            <UploadDebugPanel
+              error={uploadError}
+              debugInfo={debugInfo}
+              onDismiss={() => {
+                setUploadError(undefined);
+                setDebugInfo(undefined);
+              }}
+            />
           )}
 
           {parsedData && !isProcessing && (

@@ -6,9 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Image as ImageIcon, FileText, CheckCircle, AlertCircle } from "lucide-react";
+import { Image as ImageIcon, FileText, CheckCircle, AlertCircle, Bug } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Switch } from "@/components/ui/switch";
+import { uploadFile, setDebugMode, UploadError } from "@/lib/uploadService";
+import { UploadDebugPanel } from "@/components/UploadDebugPanel";
 
 export interface ImportItem {
   type: 'image' | 'text' | 'page';
@@ -38,6 +41,18 @@ export const ImportItemSelector = ({ items, onImportComplete, onCancel }: Import
   const [itemDestinations, setItemDestinations] = useState<Map<string, ImportDestination>>(new Map());
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set(items.map(item => item.id)));
   const [isImporting, setIsImporting] = useState(false);
+  const [debugEnabled, setDebugEnabled] = useState(false);
+  const [uploadError, setUploadError] = useState<UploadError | undefined>();
+  const [debugInfo, setDebugInfo] = useState<any>(undefined);
+
+  // Handle debug mode toggle
+  const handleDebugToggle = (enabled: boolean) => {
+    setDebugEnabled(enabled);
+    setDebugMode(enabled);
+    if (enabled) {
+      toast.info('Debug mode enabled - detailed error information will be displayed');
+    }
+  };
   const [importNotes, setImportNotes] = useState<Map<string, string>>(new Map());
 
   const handleDestinationChange = (itemId: string, target: string) => {
@@ -138,14 +153,19 @@ export const ImportItemSelector = ({ items, onImportComplete, onCancel }: Import
             storagePath = `document-images/${Date.now()}_${item.content.name}`;
         }
 
-        const { error: uploadError } = await supabase.storage
-          .from(bucket)
-          .upload(storagePath, blob, {
-            upsert: false,
-            contentType: blob.type
-          });
+        // Use new upload service
+        const uploadResult = await uploadFile(bucket, storagePath, blob, {
+          upsert: false,
+          contentType: blob.type
+        });
 
-        if (uploadError) throw uploadError;
+        if (!uploadResult.success) {
+          if (debugEnabled && uploadResult.error) {
+            setUploadError(uploadResult.error);
+            setDebugInfo(uploadResult.debugInfo);
+          }
+          throw new Error(uploadResult.error?.message || 'Upload failed');
+        }
 
         // Create a record in network_diagrams table for network-related destinations
         if (['company-network', 'nymbis-rdp', 'branches'].includes(destination.target)) {
@@ -182,14 +202,19 @@ export const ImportItemSelector = ({ items, onImportComplete, onCancel }: Import
           const bucket = 'diagrams';
           const storagePath = `pages/${Date.now()}_page_${item.content.pageNumber || 'unknown'}.png`;
 
-          const { error: uploadError } = await supabase.storage
-            .from(bucket)
-            .upload(storagePath, blob, {
-              upsert: false,
-              contentType: blob.type
-            });
+          // Use new upload service
+          const uploadResult = await uploadFile(bucket, storagePath, blob, {
+            upsert: false,
+            contentType: blob.type
+          });
 
-          if (uploadError) throw uploadError;
+          if (!uploadResult.success) {
+            if (debugEnabled && uploadResult.error) {
+              setUploadError(uploadResult.error);
+              setDebugInfo(uploadResult.debugInfo);
+            }
+            throw new Error(uploadResult.error?.message || 'Upload failed');
+          }
 
           // Store page data with text
           const { error: dbError } = await supabase

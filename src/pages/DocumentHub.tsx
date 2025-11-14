@@ -43,11 +43,15 @@ import {
   FileImage,
   FileSpreadsheet,
   FileCode,
-  Loader2
+  Loader2,
+  Bug
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { Switch } from "@/components/ui/switch";
+import { uploadFileWithMetadata, setDebugMode, UploadError } from "@/lib/uploadService";
+import { UploadDebugPanel } from "@/components/UploadDebugPanel";
 
 interface Document {
   id: string;
@@ -69,11 +73,23 @@ const DocumentHub = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [debugEnabled, setDebugEnabled] = useState(false);
+  const [uploadError, setUploadError] = useState<UploadError | undefined>();
+  const [debugInfo, setDebugInfo] = useState<any>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  
+  // Handle debug mode toggle
+  const handleDebugToggle = (enabled: boolean) => {
+    setDebugEnabled(enabled);
+    setDebugMode(enabled);
+    if (enabled) {
+      toast.info('Debug mode enabled - detailed error information will be displayed');
+    }
+  };
   
   // Upload form state
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -127,6 +143,8 @@ const DocumentHub = () => {
 
     try {
       setIsUploading(true);
+      setUploadError(undefined);
+      setDebugInfo(undefined);
       
       // Get current user
       const { data: { session } } = await supabase.auth.getSession();
@@ -141,13 +159,6 @@ const DocumentHub = () => {
       const filename = `${timestamp}_${uploadFile.name}`;
       const filePath = `documents/${filename}`;
 
-      // Upload file to storage
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(filePath, uploadFile);
-
-      if (uploadError) throw uploadError;
-
       // Determine category based on file type if not manually set
       let category = uploadCategory;
       if (category === "general") {
@@ -158,22 +169,37 @@ const DocumentHub = () => {
         else if (uploadFile.type.includes('powerpoint') || uploadFile.type.includes('presentation')) category = 'powerpoint';
       }
 
-      // Save metadata to database
-      const { error: dbError } = await (supabase as any)
-        .from("documents")
-        .insert({
-          filename: filename,
-          original_filename: uploadFile.name,
-          file_type: uploadFile.type,
-          file_size: uploadFile.size,
-          storage_path: filePath,
-          storage_bucket: 'documents',
-          category: category,
-          description: uploadDescription || null,
-          uploaded_by: session.user.id,
-        });
+      // Use new upload service for combined upload
+      const result = await uploadFileWithMetadata(
+        'documents',
+        filePath,
+        uploadFile,
+        {
+          table: 'documents',
+          data: {
+            filename: filename,
+            original_filename: uploadFile.name,
+            file_type: uploadFile.type,
+            file_size: uploadFile.size,
+            storage_path: filePath,
+            storage_bucket: 'documents',
+            category: category,
+            description: uploadDescription || null,
+            uploaded_by: session.user.id,
+          }
+        }
+      );
 
-      if (dbError) throw dbError;
+      if (!result.success) {
+        if (debugEnabled && result.error) {
+          setUploadError(result.error);
+          setDebugInfo({
+            uploadResult: result.uploadResult?.debugInfo,
+            dbResult: result.dbResult?.debugInfo
+          });
+        }
+        throw new Error(result.error?.message || 'Upload failed');
+      }
 
       toast.success("Document uploaded successfully");
       setUploadDialogOpen(false);
