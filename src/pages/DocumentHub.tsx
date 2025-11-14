@@ -82,7 +82,24 @@ const DocumentHub = () => {
 
   useEffect(() => {
     fetchDocuments();
+    // One-time setup: Create storage policies if needed
+    setupStoragePolicies();
   }, []);
+
+  const setupStoragePolicies = async () => {
+    try {
+      console.log('Checking storage policies...');
+      const { data, error } = await supabase.functions.invoke('setup-storage-policies');
+      
+      if (error) {
+        console.error('Error setting up storage policies:', error);
+      } else {
+        console.log('Storage policies setup result:', data);
+      }
+    } catch (error) {
+      console.error('Failed to setup storage policies:', error);
+    }
+  };
 
   const fetchDocuments = async () => {
     try {
@@ -142,7 +159,7 @@ const DocumentHub = () => {
       }
 
       // Save metadata to database
-      const { error: dbError } = await supabase
+      const { error: dbError } = await (supabase as any)
         .from("documents")
         .insert({
           filename: filename,
@@ -213,7 +230,7 @@ const DocumentHub = () => {
       if (storageError) throw storageError;
 
       // Delete from database
-      const { error: dbError } = await supabase
+      const { error: dbError} = await (supabase as any)
         .from("documents")
         .delete()
         .eq("id", doc.id);
