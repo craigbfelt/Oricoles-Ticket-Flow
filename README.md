@@ -6,6 +6,26 @@ A modern, professional helpdesk and asset management system built with React, Ty
 
 ## 🚀 Deployment Options
 
+### ⚡ NEW: Quick Start for Local Development
+
+**Get running in under 5 minutes!**
+
+```bash
+# Automated setup (macOS/Linux)
+./quick-start.sh
+
+# Or Windows
+quick-start.bat
+```
+
+Then open http://localhost:8080 in your browser!
+
+📚 **See [QUICK_START_LOCAL.md](./QUICK_START_LOCAL.md) for details**
+
+🖼️ **Want to embed in your website?** See [IFRAME_EMBEDDING.md](./IFRAME_EMBEDDING.md) and check out working examples in `examples/`
+
+---
+
 ### ⭐ Recommended: Self-Hosted (No Cloud Dependencies)
 
 **Run your own Supabase instance with Docker - completely free, no limits!**
@@ -78,6 +98,14 @@ npm run dev         # Start the app
 
 ## 📖 Documentation
 
+### 🆕 Local Development & Iframe Embedding
+- **[SETUP_SUMMARY.md](./SETUP_SUMMARY.md)** - 📋 Overview of local setup and iframe embedding
+- **[QUICK_START_LOCAL.md](./QUICK_START_LOCAL.md)** - ⚡ 5-minute quick start guide
+- **[LOCAL_DEV_GUIDE.md](./LOCAL_DEV_GUIDE.md)** - 📘 Complete local development setup
+- **[IFRAME_EMBEDDING.md](./IFRAME_EMBEDDING.md)** - 🖼️ Comprehensive iframe embedding guide
+- **[examples/](./examples/)** - 🎨 Working iframe examples (HTML files)
+
+### Deployment & Setup
 - **[SELF_HOSTED_SETUP.md](./SELF_HOSTED_SETUP.md)** - Complete self-hosted Supabase setup guide
 - **[MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)** - Migrate from cloud Supabase to self-hosted
 - **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - Common commands and operations
