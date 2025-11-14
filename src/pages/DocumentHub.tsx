@@ -92,12 +92,18 @@ const DocumentHub = () => {
       const { data, error } = await supabase.functions.invoke('setup-storage-policies');
       
       if (error) {
-        console.error('Error setting up storage policies:', error);
+        console.warn('Could not check storage policies (non-critical):', error);
+        // This is not a critical error - the app can still work
       } else {
-        console.log('Storage policies setup result:', data);
+        console.log('Storage verification result:', data);
+        // Log any warnings but don't block the UI
+        if (data?.warning) {
+          console.warn('Storage warning:', data.message);
+        }
       }
     } catch (error) {
-      console.error('Failed to setup storage policies:', error);
+      console.warn('Storage verification failed (non-critical):', error);
+      // Silently continue - this is just a verification check
     }
   };
 
