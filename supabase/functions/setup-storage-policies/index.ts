@@ -35,7 +35,11 @@ Deno.serve(async (req) => {
         'diagrams_storage_insert',
         'diagrams_storage_select',
         'diagrams_storage_update',
-        'diagrams_storage_delete'
+        'diagrams_storage_delete',
+        'FileUpload 1iq1g9y_0',
+        'FileUpload 1iq1g9y_1',
+        'FileUpload 1iq1g9y_2',
+        'FileUpload 1iq1g9y_3'
       ]);
 
     if (policiesError) {
@@ -62,7 +66,11 @@ Deno.serve(async (req) => {
       'diagrams_storage_insert',
       'diagrams_storage_select',
       'diagrams_storage_update',
-      'diagrams_storage_delete'
+      'diagrams_storage_delete',
+      'FileUpload 1iq1g9y_0',
+      'FileUpload 1iq1g9y_1',
+      'FileUpload 1iq1g9y_2',
+      'FileUpload 1iq1g9y_3'
     ];
 
     const existingPolicyNames = existingPolicies?.map(p => p.policyname) || [];
@@ -131,6 +139,35 @@ Deno.serve(async (req) => {
           type: 'DELETE',
           role: 'authenticated',
           using: "bucket_id = 'diagrams'"
+        },
+        {
+          name: 'FileUpload 1iq1g9y_0',
+          table: 'storage.objects',
+          type: 'SELECT',
+          role: 'public',
+          using: "bucket_id = 'FileBucket'"
+        },
+        {
+          name: 'FileUpload 1iq1g9y_1',
+          table: 'storage.objects',
+          type: 'INSERT',
+          role: 'public',
+          check: "bucket_id = 'FileBucket'"
+        },
+        {
+          name: 'FileUpload 1iq1g9y_2',
+          table: 'storage.objects',
+          type: 'UPDATE',
+          role: 'public',
+          using: "bucket_id = 'FileBucket'",
+          check: "bucket_id = 'FileBucket'"
+        },
+        {
+          name: 'FileUpload 1iq1g9y_3',
+          table: 'storage.objects',
+          type: 'DELETE',
+          role: 'public',
+          using: "bucket_id = 'FileBucket'"
         }
       ];
 
