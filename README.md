@@ -4,18 +4,29 @@ A modern, professional helpdesk and asset management system built with React, Ty
 
 ![Oricol Helpdesk](https://github.com/user-attachments/assets/43b833f0-e11c-4776-a0ad-cba268f6aa18)
 
-## 🚀 Working with this project
+## 🚀 Deployment Options
 
-**This app runs on Lovable** - All code changes sync automatically between GitHub and Lovable.
+### ⭐ Recommended: Self-Hosted (No Cloud Dependencies)
 
-### Making Changes:
-1. **Edit code on GitHub** - Make changes here and commit them
-2. **Lovable syncs automatically** - Your changes appear in Lovable
-3. **App updates live** - The app running on Lovable updates with your changes
+**Run your own Supabase instance with Docker - completely free, no limits!**
 
-### Additional Setup Options:
-- **Local Development** (optional) - See [LOCAL_SETUP.md](./LOCAL_SETUP.md)
-- **Alternative Deployment** (optional) - See [DEPLOYMENT.md](./DEPLOYMENT.md)
+- ✅ **Full control** of your data and infrastructure
+- ✅ **No account limits** - unlimited storage, bandwidth, and API requests
+- ✅ **Free forever** - only costs are your hosting infrastructure
+- ✅ **Easy setup** with Docker Compose
+
+**[📚 Self-Hosted Setup Guide](./SELF_HOSTED_SETUP.md)** - Complete guide to running your own Supabase
+
+Quick start:
+```bash
+./scripts/setup.sh  # Start self-hosted Supabase
+npm run dev         # Start the app
+```
+
+### Alternative Options:
+- **Lovable Cloud** - All code changes sync automatically between GitHub and Lovable
+- **Local Development** - See [LOCAL_SETUP.md](./LOCAL_SETUP.md)
+- **Cloud Deployment** - See [DEPLOYMENT.md](./DEPLOYMENT.md)
 - **Quick Reference** - See [QUICKSTART.md](./QUICKSTART.md)
 
 ## Features
@@ -64,6 +75,16 @@ A modern, professional helpdesk and asset management system built with React, Ty
 ## Project info
 
 **URL**: https://lovable.dev/projects/c75c70a7-c13d-4879-a8af-bbb8cc076141
+
+## 📖 Documentation
+
+- **[SELF_HOSTED_SETUP.md](./SELF_HOSTED_SETUP.md)** - Complete self-hosted Supabase setup guide
+- **[MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)** - Migrate from cloud Supabase to self-hosted
+- **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - Common commands and operations
+- **[INSTALLATION_OPTIONS.md](./INSTALLATION_OPTIONS.md)** - Compare all deployment options
+- **[LOCAL_SETUP.md](./LOCAL_SETUP.md)** - Local development setup
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Cloud deployment options
+- **[QUICKSTART.md](./QUICKSTART.md)** - Quick start guide
 
 ## Getting Started
 
