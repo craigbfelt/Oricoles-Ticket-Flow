@@ -48,7 +48,8 @@ make prereqs            # Check prerequisites only
 Then open http://localhost:8080 in your browser!
 
 📚 **See [AUTOMATED_SETUP.md](./AUTOMATED_SETUP.md) for complete automation guide**  
-📚 **See [QUICK_START_LOCAL.md](./QUICK_START_LOCAL.md) for manual setup details**
+📚 **See [QUICK_START_LOCAL.md](./QUICK_START_LOCAL.md) for manual setup details**  
+🤖 **Using GitHub Copilot?** See [GITHUB_COPILOT_WITH_LOCAL_DEV.md](./GITHUB_COPILOT_WITH_LOCAL_DEV.md) to learn how to use Copilot with your local app
 
 🖼️ **Want to embed in your website?** See [IFRAME_EMBEDDING.md](./IFRAME_EMBEDDING.md) and check out working examples in `examples/`
 

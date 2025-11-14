@@ -459,6 +459,13 @@ After successful setup:
    - Upload documents
    - Test email notifications (check Inbucket)
 
+5. **Use with GitHub Copilot:**
+   - Keep your local app running (`npm run dev`)
+   - Ask GitHub Copilot to make changes via GitHub
+   - Pull changes: `git pull origin <branch-name>`
+   - Test changes in your browser at http://localhost:8080
+   - See [GITHUB_COPILOT_WITH_LOCAL_DEV.md](./GITHUB_COPILOT_WITH_LOCAL_DEV.md) for details
+
 ---
 
 ## 🆘 Getting Help
