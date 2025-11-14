@@ -10,21 +10,24 @@ echo ==========================================
 echo    Oricol Helpdesk - Local Setup
 echo ==========================================
 echo.
+echo [!] Docker Desktop is FREE for local development
+echo     No account, profile, or payment needed!
+echo.
 echo Choose your setup method:
 echo.
-echo   1) Docker Compose (Recommended)
+echo   1) Docker Compose (Recommended - FREE)
 echo      - Complete stack with PostgreSQL, Supabase, and all services
 echo      - Production-like environment
-echo      - Requires: Docker Desktop
+echo      - Requires: Docker Desktop (100%% free, no login required)
 echo.
-echo   2) Local Supabase CLI
+echo   2) Local Supabase CLI (FREE)
 echo      - Lightweight development setup
 echo      - Full Supabase features
-echo      - Requires: Docker (for Supabase containers)
+echo      - Requires: Docker (for Supabase containers, no login needed)
 echo.
-echo   3) Native Node.js
+echo   3) Native Node.js (No Docker at all)
 echo      - Minimal setup
-echo      - Uses cloud Supabase or local PostgreSQL
+echo      - Uses free cloud Supabase or local PostgreSQL
 echo      - Requires: Node.js only (+ optional PostgreSQL)
 echo.
 echo   4) Check prerequisites only
@@ -81,8 +84,10 @@ if %ERRORLEVEL% neq 0 (
 REM Check Docker
 where docker >nul 2>nul
 if %ERRORLEVEL% neq 0 (
-    echo [!] Docker is not installed (required for Docker setup)
-    echo     Install from: https://www.docker.com/products/docker-desktop
+    echo [X] Docker is not installed
+    echo     Download FREE from: https://www.docker.com/products/docker-desktop
+    echo     NOTE: Docker Desktop is 100%% FREE for local development
+    echo           No account, profile, or payment needed!
 ) else (
     echo [OK] Docker found
     
@@ -91,6 +96,7 @@ if %ERRORLEVEL% neq 0 (
     if %ERRORLEVEL% neq 0 (
         echo [!] Docker daemon is not running
         echo     Please start Docker Desktop
+        echo     If prompted to login, you can skip it - no account needed!
     ) else (
         echo [OK] Docker daemon is running
     )
@@ -127,7 +133,8 @@ REM Check Docker
 where docker >nul 2>nul
 if %ERRORLEVEL% neq 0 (
     echo [X] Docker is not installed
-    echo     Install from: https://www.docker.com/products/docker-desktop
+    echo     Download FREE from: https://www.docker.com/products/docker-desktop
+    echo     NOTE: Docker Desktop is 100%% FREE - no account needed!
     pause
     goto MAIN_MENU
 )
@@ -136,6 +143,7 @@ docker info >nul 2>nul
 if %ERRORLEVEL% neq 0 (
     echo [X] Docker daemon is not running
     echo     Please start Docker Desktop and try again
+    echo     TIP: If prompted to login, you can skip it!
     pause
     goto MAIN_MENU
 )

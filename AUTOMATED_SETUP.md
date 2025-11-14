@@ -1,5 +1,9 @@
 # 🚀 Automated Local Setup Guide
 
+> **💡 Important:** Docker Desktop is **100% FREE** for local development. No Docker Hub account, profile, or payment needed!  
+> Just download, install, and use. If prompted to login, click "Continue without signing in."  
+> See [DOCKER_FREE_NO_ACCOUNT.md](./DOCKER_FREE_NO_ACCOUNT.md) for details.
+
 This guide provides **fully automated** setup scripts for running the Oricol Helpdesk app locally.
 
 ## 🎯 Quick Start (One Command)
@@ -83,11 +87,15 @@ make prereqs
 ```
 
 **Required:**
-- Node.js 18+ ([download](https://nodejs.org/))
+- Node.js 18+ ([download FREE](https://nodejs.org/))
 - npm (comes with Node.js)
 
 **Optional (depends on setup method):**
-- Docker Desktop ([download](https://www.docker.com/products/docker-desktop))
+- Docker Desktop ([download FREE](https://www.docker.com/products/docker-desktop))
+  - **100% FREE for local development**
+  - **No account, profile, or payment needed**
+  - **No login required** - just download and use
+  - See [DOCKER_FREE_NO_ACCOUNT.md](./DOCKER_FREE_NO_ACCOUNT.md) for details
 
 ---
 
@@ -95,9 +103,12 @@ make prereqs
 
 | Method | Best For | Requirements | Pros | Cons |
 |--------|----------|--------------|------|------|
-| **Docker Compose** | Production-like environment | Docker Desktop | Complete stack, all services | Higher resource usage |
-| **Local Supabase** | Development | Docker, Node.js | Full features, lightweight | Requires Docker |
+| **Docker Compose** | Production-like environment | Docker Desktop (FREE) | Complete stack, all services | Higher resource usage |
+| **Local Supabase** | Development | Docker (FREE), Node.js | Full features, lightweight | Requires Docker |
 | **Native Node** | Minimal setup | Node.js only | Minimal resources | Need external DB |
+
+**Note:** Docker Desktop is **100% FREE** for local development. No account, login, or payment needed!  
+See [DOCKER_FREE_NO_ACCOUNT.md](./DOCKER_FREE_NO_ACCOUNT.md) for details.
 
 ---
 

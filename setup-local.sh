@@ -131,11 +131,13 @@ check_prerequisites() {
             print_success "Docker daemon is running"
         else
             print_warning "Docker is installed but daemon is not running"
-            print_info "Please start Docker Desktop"
+            print_info "Please start Docker Desktop (no account/login required)"
         fi
     else
-        print_warning "Docker is not installed (required for Option 1: Docker setup)"
-        print_info "Install from: https://www.docker.com/products/docker-desktop"
+        print_warning "Docker is not installed (required for Docker setup options)"
+        print_info "Download FREE from: https://www.docker.com/products/docker-desktop"
+        print_info "NOTE: Docker Desktop is 100% FREE for local development"
+        print_info "      No account, profile, or payment needed!"
     fi
     
     # Check Git
@@ -247,13 +249,16 @@ setup_docker_compose() {
     # Check Docker
     if ! command_exists docker; then
         print_error "Docker is not installed"
-        print_info "Install from: https://www.docker.com/products/docker-desktop"
+        print_info "Download FREE from: https://www.docker.com/products/docker-desktop"
+        print_info "NOTE: Docker Desktop is 100% FREE for local development"
+        print_info "      No account, profile, or payment needed!"
         exit 1
     fi
     
     if ! docker info >/dev/null 2>&1; then
         print_error "Docker daemon is not running"
         print_info "Please start Docker Desktop and try again"
+        print_info "If prompted to login, you can skip it - no account needed!"
         exit 1
     fi
     
@@ -434,21 +439,24 @@ show_menu() {
     print_info "Detected OS: $os"
     echo ""
     
+    print_info "💡 Docker Desktop is FREE for local development (no account needed!)"
+    echo ""
+    
     echo "Choose your setup method:"
     echo ""
-    echo "  ${BOLD}1)${NC} Docker Compose (Recommended)"
+    echo "  ${BOLD}1)${NC} Docker Compose (Recommended - FREE, no Docker account needed)"
     echo "     ✓ Complete stack with PostgreSQL, Supabase, and all services"
     echo "     ✓ Production-like environment"
-    echo "     ✓ Requires: Docker Desktop"
+    echo "     ✓ Requires: Docker Desktop (100% free, no login required)"
     echo ""
-    echo "  ${BOLD}2)${NC} Local Supabase CLI"
+    echo "  ${BOLD}2)${NC} Local Supabase CLI (FREE, no Docker account needed)"
     echo "     ✓ Lightweight development setup"
     echo "     ✓ Full Supabase features"
-    echo "     ✓ Requires: Docker (for Supabase containers)"
+    echo "     ✓ Requires: Docker (for Supabase containers, no login needed)"
     echo ""
-    echo "  ${BOLD}3)${NC} Native Node.js"
+    echo "  ${BOLD}3)${NC} Native Node.js (No Docker at all)"
     echo "     ✓ Minimal setup"
-    echo "     ✓ Uses cloud Supabase or local PostgreSQL"
+    echo "     ✓ Uses free cloud Supabase or local PostgreSQL"
     echo "     ✓ Requires: Node.js only (+ optional PostgreSQL)"
     echo ""
     echo "  ${BOLD}4)${NC} Check prerequisites only"
