@@ -26,10 +26,20 @@ export const StorageDiagnostics = () => {
   const [buckets, setBuckets] = useState<BucketInfo[]>([]);
   const [uploadErrors, setUploadErrors] = useState<UploadError[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   useEffect(() => {
     fetchBucketInfo();
     loadErrorsFromStorage();
+    
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      fetchBucketInfo();
+      loadErrorsFromStorage();
+      setLastRefresh(new Date());
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const fetchBucketInfo = async () => {
@@ -107,7 +117,10 @@ export const StorageDiagnostics = () => {
               )}
             </CardTitle>
             <CardDescription>
-              Monitor storage buckets and upload errors
+              Monitor storage buckets and upload errors • Auto-refresh every 30s
+              <span className="text-xs ml-2 text-muted-foreground">
+                Last: {lastRefresh.toLocaleTimeString()}
+              </span>
             </CardDescription>
           </div>
           <Button
