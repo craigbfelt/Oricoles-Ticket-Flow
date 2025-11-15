@@ -49,6 +49,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { StorageDiagnostics, logUploadError } from "@/components/StorageDiagnostics";
+import { StorageUsageChart } from "@/components/StorageUsageChart";
 
 interface Document {
   id: string;
@@ -403,8 +404,11 @@ const DocumentHub = () => {
           </Dialog>
         </div>
 
-        {/* Storage Diagnostics Panel */}
-        <StorageDiagnostics />
+        {/* Storage Analytics */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <StorageUsageChart />
+          <StorageDiagnostics />
+        </div>
 
         <Card>
           <CardHeader>
