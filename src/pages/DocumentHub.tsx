@@ -48,6 +48,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { StorageDiagnostics, logUploadError } from "@/components/StorageDiagnostics";
 
 interface Document {
   id: string;
@@ -150,7 +151,10 @@ const DocumentHub = () => {
         .from('documents')
         .upload(filePath, uploadFile);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        logUploadError('documents', uploadError.message, JSON.stringify(uploadError, null, 2));
+        throw uploadError;
+      }
 
       // Determine category based on file type if not manually set
       let category = uploadCategory;
@@ -177,7 +181,10 @@ const DocumentHub = () => {
           uploaded_by: session.user.id,
         });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        logUploadError('documents', 'Database insert failed', JSON.stringify(dbError, null, 2));
+        throw dbError;
+      }
 
       toast.success("Document uploaded successfully");
       setUploadDialogOpen(false);
@@ -187,8 +194,10 @@ const DocumentHub = () => {
       fetchDocuments();
     } catch (error) {
       console.error("Error uploading document:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      logUploadError('documents', 'Upload failed', errorMessage);
       toast.error("Failed to upload document", {
-        description: error instanceof Error ? error.message : "Unknown error"
+        description: errorMessage
       });
     } finally {
       setIsUploading(false);
@@ -393,6 +402,9 @@ const DocumentHub = () => {
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Storage Diagnostics Panel */}
+        <StorageDiagnostics />
 
         <Card>
           <CardHeader>
