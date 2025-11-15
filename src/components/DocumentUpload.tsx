@@ -226,60 +226,119 @@ export const DocumentUpload = ({
     setFileName(file.name);
     setIsProcessing(true);
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setFileName(file.name);
+    setIsProcessing(true);
+
     try {
-      // Step 1: Save the original document file to Document Hub
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        try {
-          // Generate unique filename for document storage
-          const timestamp = Date.now();
-          const fileExt = file.name.split('.').pop();
-          const storedFilename = `${timestamp}_${file.name}`;
-          const documentPath = `documents/${storedFilename}`;
+      console.log("🔍 ===== DOCUMENT UPLOAD DEBUG START =====");
+      console.log("🔍 File details:", {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
 
-          // Determine category based on file type
-          let category = 'general';
-          if (file.type.startsWith('image/')) category = 'image';
-          else if (file.type === 'application/pdf') category = 'pdf';
-          else if (file.type.includes('word')) category = 'word';
-          else if (file.type.includes('excel') || file.type.includes('spreadsheet')) category = 'excel';
-          else if (file.type.includes('powerpoint') || file.type.includes('presentation')) category = 'powerpoint';
+      // Step 1: Check authentication
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log("🔍 Auth Session:", {
+        hasSession: !!session,
+        userId: session?.user?.id,
+        userEmail: session?.user?.email,
+        sessionError: sessionError?.message
+      });
 
-          // Upload the original document to storage
-          const { error: uploadError } = await supabase.storage
-            .from('documents' as any)
-            .upload(documentPath, file);
-
-          if (uploadError) {
-            console.error('Error uploading document to storage:', uploadError);
-            // Continue with processing even if storage upload fails
-          } else {
-            // Save document metadata to database
-            const { error: dbError } = await (supabase as any)
-              .from('documents')
-              .insert({
-                filename: storedFilename,
-                original_filename: file.name,
-                file_type: file.type,
-                file_size: file.size,
-                storage_path: documentPath,
-                storage_bucket: 'documents',
-                category: category,
-                description: `Uploaded via Document Import on ${new Date().toLocaleDateString()}`,
-                uploaded_by: session.user.id,
-              });
-
-            if (dbError) {
-              console.error('Error saving document metadata:', dbError);
-            } else {
-              toast.success('Document saved to Document Hub');
-            }
-          }
-        } catch (error) {
-          console.error('Error saving document to hub:', error);
-          // Continue with processing even if hub save fails
-        }
+      if (!session) {
+        throw new Error("You must be logged in to upload documents");
       }
+
+      // Step 2: Upload to storage
+      const timestamp = Date.now();
+      const fileExt = file.name.split('.').pop();
+      const storedFilename = `${timestamp}_${file.name}`;
+      const documentPath = `documents/${storedFilename}`;
+
+      console.log("🔍 Uploading to storage:", {
+        bucket: "documents",
+        path: documentPath,
+        fileSize: file.size,
+        contentType: file.type
+      });
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('documents' as any)
+        .upload(documentPath, file);
+
+      console.log("🔍 Storage upload result:", {
+        success: !uploadError,
+        uploadData,
+        error: uploadError,
+        errorMessage: uploadError?.message,
+        errorCode: uploadError?.statusCode,
+        errorDetails: uploadError?.details
+      });
+
+      if (uploadError) {
+        console.error("❌ Storage upload failed:", uploadError);
+        toast.error(`Storage upload failed: ${uploadError.message}`);
+        throw uploadError;
+      }
+
+      // Step 3: Determine category
+      let category = 'general';
+      if (file.type.startsWith('image/')) category = 'image';
+      else if (file.type === 'application/pdf') category = 'pdf';
+      else if (file.type.includes('word')) category = 'word';
+      else if (file.type.includes('excel') || file.type.includes('spreadsheet')) category = 'excel';
+      else if (file.type.includes('powerpoint') || file.type.includes('presentation')) category = 'powerpoint';
+
+      // Step 4: Save metadata to database
+      console.log("🔍 Inserting document metadata:", {
+        filename: storedFilename,
+        original_filename: file.name,
+        file_type: file.type,
+        file_size: file.size,
+        storage_path: documentPath,
+        storage_bucket: 'documents',
+        category: category,
+        uploaded_by: session.user.id
+      });
+
+      const { data: dbData, error: dbError } = await (supabase as any)
+        .from('documents')
+        .insert({
+          filename: storedFilename,
+          original_filename: file.name,
+          file_type: file.type,
+          file_size: file.size,
+          storage_path: documentPath,
+          storage_bucket: 'documents',
+          category: category,
+          description: `Uploaded via Document Import on ${new Date().toLocaleDateString()}`,
+          uploaded_by: session.user.id,
+        })
+        .select();
+
+      console.log("🔍 Database insert result:", {
+        success: !dbError,
+        data: dbData,
+        error: dbError,
+        errorMessage: dbError?.message,
+        errorCode: dbError?.code,
+        errorDetails: dbError?.details,
+        errorHint: dbError?.hint
+      });
+
+      if (dbError) {
+        console.error("❌ Database insert failed:", dbError);
+        toast.error(`Database error: ${dbError.message} (Code: ${dbError.code})`);
+        throw dbError;
+      }
+
+      console.log("✅ Document saved successfully to Document Hub");
+      toast.success('Document saved to Document Hub');
 
       // Step 2: Parse the document and extract data
       let parsed: ParsedData;
@@ -351,11 +410,19 @@ export const DocumentUpload = ({
       toast.success('Document parsed successfully', {
         description: `Found ${tableCount} table(s) and ${imageCount} image(s) in the document`
       });
+      
+      console.log("🔍 ===== DOCUMENT UPLOAD DEBUG END =====");
     } catch (error) {
-      console.error('Error parsing document:', error);
+      console.error('❌ Error parsing document:', error);
+      console.error('❌ Full error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        error
+      });
       toast.error('Failed to parse document', {
         description: error instanceof Error ? error.message : 'Unknown error'
       });
+      console.log("🔍 ===== DOCUMENT UPLOAD DEBUG END (WITH ERROR) =====");
     } finally {
       setIsProcessing(false);
     }
