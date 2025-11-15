@@ -82,8 +82,6 @@ const DocumentHub = () => {
 
   useEffect(() => {
     fetchDocuments();
-    // One-time setup: Create storage policies if needed
-    setupStoragePolicies();
   }, []);
 
   const setupStoragePolicies = async () => {
