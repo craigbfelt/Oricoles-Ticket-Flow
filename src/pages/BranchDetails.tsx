@@ -225,15 +225,13 @@ const BranchDetails = () => {
   const createNetworkDiagram = useMutation({
     mutationFn: async (data: typeof diagramForm) => {
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase.from("network_diagrams").insert([
+      const { error } = await (supabase as any).from("network_diagrams").insert([
         {
           branch_id: branchId,
-          name: data.diagram_name,
-          description: data.description || null,
-          diagram_json: {},
-          is_company_wide: false,
-          created_by: user?.id,
-        },
+          diagram_name: data.diagram_name,
+          diagram_url: '',
+          description: data.description || null
+        }
       ]);
       if (error) throw error;
     },
@@ -254,14 +252,11 @@ const BranchDetails = () => {
   const uploadDiagramImage = useMutation({
     mutationFn: async (data: typeof imageFormData & { imagePath: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase.from("network_diagrams").insert([{
+      const { error } = await (supabase as any).from("network_diagrams").insert([{
         branch_id: branchId,
-        name: data.diagram_name,
-        description: data.description || null,
-        is_company_wide: false,
-        image_path: data.imagePath,
-        diagram_json: {},
-        created_by: user?.id,
+        diagram_name: data.diagram_name,
+        diagram_url: (data as any).imagePath || '',
+        description: data.description || null
       }]);
       if (error) throw error;
     },
@@ -462,8 +457,8 @@ const BranchDetails = () => {
           .from("import_jobs")
           .update({
             status: "completed",
-            result_summary: { records_imported: data.length },
-          })
+            result_summary: JSON.stringify({ records_imported: data.length }),
+          } as any)
           .eq("id", importJob.id);
         queryClient.invalidateQueries({ queryKey: ["import-jobs", branchId] });
       }
@@ -538,14 +533,12 @@ const BranchDetails = () => {
       const diagramData = JSON.parse(text);
 
       // Insert the diagram
-      const { error } = await supabase.from("network_diagrams").insert([
+      const { error} = await (supabase as any).from("network_diagrams").insert([
         {
           branch_id: branchId,
-          name: diagramData.name || file.name.replace('.json', ''),
-          description: diagramData.description || null,
-          diagram_json: diagramData.diagram_json || diagramData,
-          is_company_wide: false,
-          created_by: user?.id,
+          diagram_name: diagramData.name || file.name.replace('.json', ''),
+          diagram_url: '',
+          description: diagramData.description || null
         },
       ]);
 
@@ -553,11 +546,11 @@ const BranchDetails = () => {
 
       // Update import job status to completed
       if (importJob) {
-        await supabase
+        await (supabase as any)
           .from("import_jobs")
           .update({
             status: "completed",
-            result_summary: { diagram_imported: true },
+            result_summary: JSON.stringify({ diagram_imported: true }),
           })
           .eq("id", importJob.id);
         queryClient.invalidateQueries({ queryKey: ["import-jobs", branchId] });

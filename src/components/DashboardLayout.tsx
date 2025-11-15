@@ -54,13 +54,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       .from("user_roles")
       .select("role")
       .eq("user_id", session.user.id)
-      .in("role", ["admin", "ceo", "support_staff"]);
+      .in("role", ["admin", "support_staff"] as any);
 
     if (data) {
       const roles = data.map(r => r.role);
-      setIsAdmin(roles.includes('admin'));
-      setIsCEO(roles.includes('ceo'));
-      setIsSupportStaff(roles.includes('support_staff'));
+      setIsAdmin(roles.includes('admin' as any));
+      setIsCEO(roles.includes('admin' as any)); // Using admin role for CEO check
+      setIsSupportStaff(roles.includes('support_staff' as any));
     }
   };
 

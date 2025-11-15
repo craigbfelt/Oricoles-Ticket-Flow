@@ -500,7 +500,7 @@ const Branches = () => {
         throw new Error("No valid diagrams to import. Please check branch names.");
       }
 
-      const { error } = await supabase.from("network_diagrams").insert(diagrams);
+      const { error } = await (supabase as any).from("network_diagrams").insert(diagrams);
       if (error) throw error;
 
       toast({

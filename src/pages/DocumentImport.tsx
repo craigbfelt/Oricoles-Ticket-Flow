@@ -358,14 +358,14 @@ const DocumentImport = () => {
       }
 
       // Update job status to completed
-      await supabase
+      await (supabase as any)
         .from("import_jobs")
         .update({
           status: "completed",
-          result_summary: {
+          result_summary: JSON.stringify({
             records_imported: records.length,
             table_index: selectedTable,
-          },
+          }),
         })
         .eq("id", importJob.id);
 

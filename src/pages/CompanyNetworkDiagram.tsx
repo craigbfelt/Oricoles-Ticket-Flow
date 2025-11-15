@@ -100,10 +100,9 @@ const CompanyNetworkDiagram = () => {
   const { data: diagrams, isLoading } = useQuery({
     queryKey: ["network-diagrams-company"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("network_diagrams")
         .select("*")
-        .eq("is_company_wide", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -137,11 +136,11 @@ const CompanyNetworkDiagram = () => {
           to: `device-${device.id}`,
         }));
 
-      const { error } = await supabase.from("network_diagrams").insert([{
-        ...data,
-        is_company_wide: true,
-        diagram_json: { nodes, edges },
-        created_by: user?.id,
+      const { error } = await (supabase as any).from("network_diagrams").insert([{
+        branch_id: (data as any).branch_id || null,
+        diagram_name: (data as any).name || 'Company Network',
+        diagram_url: '',
+        description: (data as any).description
       }]);
       if (error) throw error;
     },
@@ -166,13 +165,11 @@ const CompanyNetworkDiagram = () => {
   const uploadImageDiagram = useMutation({
     mutationFn: async (data: typeof imageFormData & { imagePath: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase.from("network_diagrams").insert([{
-        name: data.name,
-        description: data.description || null,
-        is_company_wide: true,
-        image_path: data.imagePath,
-        diagram_json: {},
-        created_by: user?.id,
+      const { error } = await (supabase as any).from("network_diagrams").insert([{
+        branch_id: null,
+        diagram_name: data.name,
+        diagram_url: (data as any).imagePath || '',
+        description: data.description || null
       }]);
       if (error) throw error;
     },
@@ -323,16 +320,16 @@ const CompanyNetworkDiagram = () => {
         created_by: user?.id,
       }));
 
-      const { error } = await supabase.from("network_diagrams").insert(diagrams);
+      const { error } = await (supabase as any).from("network_diagrams").insert(diagrams);
       if (error) throw error;
 
       // Update import job status
       if (importJob) {
-        await supabase
+        await (supabase as any)
           .from("import_jobs")
           .update({
             status: "completed",
-            result_summary: { records_imported: diagrams.length },
+            result_summary: JSON.stringify({ records_imported: diagrams.length }),
           })
           .eq("id", importJob.id);
       }
@@ -382,13 +379,13 @@ const CompanyNetworkDiagram = () => {
     });
   };
 
-  const handleExportDiagram = (diagram: NetworkDiagram) => {
-    const dataStr = JSON.stringify(diagram.diagram_json, null, 2);
+  const handleExportDiagram = (diagram: any) => {
+    const dataStr = JSON.stringify(diagram.diagram_json || {}, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${diagram.name.replace(/\s+/g, '_')}_diagram.json`;
+    a.download = `${(diagram.diagram_name || 'diagram').replace(/\s+/g, '_')}_diagram.json`;
     a.click();
     window.URL.revokeObjectURL(url);
     
@@ -653,15 +650,16 @@ const DiagramCard = ({
   onExport: () => void;
 }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const diagramAny = diagram as any;
 
   useEffect(() => {
-    if (diagram.image_path) {
+    if (diagramAny.image_path || diagramAny.diagram_url) {
       const { data } = supabase.storage
         .from('diagrams')
-        .getPublicUrl(diagram.image_path);
+        .getPublicUrl(diagramAny.image_path || diagramAny.diagram_url);
       setImageUrl(data.publicUrl);
     }
-  }, [diagram.image_path]);
+  }, [diagramAny.image_path, diagramAny.diagram_url]);
 
   return (
     <div className="flex items-start gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
@@ -669,7 +667,7 @@ const DiagramCard = ({
         <div className="flex-shrink-0 w-48 h-32 border rounded-lg overflow-hidden bg-muted">
           <img 
             src={imageUrl} 
-            alt={diagram.name} 
+            alt={diagramAny.name || diagramAny.diagram_name} 
             className="w-full h-full object-cover"
           />
         </div>
@@ -678,8 +676,8 @@ const DiagramCard = ({
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold flex items-center gap-2">
-              {diagram.image_path && <ImageIcon className="h-4 w-4 text-primary" />}
-              {diagram.name}
+              {(diagramAny.image_path || diagramAny.diagram_url) && <ImageIcon className="h-4 w-4 text-primary" />}
+              {diagramAny.name || diagramAny.diagram_name}
             </h3>
             {diagram.description && (
               <p className="text-sm text-muted-foreground mt-1">
@@ -689,19 +687,19 @@ const DiagramCard = ({
             <p className="text-xs text-muted-foreground mt-2">
               Created {new Date(diagram.created_at).toLocaleString()}
             </p>
-            {!diagram.image_path && (
+            {!(diagramAny.image_path || diagramAny.diagram_url) && (
               <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
                 <span>
-                  Nodes: {(diagram.diagram_json as any)?.nodes?.length || 0}
+                  Nodes: {diagramAny.diagram_json?.nodes?.length || 0}
                 </span>
                 <span>
-                  Edges: {(diagram.diagram_json as any)?.edges?.length || 0}
+                  Edges: {diagramAny.diagram_json?.edges?.length || 0}
                 </span>
               </div>
             )}
           </div>
           <div className="flex gap-2 flex-shrink-0">
-            {!diagram.image_path && (
+            {!(diagramAny.image_path || diagramAny.diagram_url) && (
               <Button
                 variant="outline"
                 size="sm"

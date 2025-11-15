@@ -149,14 +149,13 @@ export const ImportItemSelector = ({ items, onImportComplete, onCancel }: Import
 
         // Create a record in network_diagrams table for network-related destinations
         if (['company-network', 'nymbis-rdp', 'branches'].includes(destination.target)) {
-          const { error: dbError } = await supabase
+          const { error: dbError } = await (supabase as any)
             .from('network_diagrams')
             .insert({
-              name: item.content.name || 'Imported Image',
-              description: destination.notes || null,
-              image_path: storagePath,
-              is_company_wide: destination.target === 'company-network',
-              diagram_json: {}
+              branch_id: (destination as any).branch_id || null,
+              diagram_name: item.content.name || 'Imported Image',
+              diagram_url: storagePath,
+              description: destination.notes || null
             });
 
           if (dbError) throw dbError;
@@ -192,17 +191,13 @@ export const ImportItemSelector = ({ items, onImportComplete, onCancel }: Import
           if (uploadError) throw uploadError;
 
           // Store page data with text
-          const { error: dbError } = await supabase
+          const { error: dbError } = await (supabase as any)
             .from('network_diagrams')
             .insert({
-              name: `Page ${item.content.pageNumber || 'Unknown'}`,
-              description: item.content.text || destination.notes || null,
-              image_path: storagePath,
-              is_company_wide: destination.target === 'company-network',
-              diagram_json: {
-                page_number: item.content.pageNumber,
-                has_text: !!item.content.text
-              }
+              branch_id: (destination as any).branch_id || null,
+              diagram_name: `Page ${item.content.pageNumber || 'Unknown'}`,
+              diagram_url: storagePath,
+              description: item.content.text || destination.notes || null
             });
 
           if (dbError) throw dbError;

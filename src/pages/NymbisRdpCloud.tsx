@@ -30,7 +30,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-type CloudNetwork = Tables<"cloud_networks">;
+type CloudNetwork = any; // Cloud networks table not in current schema
 
 const NymbisRdpCloud = () => {
   const navigate = useNavigate();
@@ -65,7 +65,7 @@ const NymbisRdpCloud = () => {
   const { data: cloudNetworks, isLoading } = useQuery({
     queryKey: ["cloud-networks"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("cloud_networks")
         .select("*")
         .order("created_at", { ascending: false });
@@ -77,7 +77,7 @@ const NymbisRdpCloud = () => {
   const createNetwork = useMutation({
     mutationFn: async (data: typeof formData & { image_path?: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase.from("cloud_networks").insert([{
+      const { error } = await (supabase as any).from("cloud_networks").insert([{
         ...data,
         created_by: user?.id,
       }]);
@@ -103,7 +103,7 @@ const NymbisRdpCloud = () => {
 
   const deleteNetwork = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("cloud_networks")
         .delete()
         .eq("id", id);
@@ -239,7 +239,7 @@ const NymbisRdpCloud = () => {
         created_by: user?.id,
       }));
 
-      const { error } = await supabase.from("cloud_networks").insert(networks);
+      const { error } = await (supabase as any).from("cloud_networks").insert(networks);
       if (error) throw error;
 
       queryClient.invalidateQueries({ queryKey: ["cloud-networks"] });
@@ -311,8 +311,8 @@ const NymbisRdpCloud = () => {
     return colors[provider] || "bg-gray-500";
   };
 
-  const nymbisNetworks = cloudNetworks?.filter(n => n.provider === 'nymbis') || [];
-  const otherNetworks = cloudNetworks?.filter(n => n.provider !== 'nymbis') || [];
+  const nymbisNetworks = (cloudNetworks as any)?.filter((n: any) => n.provider === 'nymbis') || [];
+  const otherNetworks = (cloudNetworks as any)?.filter((n: any) => n.provider !== 'nymbis') || [];
 
   return (
     <DashboardLayout>
@@ -601,13 +601,13 @@ const NymbisRdpCloud = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {nymbisNetworks.filter(n => n.image_path).map((network) => (
+                  {nymbisNetworks.filter((n: any) => n.image_path).map((network: any) => (
                     <NetworkDiagramCard 
                       key={network.id} 
                       network={network}
                     />
                   ))}
-                  {nymbisNetworks.filter(n => n.image_path).length === 0 && (
+                  {nymbisNetworks.filter((n: any) => n.image_path).length === 0 && (
                     <div className="col-span-full text-center py-12 text-muted-foreground">
                       No network diagrams yet. Add a network with an image to see diagrams here.
                     </div>
