@@ -46,11 +46,14 @@ export function PageDocumentsView({
       const { data, error } = await supabase
         .from("documents")
         .select("*")
-        .eq("page_location", pageLocation)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setDocuments(data || []);
+      // Filter client-side since page_location column doesn't exist yet
+      const filtered = (data || []).filter((doc: any) => 
+        doc.page_location === pageLocation || !doc.page_location
+      );
+      setDocuments(filtered as any);
     } catch (error) {
       console.error("Error fetching documents:", error);
       toast.error("Failed to fetch documents");

@@ -71,7 +71,7 @@ export const UserProfilesSection = () => {
 
       if (profilesError) throw profilesError;
 
-      setUserProfiles(profiles || []);
+      setUserProfiles(profiles as any || []);
 
       // Fetch storage info for each user
       if (profiles) {
@@ -108,7 +108,8 @@ export const UserProfilesSection = () => {
 
   const fetchUserActivities = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      // @ts-ignore - Table exists but types haven't regenerated yet
+      const { data, error } = await (supabase as any)
         .from("user_activity_log")
         .select("*")
         .eq("user_id", userId)

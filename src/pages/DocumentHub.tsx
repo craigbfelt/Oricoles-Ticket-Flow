@@ -368,7 +368,7 @@ const DocumentHub = () => {
           moved_from: selectedDocument.page_location || "general",
           moved_at: new Date().toISOString(),
           moved_by: session.user.id,
-        })
+        } as any)
         .eq("id", selectedDocument.id);
 
       if (error) throw error;

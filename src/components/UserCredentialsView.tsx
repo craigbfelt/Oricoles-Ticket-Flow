@@ -47,7 +47,7 @@ export const UserCredentialsView = ({
           vpn_password: editVpnPassword || null,
           rdp_username: editRdpUsername || null,
           rdp_password: editRdpPassword || null,
-        })
+        } as any)
         .eq("user_id", userId);
 
       if (error) throw error;

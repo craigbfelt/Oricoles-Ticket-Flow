@@ -21,6 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AddStaffMemberDialog } from "@/components/AddStaffMemberDialog";
 import { ManageLicensesDialog } from "@/components/ManageLicensesDialog";
 import { AddSystemUserDialog } from "@/components/AddSystemUserDialog";
+import { ImportSystemUsersDialog } from "@/components/ImportSystemUsersDialog";
 
 interface DirectoryUser {
   id: string;

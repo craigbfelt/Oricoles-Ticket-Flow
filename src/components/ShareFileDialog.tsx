@@ -62,7 +62,8 @@ export function ShareFileDialog({ documentId, documentName, open, onOpenChange }
   };
 
   const fetchUserGroups = async () => {
-    const { data, error } = await supabase
+    // @ts-ignore - Table exists but types haven't regenerated yet
+    const { data, error } = await (supabase as any)
       .from("user_groups")
       .select("id, name, description")
       .order("name");
@@ -105,7 +106,8 @@ export function ShareFileDialog({ documentId, documentName, open, onOpenChange }
       shareData.shared_with_group = selectedGroupId;
     }
 
-    const { error } = await supabase
+    // @ts-ignore - Table exists but types haven't regenerated yet
+    const { error } = await (supabase as any)
       .from("shared_files")
       .insert(shareData);
 

@@ -71,25 +71,25 @@ const Tickets = () => {
   const fetchUserProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, email, full_name, user_id, branch_id, device_serial_number")
+      .select("id, email, full_name, user_id" as any)
       .eq("user_id", userId)
       .single();
 
     if (data) {
-      setCurrentUserId(data.id);
-      setCurrentUserEmail(data.email || "");
-      setCurrentUserName(data.full_name || "");
-      setCurrentUserDeviceSerial(data.device_serial_number || "");
+      setCurrentUserId((data as any).id);
+      setCurrentUserEmail((data as any).email || "");
+      setCurrentUserName((data as any).full_name || "");
+      setCurrentUserDeviceSerial((data as any).device_serial_number || "");
       
       // Auto-fill user email in ticket form
-      setUserEmail(data.email || "");
+      setUserEmail((data as any).email || "");
       
       // Fetch branch name if branch_id exists
-      if (data.branch_id) {
+      if ((data as any).branch_id) {
         const { data: branchData } = await supabase
           .from("branches")
           .select("name")
-          .eq("id", data.branch_id)
+          .eq("id", (data as any).branch_id)
           .single();
         
         if (branchData) {

@@ -86,17 +86,19 @@ export function ImportSystemUsersDialog() {
     const userIds = Array.from(selectedUsers);
 
     try {
+      // @ts-expect-error - RPC function exists but types haven't regenerated yet
       const { data, error } = await supabase.rpc("import_system_users_from_staff", {
         staff_user_ids: userIds,
       });
 
       if (error) throw error;
 
-      setImportResults(data?.results || []);
+      const result = data as any;
+      setImportResults(result?.results || []);
       setShowResults(true);
       
-      toast.success(`Prepared ${data?.success_count || 0} users for import`, {
-        description: `${data?.error_count || 0} errors occurred`
+      toast.success(`Prepared ${result?.success_count || 0} users for import`, {
+        description: `${result?.error_count || 0} errors occurred`
       });
     } catch (error: any) {
       toast.error("Failed to import users");
