@@ -95,14 +95,13 @@ export const DocumentImporter = ({
       const document = documents.find(d => d.id === selectedDocument);
       if (!document) return;
 
-      // Update the document's page_location
+      // Update the document metadata (removed page_location - not in schema)
       const { error } = await supabase
         .from("documents")
         .update({
-          page_location: targetPage,
-          moved_from: document.page_location || "document_hub",
-          moved_at: new Date().toISOString(),
-        })
+          category: targetPage,
+          updated_at: new Date().toISOString(),
+        } as any)
         .eq("id", selectedDocument);
 
       if (error) throw error;

@@ -156,7 +156,7 @@ const SharedFiles = () => {
       const { data, error } = await query.order("name");
 
       if (error) throw error;
-      setFolders(data || []);
+      setFolders((data as any) || []);
       
       // Build folder path
       if (currentFolderId) {
@@ -183,8 +183,8 @@ const SharedFiles = () => {
 
         if (error) throw error;
         if (data) {
-          path.unshift(data);
-          currentId = data.parent_folder_id;
+          path.unshift(data as any);
+          currentId = (data as any).parent_folder_id;
         } else {
           break;
         }
@@ -211,7 +211,7 @@ const SharedFiles = () => {
       const { data, error } = await query.order("original_filename");
 
       if (error) throw error;
-      setFiles(data || []);
+      setFiles((data as any) || []);
     } catch (error) {
       console.error("Error fetching files:", error);
     }
@@ -219,13 +219,14 @@ const SharedFiles = () => {
 
   const fetchUserGroups = async () => {
     try {
-      const { data, error } = await supabase
+      // @ts-ignore - Types will regenerate after migration
+      const { data, error } = await (supabase as any)
         .from("user_groups")
         .select("*")
         .order("name");
 
       if (error) throw error;
-      setUserGroups(data || []);
+      setUserGroups((data as any) || []);
     } catch (error) {
       console.error("Error fetching user groups:", error);
     }
@@ -359,7 +360,7 @@ const SharedFiles = () => {
     try {
       const { data, error } = await supabase.storage
         .from('documents')
-        .download(file.storage_path);
+        .download((file as any).storage_path);
 
       if (error) throw error;
 
@@ -619,7 +620,7 @@ const SharedFiles = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => deleteFile(file.id, file.storage_path)}
+                              onClick={() => deleteFile(file.id, (file as any).storage_path)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

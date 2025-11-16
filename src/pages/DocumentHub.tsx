@@ -360,14 +360,13 @@ const DocumentHub = () => {
         return;
       }
 
-      // Update the document's page_location and track the move
+      // Update the document category to track location
       const { error } = await supabase
         .from("documents")
         .update({
-          page_location: destination,
-          moved_from: selectedDocument.page_location || "document_hub",
-          moved_at: new Date().toISOString(),
-        })
+          category: destination,
+          updated_at: new Date().toISOString(),
+        } as any)
         .eq("id", selectedDocument.id);
 
       if (error) {
