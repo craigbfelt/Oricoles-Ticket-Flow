@@ -29,6 +29,7 @@ import Logistics from "./pages/Logistics";
 import NymbisRdpCloud from "./pages/NymbisRdpCloud";
 import CompanyNetworkDiagram from "./pages/CompanyNetworkDiagram";
 import DocumentHub from "./pages/DocumentHub";
+import SharedFiles from "./pages/SharedFiles";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -67,6 +68,7 @@ const App = () => (
           <Route path="/nymbis-rdp-cloud" element={<NymbisRdpCloud />} />
           <Route path="/company-network" element={<CompanyNetworkDiagram />} />
           <Route path="/document-hub" element={<DocumentHub />} />
+          <Route path="/shared-files" element={<SharedFiles />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

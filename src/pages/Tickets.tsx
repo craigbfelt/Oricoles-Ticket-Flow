@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FaultTypeSelector } from "@/components/FaultTypeSelector";
 
 const Tickets = () => {
   const navigate = useNavigate();
@@ -561,7 +562,7 @@ const Tickets = () => {
                   New Ticket
                 </Button>
               </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create New Ticket</DialogTitle>
               </DialogHeader>
@@ -593,20 +594,11 @@ const Tickets = () => {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="faultType">Fault Type</Label>
-                  <Select value={faultType} onValueChange={setFaultType} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select fault type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="RDP">RDP Server</SelectItem>
-                      <SelectItem value="CDrive">C Drive (My PC)</SelectItem>
-                      <SelectItem value="VPN">VPN</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <FaultTypeSelector 
+                  value={faultType} 
+                  onChange={setFaultType} 
+                  required 
+                />
 
                 <div className="space-y-2">
                   <Label htmlFor="title">Fault Title</Label>

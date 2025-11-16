@@ -365,13 +365,15 @@ const DocumentHub = () => {
         .from("documents")
         .update({
           page_location: destination,
-          moved_from: selectedDocument.page_location || "general",
+          moved_from: selectedDocument.page_location || "document_hub",
           moved_at: new Date().toISOString(),
-          moved_by: session.user.id,
-        } as any)
+        })
         .eq("id", selectedDocument.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Move error:", error);
+        throw error;
+      }
       
       toast.success(`Document moved to ${destination} successfully`, {
         description: `"${selectedDocument.original_filename}" is now available in ${destination}`
@@ -382,7 +384,9 @@ const DocumentHub = () => {
       fetchDocuments();
     } catch (error) {
       console.error("Error moving document:", error);
-      toast.error("Failed to move document");
+      toast.error("Failed to move document", {
+        description: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   };
 

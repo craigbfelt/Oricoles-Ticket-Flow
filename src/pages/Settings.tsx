@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, Copy, ExternalLink, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ThemeCustomizer } from "@/components/ThemeCustomizer";
+import DashboardLayout from "@/components/DashboardLayout";
 
 const Settings = () => {
   const { toast } = useToast();
@@ -52,12 +55,25 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-          <p className="text-gray-600 mt-2">View your Supabase connection and configuration details</p>
-        </div>
+    <DashboardLayout>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+            <p className="text-gray-600 mt-2">Customize your dashboard and view configuration details</p>
+          </div>
+
+          <Tabs defaultValue="theme" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="theme">Theme & Appearance</TabsTrigger>
+              <TabsTrigger value="connection">Connection Status</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="theme" className="space-y-6">
+              <ThemeCustomizer />
+            </TabsContent>
+
+            <TabsContent value="connection" className="space-y-6">
 
         {/* Connection Status Card */}
         <Card>
@@ -257,8 +273,11 @@ const Settings = () => {
             </div>
           </CardContent>
         </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
