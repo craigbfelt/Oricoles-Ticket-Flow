@@ -1,22 +1,22 @@
 project_id = "kwmeqvrmtivmljujwocp"
 
 [functions.route-ticket-email]
-verify_jwt = false
+verify_jwt = true  # SECURITY: Require authentication to prevent email spam/XSS
 
 [functions.sync-microsoft-365]
-verify_jwt = false
+verify_jwt = true  # SECURITY: Prevent unauthorized Microsoft API calls
 
 [functions.register-remote-client]
-verify_jwt = false
+verify_jwt = true  # SECURITY: Prevent unauthorized client registration
 
 [functions.send-staff-onboarding-email]
-verify_jwt = false
+verify_jwt = true  # SECURITY: Prevent email spam
 
 [functions.resend-provider-email]
-verify_jwt = false
+verify_jwt = true  # SECURITY: Prevent email abuse
 
 [functions.confirm-provider-task]
-verify_jwt = false
+verify_jwt = true  # SECURITY: Require authentication for task confirmations
 
 [functions.storage-admin-operations]
-verify_jwt = false
+verify_jwt = true  # SECURITY: Require authentication for admin operations
