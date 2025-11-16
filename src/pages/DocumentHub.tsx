@@ -150,7 +150,11 @@ const DocumentHub = () => {
       // Upload file to storage
       const { error: uploadError } = await supabase.storage
         .from('documents')
-        .upload(filePath, uploadFile);
+        .upload(filePath, uploadFile, {
+          metadata: {
+            owner: session.user.id
+          }
+        });
 
       if (uploadError) {
         logUploadError('documents', uploadError.message, JSON.stringify(uploadError, null, 2));

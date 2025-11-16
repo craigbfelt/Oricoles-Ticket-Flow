@@ -315,13 +315,27 @@ const BranchDetails = () => {
       return;
     }
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to upload files",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const fileExt = selectedDiagramImage.name.split('.').pop();
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
     const filePath = `branch-diagrams/${branchId}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from('diagrams')
-      .upload(filePath, selectedDiagramImage);
+      .upload(filePath, selectedDiagramImage, {
+        metadata: {
+          owner: user.id
+        }
+      });
 
     if (uploadError) {
       toast({

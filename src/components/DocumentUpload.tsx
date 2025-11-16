@@ -130,6 +130,13 @@ export const DocumentUpload = ({
 
   const uploadImageToStorage = async (dataUrl: string, fileName: string): Promise<string | null> => {
     try {
+      // Get current user for metadata
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('User must be logged in to upload images');
+        return null;
+      }
+
       // Convert data URL to blob
       const response = await fetch(dataUrl);
       const blob = await response.blob();
@@ -138,7 +145,11 @@ export const DocumentUpload = ({
       
       const { error } = await supabase.storage
         .from('diagrams')
-        .upload(filePath, blob);
+        .upload(filePath, blob, {
+          metadata: {
+            owner: user.id
+          }
+        });
       
       if (error) {
         console.error('Error uploading image:', error);
@@ -262,7 +273,11 @@ export const DocumentUpload = ({
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('documents' as any)
-        .upload(documentPath, file);
+        .upload(documentPath, file, {
+          metadata: {
+            owner: session.user.id
+          }
+        });
 
       console.log("🔍 Storage upload result:", {
         success: !uploadError,

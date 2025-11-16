@@ -98,6 +98,13 @@ export const ImportItemSelector = ({ items, onImportComplete, onCancel }: Import
 
   const uploadItemToDestination = async (item: ImportItem, destination: ImportDestination): Promise<boolean> => {
     try {
+      // Get the current user for metadata
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('You must be logged in to upload files');
+        return false;
+      }
+
       if (item.type === 'image' && item.content.dataUrl) {
         // Convert image format if needed
         let dataUrl = item.content.dataUrl;
@@ -142,7 +149,10 @@ export const ImportItemSelector = ({ items, onImportComplete, onCancel }: Import
           .from(bucket)
           .upload(storagePath, blob, {
             upsert: false,
-            contentType: blob.type
+            contentType: blob.type,
+            metadata: {
+              owner: user.id
+            }
           });
 
         if (uploadError) throw uploadError;
@@ -185,7 +195,10 @@ export const ImportItemSelector = ({ items, onImportComplete, onCancel }: Import
             .from(bucket)
             .upload(storagePath, blob, {
               upsert: false,
-              contentType: blob.type
+              contentType: blob.type,
+              metadata: {
+                owner: user.id
+              }
             });
 
           if (uploadError) throw uploadError;

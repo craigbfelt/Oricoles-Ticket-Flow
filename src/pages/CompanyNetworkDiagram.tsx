@@ -254,13 +254,27 @@ const CompanyNetworkDiagram = () => {
       return;
     }
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to upload files",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const fileExt = selectedImage.name.split('.').pop();
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
     const filePath = `company-network/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from('diagrams')
-      .upload(filePath, selectedImage);
+      .upload(filePath, selectedImage, {
+        metadata: {
+          owner: user.id
+        }
+      });
 
     if (uploadError) {
       toast({
