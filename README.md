@@ -12,6 +12,18 @@ A modern, professional helpdesk and asset management system built with React, Ty
 1. **Edit code on GitHub** - Make changes here and commit them
 2. **Lovable syncs automatically** - Your changes appear in Lovable
 3. **App updates live** - The app running on Lovable updates with your changes
+4. **Apply database changes** - If migrations are included, run `npm run migrate`
+
+### 🔄 Database Migrations (Important!)
+When pulling code from GitHub that includes database changes:
+```bash
+npm run migrate
+```
+
+**Documentation**:
+- **[MIGRATION_QUICKSTART.md](./MIGRATION_QUICKSTART.md)** - Quick start guide for Lovable users
+- **[MIGRATION_CHEATSHEET.md](./MIGRATION_CHEATSHEET.md)** - Command reference
+- **[SUPABASE_MIGRATIONS.md](./SUPABASE_MIGRATIONS.md)** - Complete migration guide
 
 ### Additional Setup Options:
 - **Local Development** (optional) - See [LOCAL_SETUP.md](./LOCAL_SETUP.md)
@@ -110,14 +122,21 @@ A modern, professional helpdesk and asset management system built with React, Ty
    
    Get these from your free Supabase project at [supabase.com](https://supabase.com)
 
-4. **Start the development server**
+4. **Apply Database Migrations**
+   ```sh
+   npm run migrate
+   ```
+   
+   This applies all database schema changes. See [SUPABASE_MIGRATIONS.md](./SUPABASE_MIGRATIONS.md) for details.
+
+5. **Start the development server**
    ```sh
    npm run dev
    ```
    
    The app will be available at http://localhost:8080
 
-5. **Build for production**
+6. **Build for production**
    ```sh
    npm run build
    ```
@@ -301,10 +320,25 @@ oricol-ticket-flow/
 
 ## Available Scripts
 
+### Development
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
+
+### Database Migrations
+- `npm run migrate` - Apply pending migrations (interactive)
+- `npm run migrate:status` - Check migration status
+- `npm run migrate:apply` - Apply pending migrations
+- `npm run migrate:new [name]` - Create new migration file
+
+### Supabase CLI
+- `npm run supabase:start` - Start local Supabase instance
+- `npm run supabase:stop` - Stop local Supabase instance
+- `npm run supabase:status` - Check local Supabase status
+- `npm run supabase:link` - Link to remote Supabase project
+
+**📖 For complete migration guide, see [SUPABASE_MIGRATIONS.md](./SUPABASE_MIGRATIONS.md)**
 
 ## Database Migrations
 

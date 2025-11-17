@@ -9,7 +9,16 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "postinstall": "node scripts/postinstall.cjs"
+    "postinstall": "node scripts/postinstall.cjs",
+    "migrate": "bash scripts/apply-migrations.sh",
+    "migrate:help": "bash scripts/migrate-supabase.sh help",
+    "migrate:status": "npx supabase migration list",
+    "migrate:apply": "npx supabase db push",
+    "migrate:new": "npx supabase migration new",
+    "supabase:start": "npx supabase start",
+    "supabase:stop": "npx supabase stop",
+    "supabase:status": "npx supabase status",
+    "supabase:link": "npx supabase link"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
