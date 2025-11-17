@@ -75,9 +75,12 @@ interface SharedFile {
   filename: string;
   original_filename: string;
   file_size: number;
-  folder_id: string;
-  uploaded_by: string;
+  file_type: string;
+  storage_path: string;
+  folder_id: string | null;
+  uploaded_by: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 interface UserGroup {
@@ -146,7 +149,7 @@ const SharedFiles = () => {
     
     try {
       const query = supabase
-        .from("shared_folders" as any)
+        .from("shared_folders")
         .select("*");
 
       if (currentFolderId) {
@@ -170,7 +173,7 @@ const SharedFiles = () => {
       }
       
       console.log("SharedFiles: Fetched folders:", data?.length || 0);
-      setFolders((data as any) || []);
+      setFolders(data || []);
       
       // Build folder path
       if (currentFolderId) {
@@ -191,15 +194,15 @@ const SharedFiles = () => {
 
       while (currentId) {
         const { data, error } = await supabase
-          .from("shared_folders" as any)
+          .from("shared_folders")
           .select("*")
           .eq("id", currentId)
           .single();
 
         if (error) throw error;
         if (data) {
-          path.unshift(data as any);
-          currentId = (data as any).parent_folder_id;
+          path.unshift(data);
+          currentId = data.parent_folder_id;
         } else {
           break;
         }
@@ -214,7 +217,7 @@ const SharedFiles = () => {
   const fetchFiles = async () => {
     try {
       const query = supabase
-        .from("shared_folder_files" as any)
+        .from("shared_folder_files")
         .select("*");
 
       if (currentFolderId) {
@@ -226,7 +229,7 @@ const SharedFiles = () => {
       const { data, error } = await query.order("original_filename");
 
       if (error) throw error;
-      setFiles((data as any) || []);
+      setFiles(data || []);
     } catch (error) {
       console.error("Error fetching files:", error);
     }
@@ -234,14 +237,13 @@ const SharedFiles = () => {
 
   const fetchUserGroups = async () => {
     try {
-      // @ts-ignore - Types will regenerate after migration
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("user_groups")
         .select("*")
         .order("name");
 
       if (error) throw error;
-      setUserGroups((data as any) || []);
+      setUserGroups(data || []);
     } catch (error) {
       console.error("Error fetching user groups:", error);
     }
@@ -297,7 +299,7 @@ const SharedFiles = () => {
       console.log("SharedFiles: Attempting to insert folder into shared_folders table");
 
       const { error } = await supabase
-        .from("shared_folders" as any)
+        .from("shared_folders")
         .insert({
           name: newFolderName,
           description: newFolderDescription || null,
@@ -402,7 +404,7 @@ const SharedFiles = () => {
       console.log("SharedFiles: File uploaded to storage, creating database record");
 
       const { error: dbError } = await supabase
-        .from("shared_folder_files" as any)
+        .from("shared_folder_files")
         .insert({
           filename: filename,
           original_filename: selectedFile.name,
@@ -447,7 +449,7 @@ const SharedFiles = () => {
 
     try {
       const { error } = await supabase
-        .from("shared_folders" as any)
+        .from("shared_folders")
         .delete()
         .eq("id", folderId);
 
@@ -472,7 +474,7 @@ const SharedFiles = () => {
       if (storageError) throw storageError;
 
       const { error: dbError } = await supabase
-        .from("shared_folder_files" as any)
+        .from("shared_folder_files")
         .delete()
         .eq("id", fileId);
 
@@ -490,7 +492,7 @@ const SharedFiles = () => {
     try {
       const { data, error } = await supabase.storage
         .from('documents')
-        .download((file as any).storage_path);
+        .download(file.storage_path);
 
       if (error) throw error;
 
@@ -750,7 +752,7 @@ const SharedFiles = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => deleteFile(file.id, (file as any).storage_path)}
+                              onClick={() => deleteFile(file.id, file.storage_path)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
