@@ -448,9 +448,9 @@ const SharedFiles = () => {
     if (!confirm("Are you sure you want to delete this folder?")) return;
 
     try {
-      const { error } = await supabase
-        .from("shared_folders")
-        .delete()
+    const { error } = await supabase
+      .from("shared_folders" as any)
+      .delete()
         .eq("id", folderId);
 
       if (error) throw error;
