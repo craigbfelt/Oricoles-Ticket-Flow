@@ -33,11 +33,18 @@ When pulling code from GitHub that includes database changes:
 npm run migrate
 ```
 
+**Database Detection & Diagnostics**:
+- **⭐ [DATABASE_DETECTION_GUIDE.md](./DATABASE_DETECTION_GUIDE.md)** - **Comprehensive 8-step detection guide**
+- **⭐ [DB_DETECTION_QUICK_REFERENCE.md](./DB_DETECTION_QUICK_REFERENCE.md)** - **Quick reference card**
+- Run automated diagnostic: `npm run detect:db`
+- Detection query files in `db/detection-queries/`
+
 **All Documentation**:
 - **[LOVABLE_START_HERE.md](./LOVABLE_START_HERE.md)** - Start here for Lovable users
 - **[LOVABLE_SQL_EDITING_GUIDE.md](./LOVABLE_SQL_EDITING_GUIDE.md)** - Edit SQL on Lovable (no CLI)
 - **[LOVABLE_SQL_CHEATSHEET.md](./LOVABLE_SQL_CHEATSHEET.md)** - Quick reference cheat sheet
 - **[LOVABLE_SQL_FAQ.md](./LOVABLE_SQL_FAQ.md)** - Frequently asked questions
+- **[DATABASE_DETECTION_GUIDE.md](./DATABASE_DETECTION_GUIDE.md)** - Database detection guide
 - **[MIGRATION_QUICKSTART.md](./MIGRATION_QUICKSTART.md)** - Quick start guide
 - **[MIGRATION_CHEATSHEET.md](./MIGRATION_CHEATSHEET.md)** - Command reference
 - **[SUPABASE_MIGRATIONS.md](./SUPABASE_MIGRATIONS.md)** - Complete migration guide

@@ -18,7 +18,8 @@
     "supabase:start": "npx supabase start",
     "supabase:stop": "npx supabase stop",
     "supabase:status": "npx supabase status",
-    "supabase:link": "npx supabase link"
+    "supabase:link": "npx supabase link",
+    "detect:db": "bash scripts/detect-database.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
