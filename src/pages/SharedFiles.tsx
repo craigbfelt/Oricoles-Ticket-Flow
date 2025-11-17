@@ -314,18 +314,28 @@ const SharedFiles = () => {
         });
         
         let errorDescription = error.message;
+        let troubleshootingSteps = "";
+        
         if (error.code === "42501") {
-          errorDescription = "Permission denied. You may not have the required admin privileges. Please check your user roles.";
+          errorDescription = "Permission denied - you do not have the required admin privileges.";
+          troubleshootingSteps = "\n\nTroubleshooting:\n1. Verify you have 'admin' role in user_roles table\n2. Contact your system administrator to grant admin access\n3. Check that RLS policies are properly configured";
         } else if (error.code === "23505") {
-          errorDescription = "A folder with this name already exists in this location. Please choose a different name.";
+          errorDescription = "A folder with this name already exists in this location.";
+          troubleshootingSteps = "\n\nPlease choose a different folder name.";
         } else if (error.code === "23503") {
-          errorDescription = "Invalid parent folder reference. The parent folder may have been deleted.";
+          errorDescription = "Invalid parent folder reference - the parent folder may have been deleted.";
+          troubleshootingSteps = "\n\nPlease refresh the page and try again.";
         } else if (error.message?.includes("violates row-level security")) {
-          errorDescription = "Row-level security policy violation. Please ensure you have admin role assigned in the user_roles table.";
+          errorDescription = "Row-level security policy violation - access denied.";
+          troubleshootingSteps = "\n\nTroubleshooting:\n1. Ensure you have admin role in user_roles table\n2. Check database logs for RLS policy details\n3. Verify that shared_folders RLS policies allow admin access";
+        } else if (error.message?.includes("JWT") || error.message?.includes("auth")) {
+          errorDescription = "Authentication error - your session may have expired.";
+          troubleshootingSteps = "\n\nPlease log out and log back in.";
         }
         
         toast.error("Failed to create folder", {
-          description: `${errorDescription}\n\nTechnical details: ${error.message}`
+          description: `${errorDescription}${troubleshootingSteps}\n\nTechnical details: ${error.message}\nError code: ${error.code || 'N/A'}`,
+          duration: 10000
         });
         throw error;
       }

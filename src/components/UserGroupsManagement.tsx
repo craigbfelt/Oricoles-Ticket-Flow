@@ -133,16 +133,28 @@ export function UserGroupsManagement() {
       });
       
       let errorDescription = error.message;
+      let troubleshootingSteps = "";
+      
       if (error.code === "23505") {
-        errorDescription = "A group with this name already exists. Please choose a different name.";
+        errorDescription = "A group with this name already exists.";
+        troubleshootingSteps = "\n\nPlease choose a different group name.";
       } else if (error.code === "42501") {
-        errorDescription = "Permission denied. You may not have the required admin privileges. Please check your user roles.";
+        errorDescription = "Permission denied - you do not have the required admin privileges.";
+        troubleshootingSteps = "\n\nTroubleshooting:\n1. Verify you have 'admin' role in user_roles table\n2. Contact your system administrator to grant admin access\n3. Check that RLS policies are properly configured";
       } else if (error.message?.includes("violates row-level security")) {
-        errorDescription = "Row-level security policy violation. Please ensure you have admin role assigned in the user_roles table.";
+        errorDescription = "Row-level security policy violation - access denied.";
+        troubleshootingSteps = "\n\nTroubleshooting:\n1. Ensure you have admin role in user_roles table\n2. Check database logs for RLS policy details\n3. Verify that user_groups RLS policies allow admin access";
+      } else if (error.message?.includes("JWT") || error.message?.includes("auth")) {
+        errorDescription = "Authentication error - your session may have expired.";
+        troubleshootingSteps = "\n\nPlease log out and log back in.";
+      } else if (error.message?.includes("does not exist") || error.code === 'PGRST116') {
+        errorDescription = "user_groups table not found - database migration may not have been applied.";
+        troubleshootingSteps = "\n\nPlease contact your administrator to run database migrations.";
       }
       
       toast.error("Failed to create group", {
-        description: `${errorDescription}\n\nTechnical details: ${error.message}`
+        description: `${errorDescription}${troubleshootingSteps}\n\nTechnical details: ${error.message}\nError code: ${error.code || 'N/A'}`,
+        duration: 10000
       });
       console.error(error);
     } else {
@@ -193,14 +205,22 @@ export function UserGroupsManagement() {
       console.error("UserGroupsManagement: Database error deleting group:", error);
       
       let errorDescription = error.message;
+      let troubleshootingSteps = "";
+      
       if (error.code === "42501") {
-        errorDescription = "Permission denied. You may not have the required admin privileges.";
+        errorDescription = "Permission denied - you do not have the required admin privileges.";
+        troubleshootingSteps = "\n\nTroubleshooting:\n1. Verify you have 'admin' role in user_roles table\n2. Contact your system administrator to grant admin access";
       } else if (error.message?.includes("violates row-level security")) {
-        errorDescription = "Row-level security policy violation. Please ensure you have admin role assigned.";
+        errorDescription = "Row-level security policy violation - access denied.";
+        troubleshootingSteps = "\n\nEnsure you have admin role assigned in user_roles table.";
+      } else if (error.code === "23503") {
+        errorDescription = "Cannot delete group - it has dependent records (e.g., folder permissions, group members).";
+        troubleshootingSteps = "\n\nPlease remove all group members and permissions first.";
       }
       
       toast.error("Failed to delete group", {
-        description: errorDescription
+        description: `${errorDescription}${troubleshootingSteps}\n\nTechnical details: ${error.message}`,
+        duration: 8000
       });
       console.error(error);
     } else {
@@ -267,16 +287,28 @@ export function UserGroupsManagement() {
       });
       
       let errorDescription = error.message;
+      let troubleshootingSteps = "";
+      
       if (error.code === '23505') {
         errorDescription = "This user is already a member of this group.";
+        troubleshootingSteps = "\n\nNo action needed - the user already has access.";
       } else if (error.code === "42501") {
-        errorDescription = "Permission denied. You may not have the required admin privileges.";
+        errorDescription = "Permission denied - you do not have the required admin privileges.";
+        troubleshootingSteps = "\n\nTroubleshooting:\n1. Verify you have 'admin' role in user_roles table\n2. Contact your system administrator to grant admin access";
       } else if (error.message?.includes("violates row-level security")) {
-        errorDescription = "Row-level security policy violation. Please ensure you have admin role assigned in the user_roles table.";
+        errorDescription = "Row-level security policy violation - access denied.";
+        troubleshootingSteps = "\n\nEnsure you have admin role assigned in user_roles table.";
+      } else if (error.code === "23503") {
+        errorDescription = "Invalid user or group reference.";
+        troubleshootingSteps = "\n\nThe user or group may have been deleted. Please refresh and try again.";
+      } else if (error.message?.includes("does not exist") || error.code === 'PGRST116') {
+        errorDescription = "user_group_members table not found - database migration may not have been applied.";
+        troubleshootingSteps = "\n\nPlease contact your administrator to run database migrations.";
       }
       
       toast.error("Failed to add member", {
-        description: `${errorDescription}\n\nTechnical details: ${error.message}`
+        description: `${errorDescription}${troubleshootingSteps}\n\nTechnical details: ${error.message}\nError code: ${error.code || 'N/A'}`,
+        duration: 10000
       });
       console.error(error);
     } else {

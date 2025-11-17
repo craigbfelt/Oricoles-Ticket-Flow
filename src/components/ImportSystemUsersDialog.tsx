@@ -125,34 +125,34 @@ export function ImportSystemUsersDialog() {
     console.log("ImportSystemUsersDialog: Starting import for user IDs:", userIds);
 
     try {
-      // Call the database function to create users
-      console.log("ImportSystemUsersDialog: Calling database function import_system_users_from_staff");
+      // Call the edge function to create users
+      console.log("ImportSystemUsersDialog: Calling edge function import-staff-users");
       
-      // @ts-expect-error - RPC function exists but types not yet regenerated
-      const { data, error } = await supabase.rpc('import_system_users_from_staff', {
-        staff_user_ids: userIds
+      const { data, error } = await supabase.functions.invoke('import-staff-users', {
+        body: { staff_user_ids: userIds }
       });
 
-      console.log("ImportSystemUsersDialog: Database function response:", { data, error });
+      console.log("ImportSystemUsersDialog: Edge function response:", { data, error });
 
       if (error) {
-        console.error("ImportSystemUsersDialog: Database function error:", error);
+        console.error("ImportSystemUsersDialog: Edge function error:", error);
         
-        // Provide specific error messages based on error code
-        let errorDescription = error.message;
-        if (error.message.includes("permission denied") || error.code === '42501') {
-          errorDescription = "Only administrators can import users. Please contact your administrator to grant you admin privileges.";
-        } else if (error.message.includes("does not exist") || error.code === 'PGRST116') {
-          errorDescription = "Import function not found. Database migration may not have been applied yet. Please contact support.";
-        } else if (error.message.includes("JWT") || error.message.includes("auth")) {
+        // Provide specific error messages based on error
+        let errorDescription = error.message || "Unknown error occurred";
+        
+        if (error.message?.includes("Missing environment variables")) {
+          errorDescription = "Server configuration error. Please contact your administrator to configure the edge function environment.";
+        } else if (error.message?.includes("Invalid request format")) {
+          errorDescription = "Invalid data sent to server. Please try again or contact support.";
+        } else if (error.message?.includes("not found")) {
+          errorDescription = "Import function not deployed. Please contact your administrator to deploy the edge function.";
+        } else if (error.message?.includes("JWT") || error.message?.includes("auth")) {
           errorDescription = "Authentication error - your session may have expired. Please log out and log back in.";
-        } else if (error.code === '23505') {
-          errorDescription = "One or more users already exist in the system.";
         }
         
         toast.error("Failed to import users", {
-          description: `${errorDescription}\n\nTechnical details: ${error.message}\n\nError code: ${error.code || 'N/A'}`,
-          duration: 6000
+          description: `${errorDescription}\n\nTechnical details: ${error.message || JSON.stringify(error)}\n\nCheck browser console for full error logs.`,
+          duration: 8000
         });
         throw error;
       }
@@ -162,22 +162,22 @@ export function ImportSystemUsersDialog() {
       if (!responseData || !responseData.results) {
         console.error("ImportSystemUsersDialog: Invalid response format:", responseData);
         toast.error("Failed to import users", {
-          description: "Invalid response from database function. Migration may not have been applied. Check console for details."
+          description: "Invalid response from import function. The function may not be properly configured. Check console for details."
         });
         throw new Error("Invalid response format");
       }
 
       console.log("ImportSystemUsersDialog: Import completed successfully:", {
-        total: responseData.total_users,
-        success_count: responseData.successful_imports,
-        error_count: responseData.failed_imports
+        total: responseData.total,
+        success_count: responseData.success_count,
+        error_count: responseData.error_count
       });
 
       setImportResults(responseData.results || []);
       setShowResults(true);
       
-      const successCount = responseData.successful_imports || 0;
-      const errorCount = responseData.failed_imports || 0;
+      const successCount = responseData.success_count || 0;
+      const errorCount = responseData.error_count || 0;
       
       if (successCount > 0 && errorCount === 0) {
         toast.success(`Successfully created ${successCount} user${successCount !== 1 ? 's' : ''}`);
