@@ -92,6 +92,12 @@ CREATE POLICY "Admins can manage folders"
       SELECT 1 FROM public.user_roles
       WHERE user_id = auth.uid() AND role = 'admin'
     )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.user_roles
+      WHERE user_id = auth.uid() AND role = 'admin'
+    )
   );
 
 -- RLS Policies for shared_folder_files
@@ -196,6 +202,12 @@ CREATE POLICY "Admins can manage permissions"
   ON public.shared_folder_permissions FOR ALL
   TO authenticated
   USING (
+    EXISTS (
+      SELECT 1 FROM public.user_roles
+      WHERE user_id = auth.uid() AND role = 'admin'
+    )
+  )
+  WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.user_roles
       WHERE user_id = auth.uid() AND role = 'admin'

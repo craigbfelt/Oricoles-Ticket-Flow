@@ -100,6 +100,12 @@ CREATE POLICY "Admins can manage groups"
       SELECT 1 FROM public.user_roles
       WHERE user_id = auth.uid() AND role = 'admin'
     )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.user_roles
+      WHERE user_id = auth.uid() AND role = 'admin'
+    )
   );
 
 -- RLS Policies for user_group_members
@@ -116,6 +122,12 @@ CREATE POLICY "Admins can manage group memberships"
       SELECT 1 FROM public.user_roles
       WHERE user_id = auth.uid() AND role = 'admin'
     )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.user_roles
+      WHERE user_id = auth.uid() AND role = 'admin'
+    )
   );
 
 -- RLS Policies for group_permissions
@@ -128,6 +140,12 @@ CREATE POLICY "Admins can manage group permissions"
   ON public.group_permissions FOR ALL
   TO authenticated
   USING (
+    EXISTS (
+      SELECT 1 FROM public.user_roles
+      WHERE user_id = auth.uid() AND role = 'admin'
+    )
+  )
+  WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.user_roles
       WHERE user_id = auth.uid() AND role = 'admin'
@@ -200,6 +218,12 @@ CREATE POLICY "Admins can manage user permissions"
   ON public.user_permissions FOR ALL
   TO authenticated
   USING (
+    EXISTS (
+      SELECT 1 FROM public.user_roles
+      WHERE user_id = auth.uid() AND role = 'admin'
+    )
+  )
+  WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.user_roles
       WHERE user_id = auth.uid() AND role = 'admin'
