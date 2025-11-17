@@ -8,6 +8,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+/**
+ * Escape HTML special characters to prevent XSS attacks
+ * @param text - The text to escape
+ * @returns HTML-safe string
+ */
+function escapeHtml(text: string | undefined): string {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 interface TicketEmailRequest {
   ticketId: string;
   title: string;
@@ -37,14 +52,14 @@ const handler = async (req: Request): Promise<Response> => {
         subject: `[RDP Ticket] ${title} - ${branch}`,
         html: `
           <h2>New RDP Support Ticket</h2>
-          <p><strong>Ticket ID:</strong> ${ticketId}</p>
-          <p><strong>Branch:</strong> ${branch}</p>
-          <p><strong>User Email:</strong> ${userEmail}</p>
-          <p><strong>Priority:</strong> ${priority.toUpperCase()}</p>
-          <p><strong>Fault Type:</strong> ${faultType}</p>
-          ${errorCode ? `<p><strong>Error Code:</strong> ${errorCode}</p>` : ''}
+          <p><strong>Ticket ID:</strong> ${escapeHtml(ticketId)}</p>
+          <p><strong>Branch:</strong> ${escapeHtml(branch)}</p>
+          <p><strong>User Email:</strong> ${escapeHtml(userEmail)}</p>
+          <p><strong>Priority:</strong> ${escapeHtml(priority?.toUpperCase())}</p>
+          <p><strong>Fault Type:</strong> ${escapeHtml(faultType)}</p>
+          ${errorCode ? `<p><strong>Error Code:</strong> ${escapeHtml(errorCode)}</p>` : ''}
           <h3>Description:</h3>
-          <p>${description || 'No description provided'}</p>
+          <p>${escapeHtml(description) || 'No description provided'}</p>
           <hr>
           <p><em>This ticket was automatically routed from Oricol Helpdesk</em></p>
         `,
@@ -61,13 +76,13 @@ const handler = async (req: Request): Promise<Response> => {
       html: `
         <h2>Your Support Ticket Has Been Created</h2>
         <p>Thank you for submitting your support request.</p>
-        <p><strong>Ticket ID:</strong> ${ticketId}</p>
-        <p><strong>Branch:</strong> ${branch}</p>
-        <p><strong>Fault Type:</strong> ${faultType}</p>
-        <p><strong>Priority:</strong> ${priority.toUpperCase()}</p>
+        <p><strong>Ticket ID:</strong> ${escapeHtml(ticketId)}</p>
+        <p><strong>Branch:</strong> ${escapeHtml(branch)}</p>
+        <p><strong>Fault Type:</strong> ${escapeHtml(faultType)}</p>
+        <p><strong>Priority:</strong> ${escapeHtml(priority?.toUpperCase())}</p>
         ${faultType === "RDP" ? '<p><em>This ticket has been routed to Qwerti for RDP support.</em></p>' : ''}
         <h3>Description:</h3>
-        <p>${description || 'No description provided'}</p>
+        <p>${escapeHtml(description) || 'No description provided'}</p>
         <hr>
         <p>We will respond to your ticket as soon as possible.</p>
         <p><em>Oricol Helpdesk - Centralised IT Management</em></p>
