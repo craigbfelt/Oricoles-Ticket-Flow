@@ -14,9 +14,20 @@
 -- This script is safe to run multiple times (uses IF NOT EXISTS)
 -- ============================================================================
 
--- First, create the documents table since other tables depend on it
+-- Create handle_updated_at function if it doesn't exist
+-- This function is used by triggers to automatically update updated_at timestamps
+CREATE OR REPLACE FUNCTION public.handle_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- Create documents table if it doesn't exist (required by shared_files)
+-- This table stores metadata about all uploaded documents
 CREATE TABLE IF NOT EXISTS public.documents (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   filename TEXT NOT NULL,
   original_filename TEXT NOT NULL,
   file_type TEXT NOT NULL,
@@ -26,10 +37,6 @@ CREATE TABLE IF NOT EXISTS public.documents (
   category TEXT NOT NULL DEFAULT 'general',
   description TEXT,
   tags TEXT[],
-  page_location TEXT,
-  moved_from TEXT,
-  moved_at TIMESTAMPTZ,
-  moved_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   uploaded_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
@@ -40,35 +47,49 @@ CREATE INDEX IF NOT EXISTS idx_documents_uploaded_by ON public.documents(uploade
 CREATE INDEX IF NOT EXISTS idx_documents_category ON public.documents(category);
 CREATE INDEX IF NOT EXISTS idx_documents_created_at ON public.documents(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_documents_file_type ON public.documents(file_type);
-CREATE INDEX IF NOT EXISTS idx_documents_page_location ON public.documents(page_location);
 
 -- Enable RLS on documents table
 ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 
--- Create RLS policies for documents table
-DROP POLICY IF EXISTS "Authenticated users can view all documents" ON public.documents;
-CREATE POLICY "Authenticated users can view all documents"
-  ON public.documents FOR SELECT
-  TO authenticated
-  USING (true);
+-- Create RLS policies for documents table if they don't exist
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'documents' AND policyname = 'Authenticated users can view all documents'
+  ) THEN
+    CREATE POLICY "Authenticated users can view all documents"
+      ON public.documents FOR SELECT
+      TO authenticated
+      USING (true);
+  END IF;
 
-DROP POLICY IF EXISTS "Authenticated users can upload documents" ON public.documents;
-CREATE POLICY "Authenticated users can upload documents"
-  ON public.documents FOR INSERT
-  TO authenticated
-  WITH CHECK (true);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'documents' AND policyname = 'Authenticated users can upload documents'
+  ) THEN
+    CREATE POLICY "Authenticated users can upload documents"
+      ON public.documents FOR INSERT
+      TO authenticated
+      WITH CHECK (true);
+  END IF;
 
-DROP POLICY IF EXISTS "Authenticated users can update documents" ON public.documents;
-CREATE POLICY "Authenticated users can update documents"
-  ON public.documents FOR UPDATE
-  TO authenticated
-  USING (true);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'documents' AND policyname = 'Authenticated users can update documents'
+  ) THEN
+    CREATE POLICY "Authenticated users can update documents"
+      ON public.documents FOR UPDATE
+      TO authenticated
+      USING (true);
+  END IF;
 
-DROP POLICY IF EXISTS "Authenticated users can delete documents" ON public.documents;
-CREATE POLICY "Authenticated users can delete documents"
-  ON public.documents FOR DELETE
-  TO authenticated
-  USING (true);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'documents' AND policyname = 'Authenticated users can delete documents'
+  ) THEN
+    CREATE POLICY "Authenticated users can delete documents"
+      ON public.documents FOR DELETE
+      TO authenticated
+      USING (true);
+  END IF;
+END $$;
 
 -- Create user groups for organizing users and permissions
 CREATE TABLE IF NOT EXISTS public.user_groups (
@@ -527,7 +548,6 @@ CREATE POLICY "Admins can manage permissions"
   );
 
 -- Add comments for documentation
-COMMENT ON TABLE public.documents IS 'Stores metadata for all documents uploaded to the Document Hub';
 COMMENT ON TABLE public.user_groups IS 'User groups for organizing users and managing permissions';
 COMMENT ON TABLE public.user_group_members IS 'Junction table for user group membership';
 COMMENT ON TABLE public.group_permissions IS 'System permissions granted to user groups';
@@ -540,8 +560,18 @@ COMMENT ON TABLE public.shared_folder_permissions IS 'Permissions for accessing 
 -- Success message
 DO $$
 BEGIN
-  RAISE NOTICE '✅ All tables created successfully!';
-  RAISE NOTICE '✅ Documents table created!';
-  RAISE NOTICE '✅ All RLS policies fixed!';
-  RAISE NOTICE '✅ Shared Files system is ready to use!';
+  RAISE NOTICE '============================================================';
+  RAISE NOTICE '✅ All required functions created!';
+  RAISE NOTICE '✅ Documents table verified/created!';
+  RAISE NOTICE '✅ User Groups tables created successfully!';
+  RAISE NOTICE '✅ Shared Files tables created successfully!';
+  RAISE NOTICE '✅ Shared Folders tables created successfully!';
+  RAISE NOTICE '✅ All RLS policies configured!';
+  RAISE NOTICE '✅ All indexes and triggers added!';
+  RAISE NOTICE '============================================================';
+  RAISE NOTICE 'Setup Complete! You can now:';
+  RAISE NOTICE '  - Create user groups';
+  RAISE NOTICE '  - Create shared folders';
+  RAISE NOTICE '  - Share files with users and groups';
+  RAISE NOTICE '============================================================';
 END $$;

@@ -13,11 +13,9 @@ dist-ssr
 *.local
 
 # Environment files
-# Note: .env is committed with local development defaults
-# Use .env.local for your personal overrides
+.env
 .env.local
 .env.*.local
-.env.production
 
 # Supabase
 .temp/

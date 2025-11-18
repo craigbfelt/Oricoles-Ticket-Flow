@@ -45,9 +45,6 @@ import {
   ChevronRight,
   Home,
   FolderOpen,
-  Edit2,
-  History,
-  Clock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -82,8 +79,6 @@ interface SharedFile {
   storage_path: string;
   folder_id: string | null;
   uploaded_by: string | null;
-  last_modified_by?: string | null;
-  last_modified_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -112,12 +107,6 @@ const SharedFiles = () => {
   const [newFolderDescription, setNewFolderDescription] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [permissions, setPermissions] = useState<Record<string, FolderPermission>>({});
-  const [isRenameFolderOpen, setIsRenameFolderOpen] = useState(false);
-  const [renameFolderName, setRenameFolderName] = useState("");
-  const [folderToRename, setFolderToRename] = useState<Folder | null>(null);
-  const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
-  const [selectedFileForHistory, setSelectedFileForHistory] = useState<SharedFile | null>(null);
-  const [fileVersions, setFileVersions] = useState<any[]>([]);
 
   useEffect(() => {
     checkAdminAccess();
@@ -243,8 +232,6 @@ const SharedFiles = () => {
             file_type,
             storage_path,
             uploaded_by,
-            last_modified_by,
-            last_modified_at,
             created_at,
             updated_at
           )
@@ -270,8 +257,6 @@ const SharedFiles = () => {
         storage_path: item.documents?.storage_path || '',
         folder_id: item.folder_id,
         uploaded_by: item.documents?.uploaded_by || item.added_by,
-        last_modified_by: item.documents?.last_modified_by,
-        last_modified_at: item.documents?.last_modified_at,
         created_at: item.documents?.created_at || item.added_at,
         updated_at: item.documents?.updated_at || item.added_at,
       }));
@@ -509,37 +494,6 @@ const SharedFiles = () => {
     }
   };
 
-  const renameFolder = async () => {
-    if (!folderToRename || !renameFolderName.trim()) {
-      toast.error("Folder name is required");
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from("shared_folders")
-        .update({ name: renameFolderName })
-        .eq("id", folderToRename.id);
-
-      if (error) throw error;
-
-      toast.success("Folder renamed successfully");
-      setIsRenameFolderOpen(false);
-      setRenameFolderName("");
-      setFolderToRename(null);
-      fetchFolders();
-    } catch (error) {
-      console.error("Error renaming folder:", error);
-      toast.error("Failed to rename folder");
-    }
-  };
-
-  const openRenameFolderDialog = (folder: Folder) => {
-    setFolderToRename(folder);
-    setRenameFolderName(folder.name);
-    setIsRenameFolderOpen(true);
-  };
-
   const deleteFolder = async (folderId: string) => {
     if (!confirm("Are you sure you want to delete this folder?")) return;
 
@@ -606,31 +560,6 @@ const SharedFiles = () => {
       console.error("Error downloading file:", error);
       toast.error("Failed to download file");
     }
-  };
-
-  const fetchFileVersionHistory = async (fileId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("shared_file_versions")
-        .select(`
-          *,
-          modified_by_profile:profiles!shared_file_versions_modified_by_fkey(full_name, email)
-        `)
-        .eq("file_id", fileId)
-        .order("version_number", { ascending: false });
-
-      if (error) throw error;
-      setFileVersions(data || []);
-    } catch (error) {
-      console.error("Error fetching version history:", error);
-      toast.error("Failed to load version history");
-    }
-  };
-
-  const openVersionHistoryDialog = (file: SharedFile) => {
-    setSelectedFileForHistory(file);
-    fetchFileVersionHistory(file.id);
-    setIsVersionHistoryOpen(true);
   };
 
   const openPermissionsDialog = (folder: Folder) => {
@@ -814,17 +743,6 @@ const SharedFiles = () => {
                               className="h-7 w-7"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                openRenameFolderDialog(folder);
-                              }}
-                            >
-                              <Edit2 className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={(e) => {
-                                e.stopPropagation();
                                 openPermissionsDialog(folder);
                               }}
                             >
@@ -863,7 +781,6 @@ const SharedFiles = () => {
                       <TableHead>Name</TableHead>
                       <TableHead>Size</TableHead>
                       <TableHead>Uploaded</TableHead>
-                      <TableHead>Last Modified</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -873,26 +790,8 @@ const SharedFiles = () => {
                         <TableCell className="font-medium">{file.original_filename}</TableCell>
                         <TableCell>{formatFileSize(file.file_size)}</TableCell>
                         <TableCell>{new Date(file.created_at).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          {file.last_modified_at ? (
-                            <div className="flex items-center gap-1 text-xs">
-                              <Clock className="h-3 w-3" />
-                              {new Date(file.last_modified_at).toLocaleDateString()}
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => openVersionHistoryDialog(file)}
-                              title="Version History"
-                            >
-                              <History className="h-4 w-4" />
-                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -974,90 +873,6 @@ const SharedFiles = () => {
                 Cancel
               </Button>
               <Button onClick={savePermissions}>Save Permissions</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Rename Folder Dialog */}
-        <Dialog open={isRenameFolderOpen} onOpenChange={setIsRenameFolderOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Rename Folder</DialogTitle>
-              <DialogDescription>
-                Enter a new name for "{folderToRename?.name}"
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="renameFolderName">New Folder Name</Label>
-                <Input
-                  id="renameFolderName"
-                  value={renameFolderName}
-                  onChange={(e) => setRenameFolderName(e.target.value)}
-                  placeholder="Enter new folder name"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsRenameFolderOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={renameFolder}>Rename</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Version History Dialog */}
-        <Dialog open={isVersionHistoryOpen} onOpenChange={setIsVersionHistoryOpen}>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>Version History</DialogTitle>
-              <DialogDescription>
-                Version history for "{selectedFileForHistory?.original_filename}"
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              {fileVersions.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No version history available for this file.
-                </p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Version</TableHead>
-                      <TableHead>Modified By</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Size</TableHead>
-                      <TableHead>Notes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {fileVersions.map((version) => (
-                      <TableRow key={version.id}>
-                        <TableCell>v{version.version_number}</TableCell>
-                        <TableCell>
-                          {version.modified_by_profile?.full_name || 
-                           version.modified_by_profile?.email || 
-                           'Unknown'}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(version.created_at).toLocaleString()}
-                        </TableCell>
-                        <TableCell>{formatFileSize(version.file_size)}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {version.change_description || '-'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsVersionHistoryOpen(false)}>
-                Close
-              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

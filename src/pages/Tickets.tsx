@@ -205,14 +205,7 @@ const Tickets = () => {
   };
 
   const fetchTickets = async () => {
-    const { data } = await supabase
-      .from("tickets")
-      .select(`
-        *,
-        created_by_profile:profiles!tickets_created_by_fkey(id, full_name, email),
-        assigned_to_profile:profiles!tickets_assigned_to_fkey(id, full_name, email)
-      `)
-      .order("created_at", { ascending: false });
+    const { data } = await supabase.from("tickets").select("*").order("created_at", { ascending: false });
 
     setTickets(data || []);
   };
@@ -818,16 +811,6 @@ const Tickets = () => {
                             {ticket.user_email && (
                               <span className="text-xs text-muted-foreground">👤 {ticket.user_email}</span>
                             )}
-                            {ticket.created_by_profile && (
-                              <span className="text-xs text-muted-foreground">
-                                ✍️ Created by: {ticket.created_by_profile.full_name || ticket.created_by_profile.email}
-                              </span>
-                            )}
-                            {ticket.assigned_to_profile && (
-                              <span className="text-xs text-muted-foreground">
-                                👥 Assigned to: {ticket.assigned_to_profile.full_name || ticket.assigned_to_profile.email}
-                              </span>
-                            )}
                             <span className="text-xs text-muted-foreground">
                               📅 {new Date(ticket.created_at).toLocaleDateString()}
                             </span>
@@ -879,16 +862,6 @@ const Tickets = () => {
                                 🔧 {ticket.fault_type}
                               </Badge>
                             )}
-                            {ticket.created_by_profile && (
-                              <span className="text-xs text-muted-foreground">
-                                ✍️ Created by: {ticket.created_by_profile.full_name || ticket.created_by_profile.email}
-                              </span>
-                            )}
-                            {ticket.assigned_to_profile && (
-                              <span className="text-xs text-muted-foreground">
-                                👥 Assigned to: {ticket.assigned_to_profile.full_name || ticket.assigned_to_profile.email}
-                              </span>
-                            )}
                             <span className="text-xs text-muted-foreground">
                               📅 {new Date(ticket.created_at).toLocaleDateString()}
                             </span>
@@ -937,16 +910,6 @@ const Tickets = () => {
                                 ✅ Resolved {new Date(ticket.resolved_at).toLocaleDateString()}
                               </span>
                             )}
-                            {ticket.created_by_profile && (
-                              <span className="text-xs text-muted-foreground">
-                                ✍️ Created by: {ticket.created_by_profile.full_name || ticket.created_by_profile.email}
-                              </span>
-                            )}
-                            {ticket.assigned_to_profile && (
-                              <span className="text-xs text-muted-foreground">
-                                👥 Resolved by: {ticket.assigned_to_profile.full_name || ticket.assigned_to_profile.email}
-                              </span>
-                            )}
                           </div>
                         </div>
                         <div className="flex gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
@@ -990,16 +953,6 @@ const Tickets = () => {
                             {ticket.resolved_at && (
                               <span className="text-xs text-muted-foreground">
                                 🔒 Closed {new Date(ticket.resolved_at).toLocaleDateString()}
-                              </span>
-                            )}
-                            {ticket.created_by_profile && (
-                              <span className="text-xs text-muted-foreground">
-                                ✍️ Created by: {ticket.created_by_profile.full_name || ticket.created_by_profile.email}
-                              </span>
-                            )}
-                            {ticket.assigned_to_profile && (
-                              <span className="text-xs text-muted-foreground">
-                                👥 Closed by: {ticket.assigned_to_profile.full_name || ticket.assigned_to_profile.email}
                               </span>
                             )}
                           </div>
@@ -1098,24 +1051,6 @@ const Tickets = () => {
                           <div>
                             <Label className="text-muted-foreground">Category</Label>
                             <p className="text-sm mt-1">{selectedTicket.category}</p>
-                          </div>
-                        )}
-
-                        {selectedTicket.created_by_profile && (
-                          <div>
-                            <Label className="text-muted-foreground">Created By</Label>
-                            <p className="text-sm mt-1">
-                              {selectedTicket.created_by_profile.full_name || selectedTicket.created_by_profile.email}
-                            </p>
-                          </div>
-                        )}
-
-                        {selectedTicket.assigned_to_profile && (
-                          <div>
-                            <Label className="text-muted-foreground">Assigned To</Label>
-                            <p className="text-sm mt-1">
-                              {selectedTicket.assigned_to_profile.full_name || selectedTicket.assigned_to_profile.email}
-                            </p>
                           </div>
                         )}
 

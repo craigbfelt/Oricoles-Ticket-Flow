@@ -1,130 +1,67 @@
 # Local Development Setup - No Cloud Required
 
-This guide shows you how to run the Oricol Helpdesk app **100% locally** on your computer without any cloud services or Lovable.
+This guide shows you how to run the Oricol Helpdesk app **100% locally** on your computer without any cloud services, Supabase, or Vercel.
 
-## ⚡ Quick Start (5 Minutes)
+## Quick Start (Docker Method - Recommended)
 
 ### Prerequisites
-- [Docker Desktop](https://www.docker.com/products/docker-desktop) installed and running
-- Node.js 18+ installed ([install with nvm](https://github.com/nvm-sh/nvm))
+- [Docker Desktop](https://www.docker.com/products/docker-desktop) installed
+- Node.js 18+ installed
 - 4GB+ RAM available
 
-### Step-by-Step Setup
+### Steps
 
-**1. Clone and Install Dependencies**
+1. **Clone and Install**
+   ```bash
+   git clone <your-repo-url>
+   cd oricol-ticket-flow-34e64301
+   npm install
+   ```
+
+2. **Start Local Supabase**
+   ```bash
+   # This starts a complete Supabase instance locally via Docker
+   npx supabase start
+   ```
+   
+   **Output will include:**
+   ```
+   API URL: http://localhost:54321
+   GraphQL URL: http://localhost:54321/graphql/v1
+   DB URL: postgresql://postgres:postgres@localhost:54322/postgres
+   Studio URL: http://localhost:54323
+   Inbucket URL: http://localhost:54324
+   JWT secret: super-secret-jwt-token
+   anon key: <your-anon-key>
+   service_role key: <your-service-role-key>
+   ```
+
+3. **Create Local Environment File**
+   
+   Create `.env.local`:
+   ```env
+   VITE_SUPABASE_URL=http://localhost:54321
+   VITE_SUPABASE_PUBLISHABLE_KEY=<anon-key-from-step-2>
+   ```
+
+4. **Start Development Server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Access the App**
+   - Application: http://localhost:8080
+   - Database Admin (Supabase Studio): http://localhost:54323
+   - Email Testing (Inbucket): http://localhost:54324
+
+### Managing Local Supabase
+
 ```bash
-git clone https://github.com/craigfelt/oricol-ticket-flow-34e64301.git
-cd oricol-ticket-flow-34e64301
-npm install
-```
-
-**2. Start Local Supabase (This starts PostgreSQL database locally)**
-```bash
-npx supabase start
-```
-
-**Wait for it to complete** - This takes 1-2 minutes. You'll see output like:
-```
-✔ Started supabase local development setup.
-
-         API URL: http://localhost:54321
-     GraphQL URL: http://localhost:54321/graphql/v1
-          DB URL: postgresql://postgres:postgres@localhost:54322/postgres
-      Studio URL: http://localhost:54323
-    Inbucket URL: http://localhost:54324
-      JWT secret: super-secret-jwt-token-with-at-least-32-characters-long
-        anon key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-service_role key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-**3. Set Up Database Schema**
-
-Open Supabase Studio in your browser:
-```bash
-# Open this URL in your browser:
-http://localhost:54323
-```
-
-In Supabase Studio:
-- Click **"SQL Editor"** in the left sidebar
-- Click **"New query"**
-- Open the file `LOCAL_SETUP_COMPLETE.sql` from your project folder
-- Copy and paste **the entire contents** into the SQL editor
-- Click **"Run"** button
-
-You should see success messages confirming all tables were created!
-
-**4. Create Environment File**
-
-Create a file named `.env.local` in your project root:
-```env
-VITE_SUPABASE_URL=http://localhost:54321
-VITE_SUPABASE_PUBLISHABLE_KEY=<paste-the-anon-key-from-step-2>
-```
-
-**Important:** Copy the `anon key` value from step 2 output and paste it after `VITE_SUPABASE_PUBLISHABLE_KEY=`
-
-**5. Start the Application**
-```bash
-npm run dev
-```
-
-**6. Access Your App**
-- **Application:** http://localhost:8080
-- **Database Admin:** http://localhost:54323
-- **Email Testing:** http://localhost:54324
-
-## ✅ That's It!
-
-You now have a **fully local** Oricol Helpdesk running on your computer with:
-- ✅ PostgreSQL database (no cloud)
-- ✅ Full authentication system
-- ✅ All features working
-- ✅ No internet required (after initial setup)
-- ✅ No Lovable needed
-- ✅ No cloud costs
-
----
-
-## 📋 Using Your Local Setup
-
-### First Time Login
-1. Go to http://localhost:8080
-2. Click **"Sign Up"**
-3. Create an account with any email
-4. Use the email inbox at http://localhost:54324 to verify your email (optional for local)
-
-### Creating an Admin Account
-To make a user an admin:
-1. Open Supabase Studio: http://localhost:54323
-2. Go to **Table Editor** → **user_roles**
-3. Click **"Insert row"**
-4. Set:
-   - `user_id`: Copy from the `auth.users` table
-   - `role`: Select `admin`
-5. Click **"Save"**
-
-Now that user has full admin access!
-
-### Managing Data
-Access Supabase Studio (http://localhost:54323) to:
-- View and edit database tables
-- Run SQL queries
-- Manage users
-- View storage files
-- Check logs
-
----
-
-## 🔧 Common Commands
-
-### Starting/Stopping Supabase
-```bash
-# Start Supabase
-npx supabase start
-
-# Stop Supabase (keeps data)
+# Stop Supabase
 npx supabase stop
+
+# Start Supabase  
+npx supabase start
 
 # Reset database (WARNING: deletes all data)
 npx supabase db reset
@@ -136,137 +73,280 @@ npx supabase status
 npx supabase logs
 ```
 
-### Application Commands
+---
+
+## Alternative: JSON Server Method (No Docker)
+
+If you can't use Docker, this method uses a simple JSON file as a database.
+
+### Prerequisites
+- Node.js 18+ only
+
+### Steps
+
+1. **Install json-server**
+   ```bash
+   npm install --save-dev json-server
+   ```
+
+2. **Create Mock Database**
+   
+   Create `db.json`:
+   ```json
+   {
+     "users": [],
+     "tickets": [],
+     "assets": [],
+     "profiles": []
+   }
+   ```
+
+3. **Add Script to package.json**
+   ```json
+   {
+     "scripts": {
+       "backend": "json-server --watch db.json --port 3001",
+       "dev:full": "npm run backend & npm run dev"
+     }
+   }
+   ```
+
+4. **Update App Code**
+   - Replace Supabase client with fetch/axios calls to `http://localhost:3001`
+   - This requires code changes (see MIGRATION.md for details)
+
+---
+
+## Alternative: SQLite Method (Lightweight)
+
+Use SQLite instead of PostgreSQL for ultra-lightweight local development.
+
+### Prerequisites
+- Node.js 18+
+- Better-SQLite3 package
+
+### Steps
+
+1. **Install Dependencies**
+   ```bash
+   npm install better-sqlite3 express cors
+   ```
+
+2. **Create Simple Backend Server**
+   
+   Create `server/index.js`:
+   ```javascript
+   const express = require('express');
+   const Database = require('better-sqlite3');
+   const cors = require('cors');
+
+   const app = express();
+   const db = new Database('helpdesk.db');
+
+   app.use(cors());
+   app.use(express.json());
+
+   // Initialize database
+   db.exec(`
+     CREATE TABLE IF NOT EXISTS tickets (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       title TEXT NOT NULL,
+       description TEXT,
+       status TEXT DEFAULT 'open',
+       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+     )
+   `);
+
+   // API endpoints
+   app.get('/api/tickets', (req, res) => {
+     const tickets = db.prepare('SELECT * FROM tickets').all();
+     res.json(tickets);
+   });
+
+   app.post('/api/tickets', (req, res) => {
+     const { title, description } = req.body;
+     const result = db.prepare(
+       'INSERT INTO tickets (title, description) VALUES (?, ?)'
+     ).run(title, description);
+     res.json({ id: result.lastInsertRowid });
+   });
+
+   app.listen(3001, () => {
+     console.log('Server running on http://localhost:3001');
+   });
+   ```
+
+3. **Start Backend**
+   ```bash
+   node server/index.js
+   ```
+
+4. **Update App** to use `http://localhost:3001/api` instead of Supabase
+
+---
+
+## Development Workflow
+
+### Using Local Supabase (Recommended)
+
 ```bash
-# Start development server
+# Terminal 1: Start Supabase
+npx supabase start
+
+# Terminal 2: Start app
 npm run dev
 
-# Build for production
-npm run build
+# Terminal 3: Access Supabase Studio
+# Open http://localhost:54323 in browser
+```
 
-# Preview production build
-npm run preview
+### Accessing Supabase Studio
 
-# Run linter
-npm run lint
+Supabase Studio is a web-based database management tool:
+- URL: http://localhost:54323
+- View and edit database tables
+- Run SQL queries
+- Manage users
+- View logs
+
+### Testing Emails
+
+Local Supabase includes Inbucket for email testing:
+- URL: http://localhost:54324
+- All emails sent by the app appear here
+- Great for testing auth emails, notifications, etc.
+
+---
+
+## Database Management
+
+### Viewing Database
+
+```bash
+# Connect to PostgreSQL
+psql postgresql://postgres:postgres@localhost:54322/postgres
+
+# Or use Supabase Studio
+# http://localhost:54323
+```
+
+### Running Migrations
+
+All migrations in `supabase/migrations/` are automatically applied when you run `npx supabase start`.
+
+### Creating New Migrations
+
+```bash
+# Create a new migration file
+npx supabase migration new <migration_name>
+
+# Apply migrations
+npx supabase db reset
+```
+
+### Backing Up Data
+
+```bash
+# Export database
+npx supabase db dump -f backup.sql
+
+# Import database
+psql postgresql://postgres:postgres@localhost:54322/postgres < backup.sql
 ```
 
 ---
 
-## 🛠 Troubleshooting
+## Troubleshooting
 
 ### "Docker not found"
-**Solution:** Install [Docker Desktop](https://www.docker.com/products/docker-desktop) and make sure it's running.
+**Solution**: Install [Docker Desktop](https://www.docker.com/products/docker-desktop)
 
 ### "Port 54321 already in use"
-**Solution:** Another instance of Supabase is running.
+**Solution**: 
 ```bash
 npx supabase stop
-# Wait a few seconds, then:
-npx supabase start
+# Find what's using the port
+lsof -i :54321  # Mac/Linux
+netstat -ano | findstr :54321  # Windows
 ```
 
 ### "Containers won't start"
-**Solution:** Clean up Docker and restart.
+**Solution**:
 ```bash
+# Stop and remove all containers
 npx supabase stop --no-backup
 docker system prune -a
 npx supabase start
 ```
 
-### "Tables not found" or "Relation does not exist"
-**Solution:** You need to run the database setup SQL.
-1. Open http://localhost:54323
-2. Go to SQL Editor
-3. Run the `LOCAL_SETUP_COMPLETE.sql` file
-
-### "Can't connect to database"
-**Solution:** Make sure Supabase is running.
+### "Migrations failing"
+**Solution**:
 ```bash
-npx supabase status
-# If not running:
-npx supabase start
+# Reset database completely
+npx supabase db reset
 ```
 
 ### "Out of memory"
-**Solution:**
+**Solution**:
 - Close other Docker containers
-- Increase Docker memory limit in Docker Desktop settings → Resources
-- Minimum 4GB recommended, 8GB ideal
-
-### Application won't start
-**Solution:** Check your `.env.local` file has the correct values:
-```env
-VITE_SUPABASE_URL=http://localhost:54321
-VITE_SUPABASE_PUBLISHABLE_KEY=<your-anon-key-from-supabase-start>
-```
+- Increase Docker memory limit in Docker Desktop settings
+- Minimum 4GB recommended
 
 ---
 
-## 🔄 Alternative: Using Migrations (Advanced)
+## Performance Tips
 
-If you're comfortable with migrations, you can use them instead of the SQL file:
-
-```bash
-# After starting Supabase, apply all migrations:
-npx supabase db reset
-
-# Or apply them one at a time:
-npx supabase migration list
-npx supabase db push
-```
-
-**Note:** The migrations are in the `supabase/migrations/` folder.
+1. **Use SSD** for Docker volumes (much faster)
+2. **Allocate enough RAM** to Docker (4GB minimum)
+3. **Disable unnecessary containers** if memory is limited
+4. **Use WSL2** on Windows for better performance
 
 ---
 
-## 📊 Performance Tips
+## Moving to Production
 
-1. **Use SSD** for Docker volumes (much faster than HDD)
-2. **Allocate enough RAM** to Docker (4GB minimum, 8GB recommended)
-3. **Use WSL2** on Windows for better Docker performance
-4. **Close unnecessary containers** if memory is limited
+When ready to deploy:
 
----
+1. **Option 1**: Deploy local Supabase to Railway/Render
+   ```bash
+   # Use Railway CLI to deploy
+   railway up
+   ```
 
-## 🚀 Moving to Production
+2. **Option 2**: Use Supabase free tier
+   ```bash
+   # Link to cloud project
+   npx supabase link --project-ref <your-ref>
+   # Push migrations
+   npx supabase db push
+   ```
 
-When ready to deploy to production:
-
-### Option 1: Deploy to Supabase Cloud (Free Tier)
-```bash
-# Link to your cloud Supabase project
-npx supabase link --project-ref <your-project-ref>
-
-# Push your local database schema to cloud
-npx supabase db push
-```
-
-### Option 2: Deploy to Railway/Render
-- Export your database schema
-- Create a new PostgreSQL instance
-- Run migrations on the new instance
-- Update your `.env` with new connection details
-
-See **DEPLOYMENT.md** for complete deployment instructions.
+3. **Option 3**: Use managed PostgreSQL
+   - Update connection string in .env
+   - Run migrations manually
 
 ---
 
-## 📝 Summary
+## Comparison
 
-**What you have now:**
-- ✅ Fully local PostgreSQL database via Docker
-- ✅ Complete Supabase stack (Auth, Database, Storage, Functions)
-- ✅ Web-based database admin (Supabase Studio)
-- ✅ Email testing interface (Inbucket)
-- ✅ No cloud dependencies
-- ✅ No monthly costs
-- ✅ Full privacy and control
+| Method | Pros | Cons | Best For |
+|--------|------|------|----------|
+| **Local Supabase (Docker)** | Complete feature parity, no code changes | Requires Docker, uses more RAM | Development |
+| **JSON Server** | Ultra simple, no Docker | No auth, limited features, requires code changes | Quick prototyping |
+| **SQLite + Express** | Lightweight, no Docker | Requires custom backend, some code changes | Simple apps |
 
-**Key URLs:**
-- App: http://localhost:8080
-- Database Admin: http://localhost:54323
-- Email Testing: http://localhost:54324
+**Recommendation**: Use **Local Supabase with Docker** for development, then deploy to Supabase free tier or Railway for production.
 
-**Need help?** Check the troubleshooting section above or see the main [README.md](./README.md) for more information.
+---
 
+## Next Steps
+
+Once you have local development working:
+
+1. ✅ Create test users
+2. ✅ Create sample tickets/assets
+3. ✅ Test all features
+4. ✅ Make your changes
+5. ✅ Deploy to production (see DEPLOYMENT.md)
+
+For deployment options, see **DEPLOYMENT.md**

@@ -19,11 +19,7 @@
     "supabase:stop": "npx supabase stop",
     "supabase:status": "npx supabase status",
     "supabase:link": "npx supabase link",
-    "supabase:reset": "npx supabase db reset",
-    "detect:db": "bash scripts/detect-database.sh",
-    "start": "bash start-local.sh",
-    "local:setup": "npx supabase start",
-    "local:start": "bash start-local.sh"
+    "detect:db": "bash scripts/detect-database.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

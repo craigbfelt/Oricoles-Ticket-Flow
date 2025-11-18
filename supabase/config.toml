@@ -1,9 +1,4 @@
-# Local development project ID
-# When running 'npx supabase start', this will be used
-project_id = "local"
-
-# For cloud deployment, update this to your actual Supabase project ID
-# project_id = "kwmeqvrmtivmljujwocp"
+project_id = "kwmeqvrmtivmljujwocp"
 
 [functions.route-ticket-email]
 verify_jwt = true  # SECURITY: Require authentication to prevent email spam/XSS

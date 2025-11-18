@@ -4,117 +4,12 @@ A modern, professional helpdesk and asset management system built with React, Ty
 
 ![Oricol Helpdesk](https://github.com/user-attachments/assets/43b833f0-e11c-4776-a0ad-cba268f6aa18)
 
----
-
-## ⚡ **NEW: Local-First Development!**
-
-This app now runs **100% locally** by default - no cloud setup required!
-
-✅ Zero configuration needed  
-✅ One command to start  
-✅ No cloud costs  
-✅ Complete privacy  
-
-📖 **Migrating from cloud?** See [LOCAL_SETUP_MIGRATION.md](./LOCAL_SETUP_MIGRATION.md)
-
----
-
-## 🚀 Quick Start - Local Development (Recommended)
-
-**Run the entire app on your computer in 5 minutes - no cloud services needed!**
-
-### Prerequisites
-- [Docker Desktop](https://www.docker.com/products/docker-desktop) (required for local Supabase)
-- [Node.js 18+](https://nodejs.org/) (install with [nvm](https://github.com/nvm-sh/nvm))
-
-### Automated Setup (Easiest!)
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/craigfelt/oricol-ticket-flow-34e64301.git
-cd oricol-ticket-flow-34e64301
-
-# 2. Install dependencies
-npm install
-
-# 3. Run the automated setup script
-./start-local.sh
-```
-
-**That's it!** The script will:
-- ✅ Check all prerequisites
-- ✅ Start local Supabase automatically
-- ✅ Launch the app at http://localhost:8080
-- ✅ Show you all service URLs
-
-Or use npm:
-```bash
-npm start
-```
-
-### Manual Setup (If you prefer step-by-step)
-
-```bash
-# 1. Clone and install dependencies
-git clone https://github.com/craigfelt/oricol-ticket-flow-34e64301.git
-cd oricol-ticket-flow-34e64301
-npm install
-
-# 2. Start local Supabase (PostgreSQL + Auth + Storage)
-npm run supabase:start
-
-# 3. Start the application
-npm run dev
-```
-
-**App is now running at http://localhost:8080**
-
-📖 **See [QUICK_LOCAL_SETUP.md](./QUICK_LOCAL_SETUP.md) for detailed setup instructions**
-
-### What You Get Locally
-- ✅ Full application running at http://localhost:8080
-- ✅ Database admin UI at http://localhost:54323
-- ✅ Email testing at http://localhost:54324
-- ✅ No cloud costs, no internet required, full privacy
-- ✅ All features working exactly as in production
-
----
-
-## 🌐 Alternative Setup Options
-
-### Option 1: Local Development (Default - Above)
-**Best for:** Development, testing, privacy, offline work  
-**Cost:** $0 - Everything runs on your computer  
-**Setup Time:** 5 minutes  
-📖 See: [QUICK_LOCAL_SETUP.md](./QUICK_LOCAL_SETUP.md)
-
-### Option 2: Cloud Free Tier
-**Best for:** Production deployment, team collaboration  
-**Cost:** $0 - Free Supabase tier (500MB database)  
-**Setup Time:** 10 minutes  
-📖 See: [DEPLOYMENT.md](./DEPLOYMENT.md)
-
-### Option 3: Docker Compose (Full Stack)
-**Best for:** Complete containerized environment  
-**Cost:** $0 - Runs locally  
-**Setup Time:** 10 minutes  
-📖 See: [DOCKER_SETUP.md](./DOCKER_SETUP.md)
-
-### Option 4: Lovable Integration
-**Best for:** AI-assisted development  
-**Cost:** Varies based on Lovable plan  
-**Setup Time:** Instant  
-🔗 Open in [Lovable](https://lovable.dev/projects/c75c70a7-c13d-4879-a8af-bbb8cc076141)
-
----
-
-## 🎯 Working with this project
+## 🚀 Working with this project
 
 **This app runs on Lovable** - All code changes sync automatically between GitHub and Lovable.
 
 ### 🎯 New to Lovable? Start Here!
 - **⭐ [LOVABLE_START_HERE.md](./LOVABLE_START_HERE.md)** - **Complete guide for Lovable users**
-- **⭐ [QUICK_FIX_TABLE_REFS.md](./QUICK_FIX_TABLE_REFS.md)** - **🔥 Fix table reference errors (2 min)**
 - **⭐ [LOVABLE_SQL_EDITING_GUIDE.md](./LOVABLE_SQL_EDITING_GUIDE.md)** - **How to edit SQL without CLI**
 - **⭐ [LOVABLE_SQL_CHEATSHEET.md](./LOVABLE_SQL_CHEATSHEET.md)** - **Quick reference**
 - **⭐ [LOVABLE_SQL_FAQ.md](./LOVABLE_SQL_FAQ.md)** - **Frequently asked questions**
@@ -133,7 +28,6 @@ npm run dev
 ### 🔄 Database Migrations (Important!)
 
 **Working on Lovable without CLI access? (Most users)**
-- **🔥 [QUICK_FIX_TABLE_REFS.md](./QUICK_FIX_TABLE_REFS.md)** - **Fix table errors NOW (2 min)**
 - **⭐ [LOVABLE_START_HERE.md](./LOVABLE_START_HERE.md)** - **START HERE!**
 - **⭐ [LOVABLE_SQL_EDITING_GUIDE.md](./LOVABLE_SQL_EDITING_GUIDE.md)** - **Complete guide (no CLI needed)**
 - **⭐ [LOVABLE_SQL_CHEATSHEET.md](./LOVABLE_SQL_CHEATSHEET.md)** - **Quick reference**
@@ -151,7 +45,6 @@ npm run migrate
 - Detection query files in `db/detection-queries/`
 
 **All Documentation**:
-- **🔥 [QUICK_FIX_TABLE_REFS.md](./QUICK_FIX_TABLE_REFS.md)** - **Fix table reference errors**
 - **[LOVABLE_START_HERE.md](./LOVABLE_START_HERE.md)** - Start here for Lovable users
 - **[LOVABLE_SQL_EDITING_GUIDE.md](./LOVABLE_SQL_EDITING_GUIDE.md)** - Edit SQL on Lovable (no CLI)
 - **[LOVABLE_SQL_CHEATSHEET.md](./LOVABLE_SQL_CHEATSHEET.md)** - Quick reference cheat sheet
@@ -162,7 +55,7 @@ npm run migrate
 - **[SUPABASE_MIGRATIONS.md](./SUPABASE_MIGRATIONS.md)** - Complete migration guide
 
 ### Additional Setup Options:
-- **🚀 [LOCAL_SETUP.md](./LOCAL_SETUP.md)** - **Run 100% locally (no cloud, no Lovable)**
+- **Local Development** (optional) - See [LOCAL_SETUP.md](./LOCAL_SETUP.md)
 - **Alternative Deployment** (optional) - See [DEPLOYMENT.md](./DEPLOYMENT.md)
 - **Quick Reference** - See [QUICKSTART.md](./QUICKSTART.md)
 
@@ -215,65 +108,32 @@ npm run migrate
 
 ## Getting Started
 
-### 🚀 Quick Start - Local Development (Recommended)
+### 🚀 Quick Start Options
 
-**Run everything locally on your computer - no cloud services needed!**
+**Choose your setup:**
 
-1. **Prerequisites**
-   - [Docker Desktop](https://www.docker.com/products/docker-desktop) (required)
-   - Node.js 18+ and npm - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. **🐳 Docker Setup** (Easiest - Recommended for local development)
+   - **NEW!** One-command setup with Docker
+   - See [DOCKER_SETUP.md](./DOCKER_SETUP.md) for complete guide
+   - Run `./start-docker.sh` to get started in minutes
+   - Everything runs in containers - no manual configuration
 
-2. **Install**
-   ```sh
-   git clone https://github.com/craigfelt/oricol-ticket-flow-34e64301.git
-   cd oricol-ticket-flow-34e64301
-   npm install
-   ```
+2. **💰 $0 Cost - Local Development** (Manual setup)
+   - Run 100% free on your computer
+   - See [LOCAL_SETUP.md](./LOCAL_SETUP.md) for step-by-step guide
+   - Uses Docker to run Supabase locally
 
-3. **Start Local Supabase**
-   ```sh
-   npm run supabase:start
-   ```
-   
-   Wait for it to complete (1-2 minutes). This starts a complete local database, auth, and storage system.
+3. **☁️ $0 Cost - Cloud Free Tier** (Recommended for production)
+   - Use Supabase free tier (500MB database, no credit card required)
+   - See [DEPLOYMENT.md](./DEPLOYMENT.md) for all free hosting options
+   - Deploy to Netlify, Vercel, or Cloudflare Pages (all free)
 
-4. **Start the Application**
-   ```sh
-   npm run dev
-   ```
-   
-   The app will be available at **http://localhost:8080**
-
-**That's it!** For detailed instructions, see **[QUICK_LOCAL_SETUP.md](./QUICK_LOCAL_SETUP.md)**
-
-### 📖 Alternative Setup Options
-
-**Choose the setup that works best for you:**
-
-1. **🏠 Local Development** (Above - Recommended)
-   - $0 cost, runs on your computer
-   - No internet required after setup
-   - Complete privacy and control
-   - See [QUICK_LOCAL_SETUP.md](./QUICK_LOCAL_SETUP.md)
-
-2. **🐳 Docker Compose** (Full containerized stack)
-   - Everything in Docker containers
-   - One-command setup: `./start-docker.sh`
-   - See [DOCKER_SETUP.md](./DOCKER_SETUP.md)
-
-3. **☁️ Cloud Free Tier** (For production deployment)
-   - Use Supabase free tier (500MB database)
-   - Deploy to Netlify, Vercel, or Cloudflare (all free)
-   - See [DEPLOYMENT.md](./DEPLOYMENT.md)
-
-4. **🎨 Lovable Integration** (AI-assisted development)
-   - Instant setup with Lovable platform
-   - Open in [Lovable](https://lovable.dev/projects/c75c70a7-c13d-4879-a8af-bbb8cc076141)
-   - See [LOVABLE_START_HERE.md](./LOVABLE_START_HERE.md)
+### Prerequisites
+- Node.js 18+ and npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **For local development**: [Docker Desktop](https://www.docker.com/products/docker-desktop) (free)
+- **For cloud development**: Free Supabase account at [supabase.com](https://supabase.com)
 
 ### Quick Installation (Cloud - Supabase Free Tier)
-
-**Note:** For local development, use the Quick Start above. This section is for cloud deployment.
 
 1. **Clone the repository**
    ```sh
@@ -286,14 +146,10 @@ npm run migrate
    npm install
    ```
 
-3. **Environment Setup (Cloud Only)**
+3. **Environment Setup**
    
-   If using cloud Supabase, update the `.env` file with your cloud credentials.
-   The file is pre-configured for local development by default.
-   
-   For cloud setup, edit `.env` and uncomment the cloud section:
+   Create a `.env` file with your Supabase credentials:
    ```env
-   # Comment out the local settings and uncomment these:
    VITE_SUPABASE_URL=<your-supabase-url>
    VITE_SUPABASE_PUBLISHABLE_KEY=<your-anon-key>
    VITE_SUPABASE_PROJECT_ID=<your-project-id>
@@ -301,14 +157,12 @@ npm run migrate
    
    Get these from your free Supabase project at [supabase.com](https://supabase.com)
 
-4. **Apply Database Migrations (Cloud Only)**
+4. **Apply Database Migrations**
    ```sh
    npm run migrate
    ```
    
    This applies all database schema changes. See [SUPABASE_MIGRATIONS.md](./SUPABASE_MIGRATIONS.md) for details.
-   
-   **For local development:** Migrations are applied automatically when you run `npm run supabase:start`
 
 5. **Start the development server**
    ```sh
@@ -322,22 +176,7 @@ npm run migrate
    npm run build
    ```
 
-### Local Development - Complete Guide
-
-For the complete local development setup with all details, see **[QUICK_LOCAL_SETUP.md](./QUICK_LOCAL_SETUP.md)**
-
-Key local development commands:
-```sh
-npm run supabase:start    # Start local Supabase
-npm run supabase:stop     # Stop local Supabase (keeps data)
-npm run supabase:status   # Check if Supabase is running
-npm run supabase:reset    # Reset database (deletes all data)
-npm run dev               # Start the frontend app
-```
-
 ### Quick Installation (Local - 100% Free, No Cloud)
-
-**This is now the default setup!** The `.env` file is pre-configured for local development.
 
 1. **Clone and install**
    ```sh
@@ -348,22 +187,24 @@ npm run dev               # Start the frontend app
 
 2. **Start local Supabase** (requires Docker)
    ```sh
-   npm run supabase:start
+   npx supabase start
    ```
    
-   This starts a complete local Supabase instance with database, auth, and storage.
-   The default configuration in `.env` already has the correct local credentials!
+   This will output your local credentials including the anon key
 
-3. **Start the app**
+3. **Create `.env.local`**
+   ```env
+   VITE_SUPABASE_URL=http://localhost:54321
+   VITE_SUPABASE_PUBLISHABLE_KEY=<anon-key-from-step-2>
+   ```
+
+4. **Start the app**
    ```sh
    npm run dev
    ```
    
    The app will be available at http://localhost:8080
    
-   Access Supabase Studio (database admin) at http://localhost:54323
-
-**No additional configuration needed!** The `.env` file is already set up for local development.
    Access Supabase Studio (database admin) at http://localhost:54323
 
 For detailed instructions, see:
