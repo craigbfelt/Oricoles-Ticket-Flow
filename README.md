@@ -14,6 +14,11 @@ A modern, professional helpdesk and asset management system built with React, Ty
 - **⭐ [LOVABLE_SQL_CHEATSHEET.md](./LOVABLE_SQL_CHEATSHEET.md)** - **Quick reference**
 - **⭐ [LOVABLE_SQL_FAQ.md](./LOVABLE_SQL_FAQ.md)** - **Frequently asked questions**
 
+### 🔧 Troubleshooting
+- **⚡ [QUICKSTART_PGRST205_FIX.md](./QUICKSTART_PGRST205_FIX.md)** - **Quick fix for PGRST205 error (2 min)**
+- **⚠️ [DEPLOYMENT_FIX_SCHEMA_CACHE.md](./DEPLOYMENT_FIX_SCHEMA_CACHE.md)** - **Detailed fix for "table not found" errors**
+- **⭐ [QUICK_FIX_SHARED_FOLDERS.md](./QUICK_FIX_SHARED_FOLDERS.md)** - **Quick fix for shared folders**
+
 ### Making Changes:
 1. **Edit code on GitHub** - Make changes here and commit them
 2. **Lovable syncs automatically** - Your changes appear in Lovable

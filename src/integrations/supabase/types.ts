@@ -1565,6 +1565,326 @@ export type Database = {
         }
         Relationships: []
       }
+      user_groups: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_group_members: {
+        Row: {
+          id: string
+          group_id: string
+          user_id: string
+          added_by: string | null
+          added_at: string
+        }
+        Insert: {
+          id?: string
+          group_id: string
+          user_id: string
+          added_by?: string | null
+          added_at?: string
+        }
+        Update: {
+          id?: string
+          group_id?: string
+          user_id?: string
+          added_by?: string | null
+          added_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_permissions: {
+        Row: {
+          id: string
+          group_id: string
+          permission_type: string
+          can_view: boolean | null
+          can_create: boolean | null
+          can_update: boolean | null
+          can_delete: boolean | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          group_id: string
+          permission_type: string
+          can_view?: boolean | null
+          can_create?: boolean | null
+          can_update?: boolean | null
+          can_delete?: boolean | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          group_id?: string
+          permission_type?: string
+          can_view?: boolean | null
+          can_create?: boolean | null
+          can_update?: boolean | null
+          can_delete?: boolean | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_permissions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_permissions: {
+        Row: {
+          id: string
+          user_id: string
+          permission_type: string
+          can_view: boolean | null
+          can_create: boolean | null
+          can_update: boolean | null
+          can_delete: boolean | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          permission_type: string
+          can_view?: boolean | null
+          can_create?: boolean | null
+          can_update?: boolean | null
+          can_delete?: boolean | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          permission_type?: string
+          can_view?: boolean | null
+          can_create?: boolean | null
+          can_update?: boolean | null
+          can_delete?: boolean | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      shared_files: {
+        Row: {
+          id: string
+          document_id: string
+          shared_by: string
+          shared_with_user: string | null
+          shared_with_group: string | null
+          permission_level: string
+          expires_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          document_id: string
+          shared_by: string
+          shared_with_user?: string | null
+          shared_with_group?: string | null
+          permission_level?: string
+          expires_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          document_id?: string
+          shared_by?: string
+          shared_with_user?: string | null
+          shared_with_group?: string | null
+          permission_level?: string
+          expires_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_files_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_files_shared_with_group_fkey"
+            columns: ["shared_with_group"]
+            isOneToOne: false
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_folders: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          parent_folder_id: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          parent_folder_id?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          parent_folder_id?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "shared_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_folder_files: {
+        Row: {
+          id: string
+          filename: string
+          original_filename: string
+          file_type: string
+          file_size: number
+          storage_path: string
+          folder_id: string | null
+          uploaded_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          filename: string
+          original_filename: string
+          file_type: string
+          file_size: number
+          storage_path: string
+          folder_id?: string | null
+          uploaded_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          filename?: string
+          original_filename?: string
+          file_type?: string
+          file_size?: number
+          storage_path?: string
+          folder_id?: string | null
+          uploaded_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_folder_files_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "shared_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_folder_permissions: {
+        Row: {
+          id: string
+          folder_id: string
+          user_group_id: string | null
+          user_id: string | null
+          can_view: boolean | null
+          can_upload: boolean | null
+          can_download: boolean | null
+          can_delete: boolean | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          folder_id: string
+          user_group_id?: string | null
+          user_id?: string | null
+          can_view?: boolean | null
+          can_upload?: boolean | null
+          can_download?: boolean | null
+          can_delete?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          folder_id?: string
+          user_group_id?: string | null
+          user_id?: string | null
+          can_view?: boolean | null
+          can_upload?: boolean | null
+          can_download?: boolean | null
+          can_delete?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_folder_permissions_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "shared_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_folder_permissions_user_group_id_fkey"
+            columns: ["user_group_id"]
+            isOneToOne: false
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vpn_rdp_credentials: {
         Row: {
           created_at: string
