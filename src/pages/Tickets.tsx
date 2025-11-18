@@ -64,7 +64,6 @@ const Tickets = () => {
   const [timeLogMinutes, setTimeLogMinutes] = useState("");
   const [timeLogNotes, setTimeLogNotes] = useState("");
   const [timeLogs, setTimeLogs] = useState<any[]>([]);
-  const [accessDenied, setAccessDenied] = useState(false);
   const [currentUserBranch, setCurrentUserBranch] = useState("");
   const [currentUserDeviceSerial, setCurrentUserDeviceSerial] = useState("");
 
@@ -197,18 +196,7 @@ const Tickets = () => {
     // Check if user has admin role
     const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin");
 
-    if (!roles || roles.length === 0) {
-      setAccessDenied(true);
-      setIsAdmin(false);
-      toast({
-        title: "Access Denied",
-        description: "Only administrators can access the Tickets Dashboard",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsAdmin(true);
+    setIsAdmin(roles && roles.length > 0);
     fetchTickets();
   };
 
@@ -594,27 +582,6 @@ const Tickets = () => {
   const closedTickets = tickets.filter((t) => t.status === "closed");
   const resolvedTickets = tickets.filter((t) => t.status === "resolved");
   const pendingTickets = tickets.filter((t) => t.status === "pending");
-
-  if (accessDenied) {
-    return (
-      <DashboardLayout>
-        <div className="flex-1 flex items-center justify-center p-4 md:p-8">
-          <Card className="max-w-md">
-            <CardHeader>
-              <CardTitle className="text-destructive">Access Denied</CardTitle>
-              <CardDescription>You do not have permission to access the Tickets Dashboard.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Only administrators can access this page. If you believe this is an error, please contact your system
-                administrator.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </DashboardLayout>
-    );
-  }
 
   return (
     <DashboardLayout>
