@@ -216,9 +216,26 @@ const SharedFiles = () => {
 
   const fetchFiles = async () => {
     try {
+      // Join shared_folder_files with documents to get complete file info
       const query = supabase
         .from("shared_folder_files")
-        .select("*");
+        .select(`
+          id,
+          folder_id,
+          added_by,
+          added_at,
+          documents:document_id (
+            id,
+            filename,
+            original_filename,
+            file_size,
+            file_type,
+            storage_path,
+            uploaded_by,
+            created_at,
+            updated_at
+          )
+        `);
 
       if (currentFolderId) {
         query.eq("folder_id", currentFolderId);
@@ -226,10 +243,25 @@ const SharedFiles = () => {
         query.is("folder_id", null);
       }
 
-      const { data, error } = await query.order("original_filename");
+      const { data, error } = await query;
 
       if (error) throw error;
-      setFiles(data || []);
+      
+      // Transform the data to match SharedFile interface
+      const transformedFiles = (data || []).map((item: any) => ({
+        id: item.documents?.id || item.id,
+        filename: item.documents?.filename || '',
+        original_filename: item.documents?.original_filename || '',
+        file_size: item.documents?.file_size || 0,
+        file_type: item.documents?.file_type || '',
+        storage_path: item.documents?.storage_path || '',
+        folder_id: item.folder_id,
+        uploaded_by: item.documents?.uploaded_by || item.added_by,
+        created_at: item.documents?.created_at || item.added_at,
+        updated_at: item.documents?.updated_at || item.added_at,
+      }));
+      
+      setFiles(transformedFiles);
     } catch (error) {
       console.error("Error fetching files:", error);
     }
@@ -403,28 +435,46 @@ const SharedFiles = () => {
 
       console.log("SharedFiles: File uploaded to storage, creating database record");
 
-      const { error: dbError } = await supabase
-        .from("shared_folder_files")
+      // Step 1: Create document record
+      const { data: documentData, error: docError } = await supabase
+        .from("documents")
         .insert({
           filename: filename,
           original_filename: selectedFile.name,
           file_size: selectedFile.size,
           file_type: selectedFile.type,
           storage_path: filePath,
-          folder_id: currentFolderId,
+          storage_bucket: 'documents',
           uploaded_by: session.user.id,
-        });
+        })
+        .select()
+        .single();
 
-      if (dbError) {
-        console.error("SharedFiles: Database insert error:", {
-          code: dbError.code,
-          message: dbError.message,
-          details: dbError.details
+      if (docError) {
+        console.error("SharedFiles: Documents table insert error:", docError);
+        toast.error("Failed to create document record", {
+          description: docError.message || "Database error"
         });
-        toast.error("Failed to save file metadata", {
-          description: dbError.message
-        });
-        throw dbError;
+        throw docError;
+      }
+
+      // Step 2: Link document to folder (if in a folder)
+      if (currentFolderId && documentData) {
+        const { error: linkError } = await supabase
+          .from("shared_folder_files")
+          .insert({
+            folder_id: currentFolderId,
+            document_id: documentData.id,
+            added_by: session.user.id,
+          });
+
+        if (linkError) {
+          console.error("SharedFiles: Folder link error:", linkError);
+          toast.error("File uploaded but failed to add to folder", {
+            description: linkError.message
+          });
+          throw linkError;
+        }
       }
 
       console.log("SharedFiles: File uploaded successfully");
