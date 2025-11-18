@@ -23,7 +23,7 @@ SELECT
 FROM auth.users au
 WHERE au.email ILIKE '%graeme%smart%' 
    OR au.email ILIKE '%smart%graeme%'
-   OR au.full_name ILIKE '%graeme%smart%'
+   OR LOWER(COALESCE(au.raw_user_meta_data->>'full_name', '')) LIKE '%graeme%smart%'
 ON CONFLICT (user_id, role) DO NOTHING;
 
 -- Update the handle_new_user function to automatically assign roles
