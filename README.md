@@ -40,6 +40,14 @@ A modern, professional helpdesk and asset management system built with React, Ty
 - **⭐ [LOVABLE_SQL_EDITING_GUIDE.md](./LOVABLE_SQL_EDITING_GUIDE.md)** - **Complete guide (no CLI needed)**
 - **⭐ [LOVABLE_SQL_CHEATSHEET.md](./LOVABLE_SQL_CHEATSHEET.md)** - **Quick reference**
 
+**🚀 NEW: No Lovable Credits? Use GitHub Actions!**
+- **🎯 [START_HERE_GITHUB_ACTIONS.md](./START_HERE_GITHUB_ACTIONS.md)** - **Complete overview (NEW!)**
+- **⚡ [GITHUB_ACTIONS_QUICKSTART.md](./GITHUB_ACTIONS_QUICKSTART.md)** - **3-step quick start**
+- **✨ [GITHUB_ACTIONS_MIGRATIONS.md](./GITHUB_ACTIONS_MIGRATIONS.md)** - **Full guide with troubleshooting**
+- Run migrations directly from GitHub when you can't use Lovable dashboard
+- Just set up two secrets and click "Run workflow"
+- Works when you don't have CLI access or Lovable credits
+
 **Have CLI access?**
 When pulling code from GitHub that includes database changes:
 ```bash
@@ -53,7 +61,10 @@ npm run migrate
 - Detection query files in `db/detection-queries/`
 
 **All Documentation**:
-- **✨ [MIGRATION_MANAGER_GUIDE.md](./MIGRATION_MANAGER_GUIDE.md)** - **Apply migrations from dashboard (NEW!)**
+- **🎯 [START_HERE_GITHUB_ACTIONS.md](./START_HERE_GITHUB_ACTIONS.md)** - **GitHub Actions overview (NEW!)**
+- **⚡ [GITHUB_ACTIONS_QUICKSTART.md](./GITHUB_ACTIONS_QUICKSTART.md)** - **GitHub Actions 3-step quick start**
+- **✨ [GITHUB_ACTIONS_MIGRATIONS.md](./GITHUB_ACTIONS_MIGRATIONS.md)** - **Apply migrations from GitHub Actions**
+- **✨ [MIGRATION_MANAGER_GUIDE.md](./MIGRATION_MANAGER_GUIDE.md)** - **Apply migrations from dashboard**
 - **🔥 [QUICK_FIX_TABLE_REFS.md](./QUICK_FIX_TABLE_REFS.md)** - **Fix table reference errors**
 - **[LOVABLE_START_HERE.md](./LOVABLE_START_HERE.md)** - Start here for Lovable users
 - **[LOVABLE_SQL_EDITING_GUIDE.md](./LOVABLE_SQL_EDITING_GUIDE.md)** - Edit SQL on Lovable (no CLI)
