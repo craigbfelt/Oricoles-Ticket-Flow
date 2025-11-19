@@ -95,36 +95,34 @@ async function fetchMigrationFromGitHub(filename: string): Promise<string> {
 }
 
 /**
- * Execute SQL using Supabase client
- * Note: This executes SQL directly using the service role key
+ * Execute SQL using PostgreSQL connection
+ * Note: This uses the postgres:// connection string to execute raw SQL
  */
-async function executeSQL(supabaseClient: any, sql: string): Promise<void> {
-  // Split SQL into individual statements (basic approach)
-  const statements = sql
-    .split(';')
-    .map(s => s.trim())
-    .filter(s => s.length > 0 && !s.startsWith('--'));
+async function executeSQL(sql: string): Promise<void> {
+  // Get database connection string from environment
+  const dbUrl = Deno.env.get('SUPABASE_DB_URL');
+  
+  if (!dbUrl) {
+    throw new Error('SUPABASE_DB_URL environment variable is not set');
+  }
 
-  for (const statement of statements) {
-    if (statement.trim().length === 0) continue;
+  // Import postgres driver
+  const { Client } = await import('https://deno.land/x/postgres@v0.17.0/mod.ts');
+  
+  // Create a new client
+  const client = new Client(dbUrl);
+  
+  try {
+    // Connect to the database
+    await client.connect();
     
-    // Execute using raw SQL query
-    const { error } = await supabaseClient.rpc('exec_sql', {
-      sql_query: statement + ';'
-    });
+    // Execute the SQL
+    // Note: We execute the entire migration as a single transaction
+    await client.queryArray(sql);
     
-    if (error) {
-      // Try direct execution if exec_sql doesn't exist
-      const { error: directError } = await supabaseClient
-        .from('_dummy_')
-        .select('*')
-        .limit(0);
-      
-      // If both fail, throw the original error
-      if (error.code !== 'PGRST204') {
-        throw error;
-      }
-    }
+  } finally {
+    // Always close the connection
+    await client.end();
   }
 }
 
@@ -148,7 +146,7 @@ serve(async (req) => {
     `;
     
     try {
-      await executeSQL(supabaseClient, createTableSQL);
+      await executeSQL(createTableSQL);
     } catch (tableError) {
       console.warn('Warning: Could not create schema_migrations table:', tableError);
       // Continue anyway - table might already exist
@@ -205,7 +203,7 @@ serve(async (req) => {
         }
 
         // Execute the migration SQL
-        await executeSQL(supabaseClient, sql);
+        await executeSQL(sql);
 
         // Record that this migration was applied
         const { error: recordError } = await supabaseClient
