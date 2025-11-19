@@ -66,8 +66,6 @@ const Tickets = () => {
   const [timeLogMinutes, setTimeLogMinutes] = useState("");
   const [timeLogNotes, setTimeLogNotes] = useState("");
   const [timeLogs, setTimeLogs] = useState<any[]>([]);
-  const [currentUserBranch, setCurrentUserBranch] = useState("");
-  const [currentUserDeviceSerial, setCurrentUserDeviceSerial] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -82,7 +80,7 @@ const Tickets = () => {
   const fetchUserProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, email, full_name, user_id, device_serial_number, branch_id")
+      .select("id, email, full_name, user_id")
       .eq("user_id", userId)
       .single();
 
@@ -115,7 +113,7 @@ const Tickets = () => {
         // Retry fetching the profile
         const { data: newData } = await supabase
           .from("profiles")
-          .select("id, email, full_name, user_id, device_serial_number, branch_id")
+          .select("id, email, full_name, user_id")
           .eq("user_id", userId)
           .single();
         
@@ -152,24 +150,9 @@ const Tickets = () => {
     setCurrentUserId(userId); // Auth user ID for role checks
     setCurrentUserEmail(data.email || "");
     setCurrentUserName(data.full_name || "");
-    setCurrentUserDeviceSerial(data.device_serial_number || "");
 
     // Auto-fill user email in ticket form
     setUserEmail(data.email || "");
-
-    // Fetch branch name if branch_id exists
-    if (data.branch_id) {
-      const { data: branchData } = await supabase
-        .from("branches")
-        .select("name")
-        .eq("id", data.branch_id)
-        .single();
-
-      if (branchData) {
-        setCurrentUserBranch(branchData.name);
-        setBranch(branchData.name); // Auto-fill branch in ticket form
-      }
-    }
 
     await checkAdminRole(userId);
     await checkSupportRole(userId);
@@ -221,7 +204,6 @@ const Tickets = () => {
       fault_type: faultType || null,
       user_email: userEmail || null,
       error_code: errorCode || null,
-      device_serial_number: currentUserDeviceSerial || null,
     };
 
     const validationResult = ticketSchema.safeParse(formData);
