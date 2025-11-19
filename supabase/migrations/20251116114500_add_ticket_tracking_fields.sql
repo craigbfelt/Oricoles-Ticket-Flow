@@ -42,7 +42,7 @@ BEGIN
   
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Create trigger for ticket activity logging
 DROP TRIGGER IF EXISTS ticket_activity_log_trigger ON public.tickets;

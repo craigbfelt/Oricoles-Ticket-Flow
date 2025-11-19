@@ -1,4 +1,7 @@
--- Function to generate random password
+-- Security fix: Add search_path protection to SECURITY DEFINER functions
+-- This prevents search_path manipulation attacks on privileged functions
+
+-- Fix generate_random_password function
 CREATE OR REPLACE FUNCTION public.generate_random_password(length INTEGER DEFAULT 16)
 RETURNS TEXT AS $$
 DECLARE
@@ -13,7 +16,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- Function to create system user from staff user (VPN/RDP user)
+-- Fix create_system_user_from_staff function
 CREATE OR REPLACE FUNCTION public.create_system_user_from_staff(
   staff_user_id UUID
 )
@@ -64,7 +67,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- Function to import multiple system users from staff users
+-- Fix import_system_users_from_staff function
 CREATE OR REPLACE FUNCTION public.import_system_users_from_staff(
   staff_user_ids UUID[]
 )
@@ -97,7 +100,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- Function to import RDP users from dashboard
+-- Fix import_rdp_users_from_dashboard function
 CREATE OR REPLACE FUNCTION public.import_rdp_users_from_dashboard()
 RETURNS JSONB AS $$
 DECLARE
@@ -118,7 +121,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- Function to import VPN users from dashboard
+-- Fix import_vpn_users_from_dashboard function
 CREATE OR REPLACE FUNCTION public.import_vpn_users_from_dashboard()
 RETURNS JSONB AS $$
 DECLARE
@@ -139,15 +142,42 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- Grant execute permissions to authenticated users for these functions
-GRANT EXECUTE ON FUNCTION public.generate_random_password TO authenticated;
-GRANT EXECUTE ON FUNCTION public.create_system_user_from_staff TO authenticated;
-GRANT EXECUTE ON FUNCTION public.import_system_users_from_staff TO authenticated;
-GRANT EXECUTE ON FUNCTION public.import_rdp_users_from_dashboard TO authenticated;
-GRANT EXECUTE ON FUNCTION public.import_vpn_users_from_dashboard TO authenticated;
+-- Fix log_ticket_activity function
+CREATE OR REPLACE FUNCTION log_ticket_activity()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Log ticket creation
+  IF TG_OP = 'INSERT' THEN
+    INSERT INTO public.user_activity_log (user_id, activity_type, activity_details)
+    VALUES (
+      (SELECT user_id FROM public.profiles WHERE id = NEW.created_by),
+      'ticket_create',
+      jsonb_build_object(
+        'ticket_id', NEW.id,
+        'title', NEW.title,
+        'priority', NEW.priority,
+        'branch', NEW.branch,
+        'device_serial_number', NEW.device_serial_number
+      )
+    );
+  -- Log ticket updates
+  ELSIF TG_OP = 'UPDATE' AND (OLD.status != NEW.status OR OLD.assigned_to != NEW.assigned_to) THEN
+    INSERT INTO public.user_activity_log (user_id, activity_type, activity_details)
+    VALUES (
+      (SELECT user_id FROM public.profiles WHERE id = COALESCE(NEW.assigned_to, NEW.created_by)),
+      'ticket_update',
+      jsonb_build_object(
+        'ticket_id', NEW.id,
+        'old_status', OLD.status,
+        'new_status', NEW.status,
+        'old_assigned_to', OLD.assigned_to,
+        'new_assigned_to', NEW.assigned_to
+      )
+    );
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
-COMMENT ON FUNCTION public.generate_random_password IS 'Generates a secure random password';
-COMMENT ON FUNCTION public.create_system_user_from_staff IS 'Creates a system user from a staff user with random password';
-COMMENT ON FUNCTION public.import_system_users_from_staff IS 'Bulk import system users from staff users';
-COMMENT ON FUNCTION public.import_rdp_users_from_dashboard IS 'Import RDP users from dashboard tab page';
-COMMENT ON FUNCTION public.import_vpn_users_from_dashboard IS 'Import VPN users from dashboard tab page';
+COMMENT ON MIGRATION IS 'Security fix: Added SET search_path = public to all SECURITY DEFINER functions to prevent search_path manipulation attacks';

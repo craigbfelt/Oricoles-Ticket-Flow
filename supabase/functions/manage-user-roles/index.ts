@@ -64,6 +64,15 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Validate user_id is a valid UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(user_id)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid user_id format. Must be a valid UUID.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Validate roles
     const validRoles = ['admin', 'support_staff', 'user'];
     const invalidRoles = roles.filter(role => !validRoles.includes(role));

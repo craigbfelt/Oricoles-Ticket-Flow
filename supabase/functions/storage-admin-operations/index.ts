@@ -40,11 +40,16 @@ Deno.serve(async (req) => {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders });
     }
 
-    // Require admin role - adjust according to your role claims
-    const isAdmin = (user?.app_metadata?.roles || []).includes('admin') || 
-                    (user?.user_metadata?.role === 'admin');
-    if (!isAdmin) {
-      console.warn('Forbidden: user lacks admin role', { userId: user.id });
+    // Check if the requesting user is an admin from database
+    const { data: adminCheck, error: adminError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (adminError || !adminCheck) {
+      console.warn('Forbidden: user lacks admin role', { userId: user.id, adminError });
       return new Response('Forbidden', { status: 403, headers: corsHeaders });
     }
 
