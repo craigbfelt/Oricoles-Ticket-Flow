@@ -41,6 +41,7 @@ const Tickets = () => {
   const [userEmail, setUserEmail] = useState("");
   const [errorCode, setErrorCode] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentProfileId, setCurrentProfileId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [ticketToDelete, setTicketToDelete] = useState<string | null>(null);
@@ -80,7 +81,7 @@ const Tickets = () => {
   const fetchUserProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, email, full_name, user_id, device_serial_number, branch_id" as any)
+      .select("id, email, full_name, user_id, device_serial_number, branch_id")
       .eq("user_id", userId)
       .single();
 
@@ -113,7 +114,7 @@ const Tickets = () => {
         // Retry fetching the profile
         const { data: newData } = await supabase
           .from("profiles")
-          .select("id, email, full_name, user_id, device_serial_number, branch_id" as any)
+          .select("id, email, full_name, user_id, device_serial_number, branch_id")
           .eq("user_id", userId)
           .single();
         
@@ -130,17 +131,24 @@ const Tickets = () => {
       setupProfile(data, userId);
     } else if (error) {
       console.error("Error fetching profile:", error);
+      console.error("Error details:", {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
       toast({
         title: "Error",
-        description: "Unable to load user profile. Please try refreshing the page.",
+        description: `Unable to load user profile: ${error.message}. Please try refreshing the page.`,
         variant: "destructive",
       });
     }
   };
 
   const setupProfile = async (data: any, userId: string) => {
-    // Use user_id (auth user UUID) instead of profile id
-    setCurrentUserId(userId);
+    // Store both profile.id (for ticket references) and user_id (for auth checks)
+    setCurrentProfileId(data.id); // Profile ID for foreign key references
+    setCurrentUserId(userId); // Auth user ID for role checks
     setCurrentUserEmail(data.email || "");
     setCurrentUserName(data.full_name || "");
     setCurrentUserDeviceSerial(data.device_serial_number || "");
@@ -193,7 +201,7 @@ const Tickets = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!currentUserId) {
+    if (!currentProfileId) {
       toast({
         title: "Error",
         description: "User profile not found",
@@ -205,7 +213,7 @@ const Tickets = () => {
     setIsSubmitting(true);
 
     // Auto-assign to current user if they're support staff
-    const assignedTo = isSupportStaff ? currentUserId : null;
+    const assignedTo = isSupportStaff ? currentProfileId : null;
 
     const { data: ticketData, error } = await supabase
       .from("tickets")
@@ -220,8 +228,8 @@ const Tickets = () => {
           user_email: userEmail || null,
           error_code: errorCode || null,
           device_serial_number: currentUserDeviceSerial || null,
-          created_by: currentUserId,
-          assigned_to: assignedTo,
+          created_by: currentProfileId, // Use profile.id for foreign key
+          assigned_to: assignedTo, // Use profile.id for foreign key
           status: "open" as any,
           last_activity_at: new Date().toISOString(),
         },
