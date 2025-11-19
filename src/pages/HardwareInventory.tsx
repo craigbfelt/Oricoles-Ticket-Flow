@@ -13,6 +13,7 @@ import { Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
 import { DataTable } from "@/components/DataTable";
+import { hardwareSchema } from "@/lib/validations";
 
 const HardwareInventory = () => {
   const [devices, setDevices] = useState<any[]>([]);
@@ -88,9 +89,17 @@ const HardwareInventory = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate form data
+    const validationResult = hardwareSchema.safeParse(formData);
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(err => err.message).join(", ");
+      toast.error(`Validation Error: ${errors}`);
+      return;
+    }
     
     const deviceData = {
-      ...formData,
+      ...validationResult.data,
       ram_gb: formData.ram_gb ? parseInt(formData.ram_gb) : null,
       storage_gb: formData.storage_gb ? parseInt(formData.storage_gb) : null,
       purchase_date: formData.purchase_date || null,
@@ -233,8 +242,16 @@ const HardwareInventory = () => {
   const handleSaveDevice = async () => {
     if (!selectedDevice) return;
 
+    // Validate form data
+    const validationResult = hardwareSchema.safeParse(formData);
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(err => err.message).join(", ");
+      toast.error(`Validation Error: ${errors}`);
+      return;
+    }
+
     const deviceData = {
-      ...formData,
+      ...validationResult.data,
       ram_gb: formData.ram_gb ? parseInt(formData.ram_gb) : null,
       storage_gb: formData.storage_gb ? parseInt(formData.storage_gb) : null,
       purchase_date: formData.purchase_date || null,

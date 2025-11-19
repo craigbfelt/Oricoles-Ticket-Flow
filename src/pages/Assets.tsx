@@ -14,6 +14,7 @@ import { Plus, Trash2, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { PageDocumentsView } from "@/components/PageDocumentsView";
+import { assetSchema } from "@/lib/validations";
 
 const Assets = () => {
   const navigate = useNavigate();
@@ -63,16 +64,19 @@ const Assets = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const { error } = await supabase.from("assets").insert([{
-      name: formData.name,
-      asset_tag: formData.asset_tag || null,
-      category: formData.category || null,
-      model: formData.model || null,
-      serial_number: formData.serial_number || null,
-      status: formData.status as any,
-      location: formData.location || null,
-      notes: formData.notes || null,
-    }]);
+    // Validate form data
+    const validationResult = assetSchema.safeParse(formData);
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(err => err.message).join(", ");
+      toast({
+        title: "Validation Error",
+        description: errors,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { error } = await supabase.from("assets").insert([validationResult.data]);
 
     if (error) {
       toast({

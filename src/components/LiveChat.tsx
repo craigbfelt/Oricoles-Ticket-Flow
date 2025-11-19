@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { chatMessageSchema } from "@/lib/validations";
 
 interface ChatMessage {
   id: string;
@@ -78,20 +79,50 @@ export const LiveChat = () => {
   };
 
   const handleSetName = () => {
-    if (userName.trim()) {
-      setIsNameSet(true);
+    if (!userName.trim()) return;
+
+    // Validate user name
+    const validationResult = chatMessageSchema.pick({ user_name: true, user_email: true }).safeParse({
+      user_name: userName,
+      user_email: userEmail || null,
+    });
+
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(err => err.message).join(", ");
+      toast({
+        title: "Validation Error",
+        description: errors,
+        variant: "destructive",
+      });
+      return;
     }
+
+    setIsNameSet(true);
   };
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
 
-    const { error } = await supabase.from("chat_messages").insert({
+    // Validate message data
+    const messageData = {
       user_name: userName,
       user_email: userEmail || null,
       message: newMessage,
       is_support_reply: false,
-    });
+    };
+
+    const validationResult = chatMessageSchema.safeParse(messageData);
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(err => err.message).join(", ");
+      toast({
+        title: "Validation Error",
+        description: errors,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { error } = await supabase.from("chat_messages").insert(validationResult.data);
 
     if (error) {
       toast({

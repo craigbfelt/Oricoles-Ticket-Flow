@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { branchSchema } from "@/lib/validations";
 
 const Branches = () => {
   const navigate = useNavigate();
@@ -127,7 +128,20 @@ const Branches = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createBranch.mutate(formData);
+
+    // Validate form data
+    const validationResult = branchSchema.safeParse(formData);
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(err => err.message).join(", ");
+      toast({
+        title: "Validation Error",
+        description: errors,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createBranch.mutate(validationResult.data);
   };
 
   const downloadCSVTemplate = () => {

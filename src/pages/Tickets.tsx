@@ -26,6 +26,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FaultTypeSelector } from "@/components/FaultTypeSelector";
+import { ticketSchema, ticketUpdateSchema } from "@/lib/validations";
 
 const Tickets = () => {
   const navigate = useNavigate();
@@ -210,6 +211,30 @@ const Tickets = () => {
       return;
     }
 
+    // Validate form data
+    const formData = {
+      title,
+      description,
+      priority,
+      category: category || null,
+      branch: branch || null,
+      fault_type: faultType || null,
+      user_email: userEmail || null,
+      error_code: errorCode || null,
+      device_serial_number: currentUserDeviceSerial || null,
+    };
+
+    const validationResult = ticketSchema.safeParse(formData);
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(err => err.message).join(", ");
+      toast({
+        title: "Validation Error",
+        description: errors,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     // Auto-assign to current user if they're support staff
@@ -219,15 +244,7 @@ const Tickets = () => {
       .from("tickets")
       .insert([
         {
-          title,
-          description,
-          priority: priority as any,
-          category: category || null,
-          branch: branch || null,
-          fault_type: faultType || null,
-          user_email: userEmail || null,
-          error_code: errorCode || null,
-          device_serial_number: currentUserDeviceSerial || null,
+          ...validationResult.data,
           created_by: currentProfileId, // Use profile.id for foreign key
           assigned_to: assignedTo, // Use profile.id for foreign key
           status: "open" as any,
@@ -465,16 +482,32 @@ const Tickets = () => {
   const handleSaveChanges = async () => {
     if (!selectedTicket) return;
 
-    const updates: any = {
+    // Validate update data
+    const updateData = {
       title: editTitle,
       description: editDescription,
-      priority: editPriority as any,
-      status: editStatus as any,
+      priority: editPriority,
+      status: editStatus,
       category: editCategory || null,
       branch: editBranch || null,
       fault_type: editFaultType || null,
       user_email: editUserEmail || null,
       error_code: editErrorCode || null,
+    };
+
+    const validationResult = ticketUpdateSchema.safeParse(updateData);
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(err => err.message).join(", ");
+      toast({
+        title: "Validation Error",
+        description: errors,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const updates: any = {
+      ...validationResult.data,
     };
 
     if (editStatus === "closed" && selectedTicket.status !== "closed") {
