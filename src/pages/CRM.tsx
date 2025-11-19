@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import oricolLogo from "@/assets/oricol-logo.png";
 
 interface Company {
   id: string;
@@ -453,8 +454,17 @@ const CRM = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6 space-y-6 w-full">
-        <div className="flex items-center justify-between">
+      <div className="p-4 md:p-6 space-y-6 w-full relative">
+        {/* Oricol Logo Watermark */}
+        <div className="fixed top-20 right-8 pointer-events-none z-0 hidden lg:block">
+          <img 
+            src={oricolLogo} 
+            alt="Oricol Environmental Services" 
+            className="h-48 w-auto object-contain opacity-10"
+          />
+        </div>
+        
+        <div className="flex items-center justify-between relative z-10">
           <div>
             <h1 className="text-3xl font-bold">Oricol CRM</h1>
             <p className="text-muted-foreground">
@@ -464,7 +474,7 @@ const CRM = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 w-full">
+        <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 w-full relative z-10">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Companies</CardTitle>
@@ -509,7 +519,7 @@ const CRM = () => {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="companies" className="w-full">
+        <Tabs defaultValue="companies" className="w-full relative z-10">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="companies">Companies</TabsTrigger>
             <TabsTrigger value="contacts">Contacts</TabsTrigger>
