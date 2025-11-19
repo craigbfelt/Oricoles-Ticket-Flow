@@ -191,41 +191,25 @@ const Users = () => {
     // Only update roles if they have changed
     const rolesChanged = JSON.stringify([...editRoles].sort()) !== JSON.stringify([...systemUser.roles].sort());
     if (rolesChanged) {
-      // Delete existing roles and insert new ones
-      const { error: deleteError } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", systemUser.user_id);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const { error: rolesError } = await supabase.functions.invoke('manage-user-roles', {
+        body: {
+          user_id: systemUser.user_id,
+          roles: editRoles,
+        },
+        headers: {
+          Authorization: `Bearer ${sessionData?.session?.access_token}`,
+        },
+      });
 
-      if (deleteError) {
-        console.error("Delete roles error:", deleteError);
+      if (rolesError) {
+        console.error("Roles update error:", rolesError);
         toast({
           title: "Error",
-          description: `Failed to update user roles: ${deleteError.message}`,
+          description: `Failed to update user roles: ${rolesError.message}`,
           variant: "destructive",
         });
         return;
-      }
-
-      if (editRoles.length > 0) {
-        const rolesToInsert = editRoles.map(role => ({
-          user_id: systemUser.user_id,
-          role: role,
-        }));
-
-        const { error: insertError } = await (supabase as any)
-          .from("user_roles")
-          .insert(rolesToInsert);
-
-        if (insertError) {
-          console.error("Insert roles error:", insertError);
-          toast({
-            title: "Error",
-            description: `Failed to assign user roles: ${insertError.message}`,
-            variant: "destructive",
-          });
-          return;
-        }
       }
     }
 

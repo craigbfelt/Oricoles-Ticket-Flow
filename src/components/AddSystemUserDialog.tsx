@@ -75,19 +75,26 @@ export function AddSystemUserDialog({ onSuccess }: { onSuccess: () => void }) {
           console.error("Profile creation error:", profileError);
         }
 
-        // Assign roles
+        // Assign roles using secure backend function
         if (roles.length > 0) {
-          const rolesToInsert = roles.map(role => ({
-            user_id: authData.user.id,
-            role: role as Database["public"]["Enums"]["app_role"],
-          }));
-
-          const { error: rolesError } = await supabase
-            .from("user_roles")
-            .insert(rolesToInsert);
+          const { data: sessionData } = await supabase.auth.getSession();
+          const { error: rolesError } = await supabase.functions.invoke('manage-user-roles', {
+            body: {
+              user_id: authData.user.id,
+              roles: roles,
+            },
+            headers: {
+              Authorization: `Bearer ${sessionData?.session?.access_token}`,
+            },
+          });
 
           if (rolesError) {
             console.error("Roles assignment error:", rolesError);
+            toast({
+              title: "Warning",
+              description: "User created but role assignment failed. You may need admin privileges.",
+              variant: "destructive",
+            });
           }
         }
 
