@@ -106,7 +106,7 @@ const HardwareInventory = () => {
       warranty_expires: formData.warranty_expires || null,
     };
 
-    const { error } = await supabase.from('hardware_inventory').insert([deviceData]);
+    const { error } = await supabase.from('hardware_inventory').insert([deviceData as any]);
     
     if (error) {
       console.error('Error creating device:', error);

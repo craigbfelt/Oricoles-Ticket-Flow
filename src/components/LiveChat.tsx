@@ -122,7 +122,12 @@ export const LiveChat = () => {
       return;
     }
 
-    const { error } = await supabase.from("chat_messages").insert([validationResult.data]);
+    const { error } = await supabase.from("chat_messages").insert([{
+      user_name: validationResult.data.user_name,
+      user_email: validationResult.data.user_email,
+      message: validationResult.data.message,
+      is_support_reply: validationResult.data.is_support_reply ?? false,
+    }]);
 
     if (error) {
       toast({

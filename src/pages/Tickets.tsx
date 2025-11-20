@@ -226,7 +226,7 @@ const Tickets = () => {
       .from("tickets")
       .insert([
         {
-          ...validationResult.data,
+          ...validationResult.data as any,
           created_by: currentProfileId, // Use profile.id for foreign key
           assigned_to: assignedTo, // Use profile.id for foreign key
           status: "open" as any,

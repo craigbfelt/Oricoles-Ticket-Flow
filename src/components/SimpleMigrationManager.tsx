@@ -100,7 +100,7 @@ export const SimpleMigrationManager = () => {
     try {
       // First, ensure the schema_migrations table exists
       const { data: tableCheckData, error: tableCheckError } = await supabase
-        .from('schema_migrations')
+        .from('schema_migrations' as any)
         .select('version')
         .limit(1);
 
@@ -128,7 +128,7 @@ export const SimpleMigrationManager = () => {
 
       // Get list of applied migrations
       const { data: appliedMigrations, error } = await supabase
-        .from('schema_migrations')
+        .from('schema_migrations' as any)
         .select('version');
 
       if (error) {

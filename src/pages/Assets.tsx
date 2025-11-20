@@ -76,7 +76,7 @@ const Assets = () => {
       return;
     }
 
-    const { error } = await supabase.from("assets").insert([validationResult.data]);
+    const { error } = await supabase.from("assets").insert([validationResult.data as any]);
 
     if (error) {
       toast({

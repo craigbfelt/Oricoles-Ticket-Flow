@@ -141,7 +141,7 @@ const Branches = () => {
       return;
     }
 
-    createBranch.mutate(validationResult.data);
+    createBranch.mutate(validationResult.data as any);
   };
 
   const downloadCSVTemplate = () => {
