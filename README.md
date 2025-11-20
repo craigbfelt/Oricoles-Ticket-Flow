@@ -33,11 +33,28 @@ Choose your setup path:
 2. **Make code changes** - Edit locally or on GitHub
 3. **Push to GitHub** - Changes are committed to your repository
 4. **Automatic deployment** - GitHub Actions builds and deploys your app
-5. **Apply database changes** - Use Supabase CLI or SQL Editor
+5. **Database migrations auto-deploy** - Migrations are automatically applied to Supabase on PR merge (see [AUTOMATED_MIGRATION_SETUP.md](./AUTOMATED_MIGRATION_SETUP.md))
 
-### 🔄 Database Migrations (Important!)
+### 🔄 Database Migrations (Automated!)
 
-**Using Supabase CLI** (Recommended):
+**✨ NEW: Automated Migration Deployment**
+
+Database migrations are now **automatically applied** when you merge PRs to main!
+
+**Quick Setup** (5 minutes):
+1. **[AUTOMATED_MIGRATION_SETUP.md](./AUTOMATED_MIGRATION_SETUP.md)** - 5-minute setup guide
+2. Add Supabase secrets to GitHub
+3. Done! Migrations auto-deploy on PR merge
+
+**How it works**:
+- Create migration files in `supabase/migrations/`
+- Squash and merge PR to main
+- GitHub Actions automatically applies migrations
+- No manual deployment needed!
+
+**Manual Options** (if needed):
+
+Using Supabase CLI:
 ```bash
 # Install Supabase CLI
 npm install -g supabase
@@ -49,13 +66,15 @@ npx supabase link --project-ref YOUR_PROJECT_REF
 npx supabase db push
 ```
 
-**Without CLI** (Manual):
+Without CLI:
 1. Go to your Supabase project dashboard
 2. Click **SQL Editor**
 3. Run migration files from `supabase/migrations/` in chronological order
 
 **All Documentation**:
-- **⭐ [GITHUB_SUPABASE_DEPLOYMENT.md](./GITHUB_SUPABASE_DEPLOYMENT.md)** - **Complete deployment guide**
+- **⭐ [AUTOMATED_MIGRATION_SETUP.md](./AUTOMATED_MIGRATION_SETUP.md)** - **5-minute automated setup**
+- **[AUTOMATED_MIGRATION_GUIDE.md](./AUTOMATED_MIGRATION_GUIDE.md)** - Complete automation guide
+- **[GITHUB_SUPABASE_DEPLOYMENT.md](./GITHUB_SUPABASE_DEPLOYMENT.md)** - Complete deployment guide
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Free hosting options
 - **[SUPABASE_MIGRATIONS.md](./SUPABASE_MIGRATIONS.md)** - Complete migration guide
 - **[DATABASE_DETECTION_GUIDE.md](./DATABASE_DETECTION_GUIDE.md)** - Database detection guide

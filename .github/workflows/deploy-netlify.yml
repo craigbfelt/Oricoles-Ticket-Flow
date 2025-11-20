@@ -4,10 +4,16 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Deploy Database Migrations"]
+    types:
+      - completed
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Wait for migrations to complete if they're running
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     
     steps:
     - uses: actions/checkout@v4
