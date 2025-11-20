@@ -4,6 +4,12 @@ A modern, professional helpdesk and asset management system built with React, Ty
 
 ![Oricol Helpdesk](https://github.com/user-attachments/assets/43b833f0-e11c-4776-a0ad-cba268f6aa18)
 
+## ✅ Lovable Status: INDEPENDENT
+
+**This app is NO LONGER connected to Lovable and runs completely independently.**
+
+The app was migrated from Lovable to an independent stack in November 2025. See [LOVABLE_DISCONNECTION_VERIFICATION.md](./LOVABLE_DISCONNECTION_VERIFICATION.md) for full verification details.
+
 ## 🚀 Working with this project
 
 **This app runs on GitHub + Supabase** - A modern, independent tech stack:
