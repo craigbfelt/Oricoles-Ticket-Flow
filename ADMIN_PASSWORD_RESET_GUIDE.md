@@ -117,8 +117,16 @@ Body: {
 
 ## Deployment
 
+### Edge Function Configuration
+**IMPORTANT**: The edge function is configured in `supabase/config.toml` with `verify_jwt = true` to require authentication. This configuration is required for the function to work properly.
+
 ### Edge Function Deployment
-The edge function needs to be deployed to your Supabase project:
+
+#### On Lovable Platform
+Edge functions are automatically deployed when changes are pushed to the repository. No manual deployment is needed.
+
+#### Using Supabase CLI (Manual Deployment)
+If deploying manually or using local Supabase:
 
 ```bash
 # Using Supabase CLI
@@ -154,8 +162,15 @@ Potential improvements:
 
 ## Support
 
-For issues or questions:
-1. Check Supabase Edge Function logs
+### Troubleshooting
+
+**Error: "Can't send the edge function"**
+- **Cause**: The edge function is not configured or deployed
+- **Solution**: Ensure `supabase/config.toml` contains the `[functions.reset-user-password]` section with `verify_jwt = true`
+- **On Lovable**: The function auto-deploys when config changes are pushed
+
+For other issues or questions:
+1. Check Supabase Edge Function logs in the Supabase Dashboard
 2. Check browser console for client-side errors
-3. Verify admin role is properly assigned
-4. Ensure edge function is deployed
+3. Verify admin role is properly assigned to your user
+4. Ensure edge function is deployed and configured
