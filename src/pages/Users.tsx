@@ -22,6 +22,7 @@ import { AddStaffMemberDialog } from "@/components/AddStaffMemberDialog";
 import { ManageLicensesDialog } from "@/components/ManageLicensesDialog";
 import { AddSystemUserDialog } from "@/components/AddSystemUserDialog";
 import { ImportSystemUsersDialog } from "@/components/ImportSystemUsersDialog";
+import { ResetPasswordDialog } from "@/components/ResetPasswordDialog";
 
 interface DirectoryUser {
   id: string;
@@ -77,6 +78,8 @@ const Users = () => {
   const [editFullName, setEditFullName] = useState("");
   const [editRoles, setEditRoles] = useState<string[]>([]);
   const [isCurrentUserAdmin, setIsCurrentUserAdmin] = useState(false);
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
+  const [userToResetPassword, setUserToResetPassword] = useState<SystemUser | null>(null);
 
   useEffect(() => {
     checkAccess();
@@ -233,7 +236,12 @@ const Users = () => {
     setSheetOpen(false);
   };
 
-  const handleResetPassword = async (user: SystemUser) => {
+  const handleResetPasswordDirect = (user: SystemUser) => {
+    setUserToResetPassword(user);
+    setResetPasswordDialogOpen(true);
+  };
+
+  const handleResetPasswordEmail = async (user: SystemUser) => {
     if (!user.email) {
       toast({
         title: "Error",
@@ -801,14 +809,24 @@ const Users = () => {
                             Edit User
                           </Button>
                           {isCurrentUserAdmin && (
-                            <Button 
-                              onClick={() => handleResetPassword(selectedUser)}
-                              variant="outline"
-                              className="w-full"
-                            >
-                              <Key className="mr-2 h-4 w-4" />
-                              Reset Password
-                            </Button>
+                            <>
+                              <Button 
+                                onClick={() => handleResetPasswordDirect(selectedUser)}
+                                variant="outline"
+                                className="w-full"
+                              >
+                                <Key className="mr-2 h-4 w-4" />
+                                Reset Password Directly
+                              </Button>
+                              <Button 
+                                onClick={() => handleResetPasswordEmail(selectedUser)}
+                                variant="outline"
+                                className="w-full"
+                              >
+                                <Key className="mr-2 h-4 w-4" />
+                                Send Reset Email
+                              </Button>
+                            </>
                           )}
                         </div>
                       </>
@@ -913,6 +931,17 @@ const Users = () => {
             )}
           </SheetContent>
         </Sheet>
+
+        {/* Password Reset Dialog */}
+        {userToResetPassword && (
+          <ResetPasswordDialog
+            open={resetPasswordDialogOpen}
+            onOpenChange={setResetPasswordDialogOpen}
+            userId={userToResetPassword.user_id}
+            userEmail={userToResetPassword.email || ""}
+            userName={userToResetPassword.full_name || ""}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
