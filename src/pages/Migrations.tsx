@@ -92,6 +92,7 @@ const Migrations = () => {
   const [selectedMigration, setSelectedMigration] = useState<string | null>(null);
   const [sqlContent, setSqlContent] = useState<string>("");
   const [loadingSql, setLoadingSql] = useState(false);
+  const [applying, setApplying] = useState(false);
   const { toast } = useToast();
 
   const fetchMigrationStatus = async () => {
@@ -160,21 +161,40 @@ const Migrations = () => {
     fetchSqlContent(filename);
   };
 
-  const handleApplyMigration = (filename: string) => {
-    toast({
-      title: "Manual Application Required",
-      description: (
-        <div className="space-y-2 mt-2">
-          <p>To apply this migration:</p>
-          <ol className="list-decimal list-inside space-y-1 text-sm">
-            <li>View the SQL content</li>
-            <li>Copy the SQL</li>
-            <li>Open the Backend dashboard</li>
-            <li>Run the SQL in the SQL editor</li>
-          </ol>
-        </div>
-      ),
-    });
+  const handleApplyAllMigrations = async () => {
+    setApplying(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData?.session) {
+        throw new Error("Not authenticated");
+      }
+
+      const { data, error } = await supabase.functions.invoke("apply-migrations", {
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: data.message || `Applied ${data.appliedCount} migration(s)`,
+      });
+
+      // Refresh migration status after applying
+      await fetchMigrationStatus();
+    } catch (error: any) {
+      console.error("Error applying migrations:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to apply migrations",
+        variant: "destructive",
+      });
+    } finally {
+      setApplying(false);
+    }
   };
 
   const appliedCount = migrations.filter((m) => m.applied).length;
@@ -258,14 +278,37 @@ const Migrations = () => {
           </CardContent>
         </Card>
 
-        {/* Important Notice */}
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Important:</strong> Migrations must be applied manually through the Backend
-            dashboard SQL editor. Use the "View SQL" button to preview and copy migration content.
-          </AlertDescription>
-        </Alert>
+        {/* Apply All Button */}
+        {totalCount > appliedCount && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Apply Pending Migrations</CardTitle>
+              <CardDescription>
+                Automatically apply all pending migrations in the correct order
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                onClick={handleApplyAllMigrations} 
+                disabled={applying}
+                size="lg"
+                className="w-full"
+              >
+                {applying ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Applying Migrations...
+                  </>
+                ) : (
+                  <>
+                    <FileCode className="h-4 w-4 mr-2" />
+                    Apply All {totalCount - appliedCount} Pending Migration{totalCount - appliedCount !== 1 ? 's' : ''}
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Migrations List */}
         <Card>
@@ -333,16 +376,6 @@ const Migrations = () => {
                           <Eye className="h-4 w-4 mr-2" />
                           View SQL
                         </Button>
-                        {!migration.applied && (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleApplyMigration(migration.filename)}
-                          >
-                            <FileCode className="h-4 w-4 mr-2" />
-                            Apply
-                          </Button>
-                        )}
                       </div>
                     </div>
                   );

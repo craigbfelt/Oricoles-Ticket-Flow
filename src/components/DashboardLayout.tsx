@@ -102,6 +102,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Remote Support", href: "/remote-support", icon: Video, requiredRoles: [] }, // Everyone
     { name: "Document Hub", href: "/document-hub", icon: FolderOpen, requiredRoles: ['admin'] }, // Admin only
     { name: "Shared Files", href: "/shared-files", icon: FolderTree, requiredRoles: ['admin'] }, // Admin only
+    { name: "Migrations", href: "/migrations", icon: Code, requiredRoles: ['admin'] }, // Admin only
     { name: "Jobs", href: "/jobs", icon: Briefcase, requiredRoles: ['admin', 'ceo', 'support_staff'] },
     { name: "Maintenance", href: "/maintenance", icon: Wrench, requiredRoles: ['admin', 'ceo', 'support_staff'] },
     { name: "Logistics", href: "/logistics", icon: Truck, requiredRoles: ['admin', 'ceo', 'support_staff'] },

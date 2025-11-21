@@ -81,6 +81,19 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Verify the target user exists before attempting password reset
+    const { data: targetUser, error: targetUserError } = await supabase.auth.admin.getUserById(user_id);
+    
+    if (targetUserError || !targetUser.user) {
+      console.error('Target user lookup error:', targetUserError);
+      return new Response(
+        JSON.stringify({ error: 'User not found or could not be retrieved.' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Resetting password for user: ${targetUser.user.email}`);
+
     // Update user password using admin API
     const { data: updateData, error: updateError } = await supabase.auth.admin.updateUserById(
       user_id,
@@ -89,11 +102,17 @@ Deno.serve(async (req) => {
 
     if (updateError) {
       console.error('Password update error:', updateError);
+      console.error('Error details:', JSON.stringify(updateError, null, 2));
       return new Response(
-        JSON.stringify({ error: `Failed to reset password: ${updateError.message}` }),
+        JSON.stringify({ 
+          error: `Failed to reset password: ${updateError.message}`,
+          details: updateError
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log(`Password successfully reset for user: ${targetUser.user.email}`);
 
     return new Response(
       JSON.stringify({ 
