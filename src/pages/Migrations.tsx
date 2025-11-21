@@ -92,7 +92,6 @@ const Migrations = () => {
   const [selectedMigration, setSelectedMigration] = useState<string | null>(null);
   const [sqlContent, setSqlContent] = useState<string>("");
   const [loadingSql, setLoadingSql] = useState(false);
-  const [applying, setApplying] = useState(false);
   const { toast } = useToast();
 
   const fetchMigrationStatus = async () => {
@@ -161,39 +160,23 @@ const Migrations = () => {
     fetchSqlContent(filename);
   };
 
-  const handleApplyAllMigrations = async () => {
-    setApplying(true);
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      if (!sessionData?.session) {
-        throw new Error("Not authenticated");
-      }
+  const getSupabaseProjectId = () => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl) return null;
+    const match = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/);
+    return match ? match[1] : null;
+  };
 
-      const { data, error } = await supabase.functions.invoke("apply-migrations", {
-        headers: {
-          Authorization: `Bearer ${sessionData.session.access_token}`,
-        },
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: data.message || `Applied ${data.appliedCount} migration(s)`,
-      });
-
-      // Refresh migration status after applying
-      await fetchMigrationStatus();
-    } catch (error: any) {
-      console.error("Error applying migrations:", error);
+  const openSupabaseSqlEditor = () => {
+    const projectId = getSupabaseProjectId();
+    if (projectId) {
+      window.open(`https://supabase.com/dashboard/project/${projectId}/sql`, '_blank');
+    } else {
       toast({
         title: "Error",
-        description: error.message || "Failed to apply migrations",
+        description: "Could not detect Supabase project ID",
         variant: "destructive",
       });
-    } finally {
-      setApplying(false);
     }
   };
 
@@ -278,36 +261,22 @@ const Migrations = () => {
           </CardContent>
         </Card>
 
-        {/* Apply All Button */}
+        {/* Manual Migration Instructions */}
         {totalCount > appliedCount && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Apply Pending Migrations</CardTitle>
-              <CardDescription>
-                Automatically apply all pending migrations in the correct order
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button 
-                onClick={handleApplyAllMigrations} 
-                disabled={applying}
-                size="lg"
-                className="w-full"
-              >
-                {applying ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Applying Migrations...
-                  </>
-                ) : (
-                  <>
-                    <FileCode className="h-4 w-4 mr-2" />
-                    Apply All {totalCount - appliedCount} Pending Migration{totalCount - appliedCount !== 1 ? 's' : ''}
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+          <Alert>
+            <Database className="h-4 w-4" />
+            <AlertDescription>
+              <div className="space-y-2">
+                <p className="font-medium">Manual Migration Required</p>
+                <p className="text-sm text-muted-foreground">
+                  To apply pending migrations, click "View SQL" on any pending migration, copy the SQL, and run it in your Backend SQL editor. Then mark it as applied.
+                </p>
+                <Button onClick={openSupabaseSqlEditor} variant="outline" size="sm" className="mt-2">
+                  Open Backend SQL Editor
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
         )}
 
         {/* Migrations List */}
@@ -394,8 +363,14 @@ const Migrations = () => {
               <FileCode className="h-5 w-5" />
               {selectedMigration}
             </DialogTitle>
-            <DialogDescription>
-              SQL content for this migration. Copy and run in Backend SQL editor.
+            <DialogDescription className="space-y-2">
+              <p>SQL content for this migration. Follow these steps:</p>
+              <ol className="text-sm list-decimal list-inside space-y-1">
+                <li>Copy the SQL below</li>
+                <li>Open Backend SQL editor</li>
+                <li>Paste and run the SQL</li>
+                <li>Mark as applied with: <code className="text-xs">INSERT INTO schema_migrations (version) VALUES ('{selectedMigration}');</code></li>
+              </ol>
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="h-[500px] w-full rounded-md border p-4">
@@ -409,7 +384,7 @@ const Migrations = () => {
               </pre>
             )}
           </ScrollArea>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={() => {
@@ -422,7 +397,23 @@ const Migrations = () => {
             >
               Copy SQL
             </Button>
-            <Button onClick={() => setSelectedMigration(null)}>Close</Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const markAsAppliedSql = `INSERT INTO schema_migrations (version) VALUES ('${selectedMigration}') ON CONFLICT (version) DO NOTHING;`;
+                navigator.clipboard.writeText(markAsAppliedSql);
+                toast({
+                  title: "Copied!",
+                  description: "Mark-as-applied SQL copied to clipboard",
+                });
+              }}
+            >
+              Copy "Mark as Applied" SQL
+            </Button>
+            <Button onClick={openSupabaseSqlEditor} variant="default">
+              Open Backend SQL Editor
+            </Button>
+            <Button onClick={() => setSelectedMigration(null)} variant="secondary">Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
