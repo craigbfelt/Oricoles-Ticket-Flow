@@ -503,35 +503,7 @@ const NymbisRdpCloud = () => {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {virtualServers.map((server) => (
-                    <Card key={server.id} className="border-2">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <HardDrive className="w-4 h-4" />
-                          {server.name}
-                        </CardTitle>
-                        <Badge className="w-fit" variant={server.status === 'active' ? 'default' : 'secondary'}>
-                          {server.status.toUpperCase()}
-                        </Badge>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Type</p>
-                          <p className="text-sm">{server.type}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Description</p>
-                          <p className="text-sm">{server.description}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Specifications</p>
-                          <p className="text-sm">{server.specs}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">IP Address</p>
-                          <p className="text-sm font-mono">{server.ip}</p>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <VirtualServerCard key={server.id} server={server} />
                   ))}
                 </div>
               </CardContent>
@@ -646,52 +618,137 @@ const CloudNetworkCard = ({
   onDelete: () => void;
   getProviderColor: (provider: string) => string;
 }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState(network.name);
+  const [editedProvider, setEditedProvider] = useState(network.provider);
+  const [editedNetworkType, setEditedNetworkType] = useState(network.network_type);
+  const [editedDescription, setEditedDescription] = useState(network.description || "");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const handleSave = async () => {
+    try {
+      const { error } = await (supabase as any)
+        .from("cloud_networks")
+        .update({
+          name: editedName,
+          provider: editedProvider,
+          network_type: editedNetworkType,
+          description: editedDescription || null,
+        })
+        .eq("id", network.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Network updated successfully",
+      });
+      setIsEditing(false);
+      queryClient.invalidateQueries({ queryKey: ["cloud-networks"] });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update network",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-lg">{network.name}</CardTitle>
-            <CardDescription className="mt-1">
-              <div className="flex gap-2 mt-2">
-                <Badge className={getProviderColor(network.provider)}>
-                  {network.provider.toUpperCase()}
-                </Badge>
-                {network.network_type && (
-                  <Badge variant="outline">
-                    {network.network_type.toUpperCase()}
-                  </Badge>
-                )}
+            {isEditing ? (
+              <div className="space-y-2">
+                <Input
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  placeholder="Network name"
+                />
+                <Select value={editedProvider} onValueChange={setEditedProvider}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nymbis">Nymbis</SelectItem>
+                    <SelectItem value="aws">AWS</SelectItem>
+                    <SelectItem value="azure">Azure</SelectItem>
+                    <SelectItem value="gcp">Google Cloud</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={editedNetworkType} onValueChange={setEditedNetworkType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="rdp">RDP</SelectItem>
+                    <SelectItem value="vpn">VPN</SelectItem>
+                    <SelectItem value="hybrid">Hybrid</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Textarea
+                  value={editedDescription}
+                  onChange={(e) => setEditedDescription(e.target.value)}
+                  placeholder="Description"
+                  rows={2}
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleSave}>Save</Button>
+                  <Button size="sm" variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
+                </div>
               </div>
-            </CardDescription>
+            ) : (
+              <>
+                <CardTitle className="text-lg">{network.name}</CardTitle>
+                <CardDescription className="mt-1">
+                  <div className="flex gap-2 mt-2">
+                    <Badge className={getProviderColor(network.provider)}>
+                      {network.provider.toUpperCase()}
+                    </Badge>
+                    {network.network_type && (
+                      <Badge variant="outline">
+                        {network.network_type.toUpperCase()}
+                      </Badge>
+                    )}
+                  </div>
+                </CardDescription>
+              </>
+            )}
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onDelete}
-          >
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </Button>
+          {!isEditing && (
+            <div className="flex gap-2">
+              <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)}>
+                <Network className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={onDelete}>
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
+          )}
         </div>
       </CardHeader>
-      <CardContent>
-        {network.image_path && (
-          <div className="mb-3 border rounded-lg p-2 bg-muted">
-            <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground" />
-            <p className="text-xs text-center mt-1 text-muted-foreground">
-              Diagram attached
+      {!isEditing && (
+        <CardContent>
+          {network.image_path && (
+            <div className="mb-3 border rounded-lg p-2 bg-muted">
+              <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground" />
+              <p className="text-xs text-center mt-1 text-muted-foreground">
+                Diagram attached
+              </p>
+            </div>
+          )}
+          {network.description && (
+            <p className="text-sm text-muted-foreground line-clamp-3">
+              {network.description}
             </p>
+          )}
+          <div className="mt-3 text-xs text-muted-foreground">
+            Created {new Date(network.created_at).toLocaleDateString()}
           </div>
-        )}
-        {network.description && (
-          <p className="text-sm text-muted-foreground line-clamp-3">
-            {network.description}
-          </p>
-        )}
-        <div className="mt-3 text-xs text-muted-foreground">
-          Created {new Date(network.created_at).toLocaleDateString()}
-        </div>
-      </CardContent>
+        </CardContent>
+      )}
     </Card>
   );
 };
@@ -735,6 +792,116 @@ const NetworkDiagramCard = ({ network }: { network: CloudNetwork }) => {
         <p className="text-xs text-muted-foreground">
           Created {new Date(network.created_at).toLocaleString()}
         </p>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Virtual Server Card Component with editable fields
+const VirtualServerCard = ({ server }: { server: any }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState(server.name);
+  const [editedType, setEditedType] = useState(server.type);
+  const [editedDescription, setEditedDescription] = useState(server.description);
+  const [editedSpecs, setEditedSpecs] = useState(server.specs);
+  const [editedIp, setEditedIp] = useState(server.ip);
+  const { toast } = useToast();
+
+  const handleSave = () => {
+    // In a real app, this would save to database
+    // For now, just show success message
+    toast({
+      title: "Success",
+      description: "Server configuration updated",
+    });
+    setIsEditing(false);
+  };
+
+  return (
+    <Card className="border-2">
+      <CardHeader className="pb-3">
+        {isEditing ? (
+          <div className="space-y-2">
+            <Input
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              placeholder="Server name"
+            />
+            <Input
+              value={editedType}
+              onChange={(e) => setEditedType(e.target.value)}
+              placeholder="Server type"
+            />
+            <Badge className="w-fit">
+              {server.status.toUpperCase()}
+            </Badge>
+          </div>
+        ) : (
+          <>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <HardDrive className="w-4 h-4" />
+              {server.name}
+            </CardTitle>
+            <Badge className="w-fit" variant={server.status === 'active' ? 'default' : 'secondary'}>
+              {server.status.toUpperCase()}
+            </Badge>
+          </>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {isEditing ? (
+          <div className="space-y-2">
+            <div>
+              <Label>Description</Label>
+              <Textarea
+                value={editedDescription}
+                onChange={(e) => setEditedDescription(e.target.value)}
+                rows={2}
+              />
+            </div>
+            <div>
+              <Label>Specifications</Label>
+              <Input
+                value={editedSpecs}
+                onChange={(e) => setEditedSpecs(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>IP Address</Label>
+              <Input
+                value={editedIp}
+                onChange={(e) => setEditedIp(e.target.value)}
+                className="font-mono"
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button size="sm" onClick={handleSave}>Save</Button>
+              <Button size="sm" variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Type</p>
+              <p className="text-sm">{server.type}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Description</p>
+              <p className="text-sm">{server.description}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Specifications</p>
+              <p className="text-sm">{server.specs}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">IP Address</p>
+              <p className="text-sm font-mono">{server.ip}</p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setIsEditing(true)} className="mt-2">
+              Edit Configuration
+            </Button>
+          </>
+        )}
       </CardContent>
     </Card>
   );

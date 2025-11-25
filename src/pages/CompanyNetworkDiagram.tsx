@@ -23,6 +23,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageDocumentsView } from "@/components/PageDocumentsView";
+import { DiagramRedrawer } from "@/components/DiagramRedrawer";
+import { Wand2 } from "lucide-react";
 
 type NetworkDiagram = Tables<"network_diagrams">;
 
@@ -51,6 +53,7 @@ const CompanyNetworkDiagram = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [currentTab, setCurrentTab] = useState("diagrams");
+  const [redrawerOpen, setRedrawerOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "Company Network Overview",
     description: "",
@@ -439,6 +442,10 @@ const CompanyNetworkDiagram = () => {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" onClick={() => setRedrawerOpen(true)}>
+              <Wand2 className="h-4 w-4 mr-2" />
+              AI Modernize
+            </Button>
             <Button variant="outline" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
               CSV Template
@@ -658,6 +665,13 @@ const CompanyNetworkDiagram = () => {
             description="Documents and images moved to this page from the Document Hub"
           />
         </div>
+
+        {/* AI Diagram Redrawer */}
+        <DiagramRedrawer 
+          open={redrawerOpen}
+          onOpenChange={setRedrawerOpen}
+          onSuccess={() => queryClient.invalidateQueries({ queryKey: ["network-diagrams-company"] })}
+        />
       </div>
     </DashboardLayout>
   );
@@ -674,6 +688,11 @@ const DiagramCard = ({
   onExport: () => void;
 }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState(diagram.diagram_name);
+  const [editedDescription, setEditedDescription] = useState(diagram.description || "");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const diagramAny = diagram as any;
 
   useEffect(() => {
@@ -684,6 +703,33 @@ const DiagramCard = ({
       setImageUrl(data.publicUrl);
     }
   }, [diagramAny.image_path, diagramAny.diagram_url]);
+
+  const handleSave = async () => {
+    try {
+      const { error } = await supabase
+        .from("network_diagrams")
+        .update({
+          diagram_name: editedName,
+          description: editedDescription || null,
+        })
+        .eq("id", diagram.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Diagram updated successfully",
+      });
+      setIsEditing(false);
+      queryClient.invalidateQueries({ queryKey: ["network-diagrams-company"] });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update diagram",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="flex items-start gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
@@ -699,14 +745,32 @@ const DiagramCard = ({
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold flex items-center gap-2">
-              {(diagramAny.image_path || diagramAny.diagram_url) && <ImageIcon className="h-4 w-4 text-primary" />}
-              {diagramAny.name || diagramAny.diagram_name}
-            </h3>
-            {diagram.description && (
-              <p className="text-sm text-muted-foreground mt-1">
-                {diagram.description}
-              </p>
+            {isEditing ? (
+              <div className="space-y-2">
+                <Input
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  placeholder="Diagram name"
+                />
+                <Textarea
+                  value={editedDescription}
+                  onChange={(e) => setEditedDescription(e.target.value)}
+                  placeholder="Description"
+                  rows={2}
+                />
+              </div>
+            ) : (
+              <>
+                <h3 className="font-semibold flex items-center gap-2">
+                  {(diagramAny.image_path || diagramAny.diagram_url) && <ImageIcon className="h-4 w-4 text-primary" />}
+                  {diagramAny.name || diagramAny.diagram_name}
+                </h3>
+                {diagram.description && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {diagram.description}
+                  </p>
+                )}
+              </>
             )}
             <p className="text-xs text-muted-foreground mt-2">
               Created {new Date(diagram.created_at).toLocaleString()}
@@ -723,23 +787,32 @@ const DiagramCard = ({
             )}
           </div>
           <div className="flex gap-2 flex-shrink-0">
-            {!(diagramAny.image_path || diagramAny.diagram_url) && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onExport}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export JSON
-              </Button>
+            {isEditing ? (
+              <>
+                <Button variant="outline" size="sm" onClick={handleSave}>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                  Edit
+                </Button>
+                {!(diagramAny.image_path || diagramAny.diagram_url) && (
+                  <Button variant="outline" size="sm" onClick={onExport}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export JSON
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" onClick={onDelete}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onDelete}
-            >
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </Button>
           </div>
         </div>
       </div>
