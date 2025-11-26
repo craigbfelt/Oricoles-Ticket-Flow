@@ -1,11 +1,16 @@
 -- Create platform_credentials table for storing credentials across different platforms
+-- SECURITY NOTE: Passwords are stored as-is in this version. 
+-- For production deployment, consider implementing:
+-- 1. Application-level encryption before storing
+-- 2. pgcrypto extension for database-level encryption
+-- 3. Vault integration for secrets management
 CREATE TABLE IF NOT EXISTS public.platform_credentials (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   platform TEXT NOT NULL, -- bluewave, sage, microsoft365, active_directory, qwerti, general
   provider TEXT NOT NULL, -- microsoft365, qwerti, active_directory, oricol_rdp, sage, bluewave, other
   credential_type TEXT NOT NULL, -- rdp, active_directory, email, api, database, admin, other
   username TEXT NOT NULL,
-  password TEXT NOT NULL, -- Should be encrypted in production
+  password TEXT NOT NULL, -- SECURITY: Should be encrypted in production environment
   email TEXT,
   server_url TEXT,
   notes TEXT,
