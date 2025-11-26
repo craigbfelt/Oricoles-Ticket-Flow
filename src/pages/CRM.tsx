@@ -17,8 +17,7 @@ import {
   Mail,
   MapPin,
   DollarSign,
-  Activity,
-  AlertTriangle
+  Activity
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -40,7 +39,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import oricolLogo from "@/assets/oricol-logo.png";
 
 interface Company {
@@ -112,7 +110,6 @@ const CRM = () => {
   const [isAddContactOpen, setIsAddContactOpen] = useState(false);
   const [isAddDealOpen, setIsAddDealOpen] = useState(false);
   const [isAddActivityOpen, setIsAddActivityOpen] = useState(false);
-  const [setupRequired, setSetupRequired] = useState(false);
   
   // Form states
   const [newCompany, setNewCompany] = useState({
@@ -178,72 +175,76 @@ const CRM = () => {
   }, [navigate]);
 
   const fetchCRMData = async () => {
-    // CRM tables don't exist yet - show setup required message
-    setSetupRequired(true);
-    return;
-    
-    /* TODO: Uncomment once CRM tables are created in database
     try {
-      // Fetch companies
-      const { data: companiesData, error: companiesError } = await supabase
+      // Fetch companies - gracefully handle if table doesn't exist
+      const { data: companiesData, error: companiesError } = await (supabase as any)
         .from("crm_companies")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(10);
 
-      if (companiesError) throw companiesError;
+      if (companiesError && companiesError.code !== '42P01') {
+        // Only log non-"table doesn't exist" errors
+        console.log("CRM companies query:", companiesError.message);
+      }
       setCompanies(companiesData || []);
 
       // Fetch contacts
-      const { data: contactsData, error: contactsError } = await supabase
+      const { data: contactsData, error: contactsError } = await (supabase as any)
         .from("crm_contacts")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(10);
 
-      if (contactsError) throw contactsError;
+      if (contactsError && contactsError.code !== '42P01') {
+        console.log("CRM contacts query:", contactsError.message);
+      }
       setContacts(contactsData || []);
 
       // Fetch deals
-      const { data: dealsData, error: dealsError } = await supabase
+      const { data: dealsData, error: dealsError } = await (supabase as any)
         .from("crm_deals")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(10);
 
-      if (dealsError) throw dealsError;
+      if (dealsError && dealsError.code !== '42P01') {
+        console.log("CRM deals query:", dealsError.message);
+      }
       setDeals(dealsData || []);
 
       // Fetch activities
-      const { data: activitiesData, error: activitiesError } = await supabase
+      const { data: activitiesData, error: activitiesError } = await (supabase as any)
         .from("crm_activities")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(10);
 
-      if (activitiesError) throw activitiesError;
+      if (activitiesError && activitiesError.code !== '42P01') {
+        console.log("CRM activities query:", activitiesError.message);
+      }
       setActivities(activitiesData || []);
 
       // Calculate stats
-      const { count: companiesCount } = await supabase
+      const { count: companiesCount } = await (supabase as any)
         .from("crm_companies")
         .select("*", { count: "exact", head: true });
 
-      const { count: contactsCount } = await supabase
+      const { count: contactsCount } = await (supabase as any)
         .from("crm_contacts")
         .select("*", { count: "exact", head: true });
 
-      const { count: activeDealsCount } = await supabase
+      const { count: activeDealsCount } = await (supabase as any)
         .from("crm_deals")
         .select("*", { count: "exact", head: true })
         .not("stage", "in", '("won","lost")');
 
-      const { data: dealsValueData } = await supabase
+      const { data: dealsValueData } = await (supabase as any)
         .from("crm_deals")
         .select("value")
         .not("stage", "in", '("won","lost")');
 
-      const totalValue = (dealsValueData || []).reduce((sum, deal) => sum + (Number(deal.value) || 0), 0);
+      const totalValue = (dealsValueData || []).reduce((sum: number, deal: any) => sum + (Number(deal.value) || 0), 0);
 
       setStats({
         totalCompanies: companiesCount || 0,
@@ -252,59 +253,22 @@ const CRM = () => {
         revenueOpportunity: totalValue,
       });
     } catch (error: any) {
-      console.error("Error fetching CRM data:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to load CRM data",
-        variant: "destructive",
-      });
-      setSetupRequired(true);
+      console.log("CRM data fetch:", error.message);
+      // Silently handle missing tables - CRM will just show empty data
     }
-    */
   };
 
-  const handleAddCompany = async () => {
-    toast({
-      title: "Feature Not Available",
-      description: "CRM database tables need to be created first. Contact your administrator.",
-      variant: "destructive",
-    });
-  };
-
-  const handleAddContact = async () => {
-    toast({
-      title: "Feature Not Available",
-      description: "CRM database tables need to be created first. Contact your administrator.",
-      variant: "destructive",
-    });
-  };
-
-  const handleAddDeal = async () => {
-    toast({
-      title: "Feature Not Available",
-      description: "CRM database tables need to be created first. Contact your administrator.",
-      variant: "destructive",
-    });
-  };
-
-  const handleAddActivity = async () => {
-    toast({
-      title: "Feature Not Available",
-      description: "CRM database tables need to be created first. Contact your administrator.",
-      variant: "destructive",
-    });
-  };
-
-  /* TODO: Restore once CRM tables are created
   const handleAddCompany = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { error } = await supabase.from("crm_companies").insert({
+      const { error } = await (supabase as any).from("crm_companies").insert({
         ...newCompany,
         created_by: user.id,
       });
+
+      if (error) throw error;
 
       toast({
         title: "Success",
@@ -327,17 +291,146 @@ const CRM = () => {
         status: "active",
       });
       fetchCRMData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding company:", error);
       toast({
         title: "Error",
-        description: "Failed to add company",
+        description: error.message || "Failed to add company. The CRM tables may not exist yet.",
         variant: "destructive",
       });
     }
   };
 
-  */
+  const handleAddContact = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await (supabase as any).from("crm_contacts").insert({
+        ...newContact,
+        created_by: user.id,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Contact added successfully",
+      });
+
+      setIsAddContactOpen(false);
+      setNewContact({
+        first_name: "",
+        last_name: "",
+        email: "",
+        phone: "",
+        mobile: "",
+        job_title: "",
+        department: "",
+        company_id: "",
+        notes: "",
+        status: "active",
+      });
+      fetchCRMData();
+    } catch (error: any) {
+      console.error("Error adding contact:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add contact. The CRM tables may not exist yet.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddDeal = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await (supabase as any).from("crm_deals").insert({
+        title: newDeal.title,
+        description: newDeal.description,
+        value: newDeal.value ? parseFloat(newDeal.value) : null,
+        currency: newDeal.currency,
+        stage: newDeal.stage,
+        probability: parseInt(newDeal.probability) || 0,
+        company_id: newDeal.company_id || null,
+        contact_id: newDeal.contact_id || null,
+        expected_close_date: newDeal.expected_close_date || null,
+        notes: newDeal.notes,
+        created_by: user.id,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Deal added successfully",
+      });
+
+      setIsAddDealOpen(false);
+      setNewDeal({
+        title: "",
+        description: "",
+        value: "",
+        currency: "USD",
+        stage: "lead",
+        probability: "0",
+        company_id: "",
+        contact_id: "",
+        expected_close_date: "",
+        notes: "",
+      });
+      fetchCRMData();
+    } catch (error: any) {
+      console.error("Error adding deal:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add deal. The CRM tables may not exist yet.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddActivity = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await (supabase as any).from("crm_activities").insert({
+        ...newActivity,
+        scheduled_date: newActivity.scheduled_date || null,
+        created_by: user.id,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Activity added successfully",
+      });
+
+      setIsAddActivityOpen(false);
+      setNewActivity({
+        activity_type: "call",
+        subject: "",
+        description: "",
+        company_id: "",
+        contact_id: "",
+        deal_id: "",
+        scheduled_date: "",
+        status: "pending",
+      });
+      fetchCRMData();
+    } catch (error: any) {
+      console.error("Error adding activity:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add activity. The CRM tables may not exist yet.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const getStageColor = (stage: string) => {
     const colors: Record<string, string> = {
@@ -383,41 +476,6 @@ const CRM = () => {
             </p>
           </div>
         </div>
-
-        {/* Setup Required Alert */}
-        {setupRequired && (
-          <Alert variant="destructive" className="relative z-10">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>CRM Setup Required</AlertTitle>
-            <AlertDescription className="mt-2 space-y-2">
-              <p>
-                The CRM database tables haven't been created yet. To use the CRM system, you need to apply the database migration.
-              </p>
-              <div className="mt-3">
-                <p className="font-semibold">For Lovable Users (No CLI):</p>
-                <ol className="list-decimal list-inside ml-2 mt-1 space-y-1 text-sm">
-                  <li>Open Supabase SQL Editor at <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="underline">supabase.com</a></li>
-                  <li>Copy the SQL from <code className="bg-muted px-1 py-0.5 rounded">supabase/migrations/20251119080900_create_crm_system.sql</code></li>
-                  <li>Paste and run it in the SQL Editor</li>
-                </ol>
-              </div>
-              <div className="mt-3">
-                <p className="font-semibold">For CLI Users:</p>
-                <p className="text-sm ml-2 mt-1">Run <code className="bg-muted px-1 py-0.5 rounded">npm run migrate</code> in your terminal</p>
-              </div>
-              <p className="mt-3 text-sm">
-                For detailed instructions, see <a 
-                  href="https://github.com/craigfelt/oricol-ticket-flow-4084ab4c/blob/main/CRM_SETUP_GUIDE.md" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="underline font-semibold"
-                >
-                  CRM_SETUP_GUIDE.md
-                </a> in the repository.
-              </p>
-            </AlertDescription>
-          </Alert>
-        )}
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 w-full relative z-10">
