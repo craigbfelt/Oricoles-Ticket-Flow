@@ -41,6 +41,10 @@ interface ThemeSettings {
   logoSize?: number;
   secondaryLogoUrl?: string;
   secondaryLogoSize?: number;
+  logoPosition?: 'left' | 'center' | 'right';
+  logoLayout?: 'horizontal' | 'stacked';
+  showPrimaryLogo?: boolean;
+  showSecondaryLogo?: boolean;
 }
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
@@ -190,14 +194,31 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const primaryLogoSize = themeSettings.logoSize || 40;
   const secondaryLogoUrl = themeSettings.secondaryLogoUrl || zerobitOneLogo;
   const secondaryLogoSize = themeSettings.secondaryLogoSize || 40;
+  const logoPosition = themeSettings.logoPosition || 'left';
+  const logoLayout = themeSettings.logoLayout || 'horizontal';
+  const showPrimaryLogo = themeSettings.showPrimaryLogo !== false && primaryLogoUrl;
+  const showSecondaryLogo = themeSettings.showSecondaryLogo !== false && secondaryLogoUrl;
+
+  // Helper function to get flex alignment based on position
+  const getLogoContainerClasses = () => {
+    const baseClasses = logoLayout === 'stacked' ? 'flex-col' : 'flex-row';
+    const alignClasses = 
+      logoPosition === 'center' ? 'justify-center' :
+      logoPosition === 'right' ? 'justify-end' : 'justify-start';
+    return `flex items-center gap-3 ${baseClasses} ${alignClasses}`;
+  };
 
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex md:flex-col md:w-64 bg-sidebar border-r border-sidebar-border">
-        <div className="flex items-center justify-between gap-3 h-20 px-4 border-b border-sidebar-border">
-          <img src={primaryLogoUrl} alt="Oricol Environmental Services" style={{ height: `${primaryLogoSize}px` }} className="w-auto object-contain" />
-          <img src={secondaryLogoUrl} alt="Zero Bit One" style={{ height: `${secondaryLogoSize}px` }} className="w-auto object-contain" />
+        <div className={`${getLogoContainerClasses()} min-h-20 px-4 border-b border-sidebar-border py-3`}>
+          {showPrimaryLogo && (
+            <img src={primaryLogoUrl} alt="Oricol Environmental Services" style={{ height: `${primaryLogoSize}px`, maxHeight: '80px' }} className="w-auto object-contain" />
+          )}
+          {showSecondaryLogo && (
+            <img src={secondaryLogoUrl} alt="Zero Bit One" style={{ height: `${secondaryLogoSize}px`, maxHeight: '80px' }} className="w-auto object-contain" />
+          )}
         </div>
         <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
           {navigation.map((item) => {
@@ -236,9 +257,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="fixed inset-0 bg-background/80" onClick={() => setMobileMenuOpen(false)} />
           <aside className="fixed top-0 left-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border flex flex-col">
             <div className="flex items-center justify-between h-20 px-4 border-b border-sidebar-border">
-              <div className="flex items-center gap-2 flex-1">
-                <img src={primaryLogoUrl} alt="Oricol Environmental Services" style={{ height: `${Math.min(primaryLogoSize, 32)}px` }} className="w-auto object-contain" />
-                <img src={secondaryLogoUrl} alt="Zero Bit One" style={{ height: `${Math.min(secondaryLogoSize, 32)}px` }} className="w-auto object-contain" />
+              <div className={`${logoLayout === 'stacked' ? 'flex-col' : 'flex-row'} flex items-center gap-2 flex-1 ${logoPosition === 'center' ? 'justify-center' : logoPosition === 'right' ? 'justify-end' : 'justify-start'}`}>
+                {showPrimaryLogo && (
+                  <img src={primaryLogoUrl} alt="Oricol Environmental Services" style={{ height: `${Math.min(primaryLogoSize, 32)}px` }} className="w-auto object-contain" />
+                )}
+                {showSecondaryLogo && (
+                  <img src={secondaryLogoUrl} alt="Zero Bit One" style={{ height: `${Math.min(secondaryLogoSize, 32)}px` }} className="w-auto object-contain" />
+                )}
               </div>
               <Button
                 variant="ghost"
@@ -287,9 +312,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}
         <header className="md:hidden flex items-center justify-between h-16 px-4 border-b border-border bg-card">
-          <div className="flex items-center gap-2">
-            <img src={primaryLogoUrl} alt="Oricol" style={{ height: `${Math.min(primaryLogoSize, 28)}px` }} className="w-auto object-contain" />
-            <img src={secondaryLogoUrl} alt="Zero Bit One" style={{ height: `${Math.min(secondaryLogoSize, 28)}px` }} className="w-auto object-contain" />
+          <div className={`flex items-center gap-2 ${logoLayout === 'stacked' ? 'flex-col' : 'flex-row'}`}>
+            {showPrimaryLogo && (
+              <img src={primaryLogoUrl} alt="Oricol" style={{ height: `${Math.min(primaryLogoSize, 28)}px` }} className="w-auto object-contain" />
+            )}
+            {showSecondaryLogo && (
+              <img src={secondaryLogoUrl} alt="Zero Bit One" style={{ height: `${Math.min(secondaryLogoSize, 28)}px` }} className="w-auto object-contain" />
+            )}
           </div>
           <Button
             variant="ghost"
