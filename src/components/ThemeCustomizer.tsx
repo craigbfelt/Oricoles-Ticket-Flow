@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { Palette, Type, Image as ImageIcon, Upload, RotateCcw, Sun, Moon, PanelLeft, GripVertical, Eye, EyeOff, ChevronUp, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -162,6 +163,91 @@ const hslToHex = (hsl: string): string => {
   };
   
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+};
+
+// Helper function to convert hex to HSL string
+const hexToHsl = (hex: string): string => {
+  // Remove # if present
+  hex = hex.replace(/^#/, '');
+  
+  // Validate hex format - must be 6 characters and valid hex digits
+  if (!/^[0-9a-fA-F]{6}$/.test(hex)) {
+    return '0 0% 0%'; // Return black as fallback for invalid input
+  }
+  
+  // Parse hex values
+  const r = parseInt(hex.substring(0, 2), 16) / 255;
+  const g = parseInt(hex.substring(2, 4), 16) / 255;
+  const b = parseInt(hex.substring(4, 6), 16) / 255;
+  
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  
+  let h = 0;
+  let s = 0;
+  
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    
+    switch (max) {
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        break;
+      case g:
+        h = ((b - r) / d + 2) / 6;
+        break;
+      case b:
+        h = ((r - g) / d + 4) / 6;
+        break;
+    }
+  }
+  
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+};
+
+// Color Picker Component with visual palette
+interface ColorPickerProps {
+  value: string; // HSL value
+  onChange: (hsl: string) => void;
+  label: string;
+}
+
+const ColorPicker = ({ value, onChange, label }: ColorPickerProps) => {
+  const hexValue = hslToHex(value);
+  
+  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newHex = e.target.value;
+    const newHsl = hexToHsl(newHex);
+    onChange(newHsl);
+  };
+  
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          className="w-10 h-10 rounded-md border flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+          style={{ backgroundColor: hexValue }}
+          aria-label={`Select ${label}`}
+        />
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-3" align="start">
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">{label}</Label>
+          <input
+            type="color"
+            value={hexValue}
+            onChange={handleColorChange}
+            className="w-full h-32 cursor-pointer rounded border-0 p-0"
+          />
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>Hex: {hexValue}</span>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 };
 
 // Default navigation items that can be reordered
@@ -562,67 +648,54 @@ export const ThemeCustomizer = () => {
             <div className="space-y-4 pt-4 border-t">
               <div>
                 <Label className="text-base font-semibold">Custom Colors</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Click on the color swatches to open the color picker.
+                </p>
               </div>
               
               <div className="grid gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="primaryColorHSL">Primary Color (HSL)</Label>
+                  <Label htmlFor="primaryColorHSL">Primary Color</Label>
                   <div className="flex items-center gap-3">
-                    <div 
-                      className="w-10 h-10 rounded-md border flex-shrink-0"
-                      style={{ backgroundColor: theme.primaryColor }}
-                    />
-                    <Input
-                      id="primaryColorHSL"
-                      type="text"
+                    <ColorPicker
                       value={theme.primaryColorHSL}
-                      onChange={(e) => handleHSLChange('primary', e.target.value)}
-                      placeholder="210 60% 55%"
-                      className="font-mono"
+                      onChange={(hsl) => handleHSLChange('primary', hsl)}
+                      label="Primary Color"
                     />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {theme.primaryColor}
+                    </span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="secondaryColorHSL">Secondary Color (HSL)</Label>
+                  <Label htmlFor="secondaryColorHSL">Secondary Color</Label>
                   <div className="flex items-center gap-3">
-                    <div 
-                      className="w-10 h-10 rounded-md border flex-shrink-0"
-                      style={{ backgroundColor: theme.secondaryColor }}
-                    />
-                    <Input
-                      id="secondaryColorHSL"
-                      type="text"
+                    <ColorPicker
                       value={theme.secondaryColorHSL}
-                      onChange={(e) => handleHSLChange('secondary', e.target.value)}
-                      placeholder="110 10% 90%"
-                      className="font-mono"
+                      onChange={(hsl) => handleHSLChange('secondary', hsl)}
+                      label="Secondary Color"
                     />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {theme.secondaryColor}
+                    </span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="accentColorHSL">Accent Color (HSL)</Label>
+                  <Label htmlFor="accentColorHSL">Accent Color</Label>
                   <div className="flex items-center gap-3">
-                    <div 
-                      className="w-10 h-10 rounded-md border flex-shrink-0"
-                      style={{ backgroundColor: theme.accentColor }}
-                    />
-                    <Input
-                      id="accentColorHSL"
-                      type="text"
+                    <ColorPicker
                       value={theme.accentColorHSL}
-                      onChange={(e) => handleHSLChange('accent', e.target.value)}
-                      placeholder="210 50% 88%"
-                      className="font-mono"
+                      onChange={(hsl) => handleHSLChange('accent', hsl)}
+                      label="Accent Color"
                     />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {theme.accentColor}
+                    </span>
                   </div>
                 </div>
               </div>
-              
-              <p className="text-sm text-muted-foreground">
-                Enter colors in HSL format: hue saturation% lightness% (e.g., "210 60% 55%")
-              </p>
             </div>
 
             {/* Dark Mode Toggle */}
@@ -698,92 +771,67 @@ export const ThemeCustomizer = () => {
               <div>
                 <Label className="text-base font-semibold">Custom Sidebar Colors</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Fine-tune your sidebar appearance with custom HSL colors.
+                  Click on the color swatches to customize your sidebar appearance.
                 </p>
               </div>
               
               <div className="grid gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="sidebarBackground">Sidebar Background (HSL)</Label>
+                  <Label htmlFor="sidebarBackground">Sidebar Background</Label>
                   <div className="flex items-center gap-3">
-                    <div 
-                      className="w-10 h-10 rounded-md border flex-shrink-0"
-                      style={{ backgroundColor: `hsl(${theme.sidebarBackground})` }}
-                    />
-                    <Input
-                      id="sidebarBackground"
-                      type="text"
+                    <ColorPicker
                       value={theme.sidebarBackground}
-                      onChange={(e) => setTheme({ ...theme, sidebarBackground: e.target.value })}
-                      placeholder="215 28% 17%"
-                      className="font-mono"
+                      onChange={(hsl) => setTheme({ ...theme, sidebarBackground: hsl })}
+                      label="Sidebar Background"
                     />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.sidebarBackground)}
+                    </span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sidebarForeground">Sidebar Text Color (HSL)</Label>
+                  <Label htmlFor="sidebarForeground">Sidebar Text Color</Label>
                   <div className="flex items-center gap-3">
-                    <div 
-                      className="w-10 h-10 rounded-md border flex-shrink-0 flex items-center justify-center"
-                      style={{ 
-                        backgroundColor: `hsl(${theme.sidebarBackground})`,
-                        color: `hsl(${theme.sidebarForeground})`
-                      }}
-                    >
-                      <span className="text-sm font-bold">Aa</span>
-                    </div>
-                    <Input
-                      id="sidebarForeground"
-                      type="text"
+                    <ColorPicker
                       value={theme.sidebarForeground}
-                      onChange={(e) => setTheme({ ...theme, sidebarForeground: e.target.value })}
-                      placeholder="210 20% 98%"
-                      className="font-mono"
+                      onChange={(hsl) => setTheme({ ...theme, sidebarForeground: hsl })}
+                      label="Sidebar Text Color"
                     />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.sidebarForeground)}
+                    </span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sidebarAccent">Sidebar Accent/Hover Color (HSL)</Label>
+                  <Label htmlFor="sidebarAccent">Sidebar Accent/Hover Color</Label>
                   <div className="flex items-center gap-3">
-                    <div 
-                      className="w-10 h-10 rounded-md border flex-shrink-0"
-                      style={{ backgroundColor: `hsl(${theme.sidebarAccent})` }}
-                    />
-                    <Input
-                      id="sidebarAccent"
-                      type="text"
+                    <ColorPicker
                       value={theme.sidebarAccent}
-                      onChange={(e) => setTheme({ ...theme, sidebarAccent: e.target.value })}
-                      placeholder="217 32% 24%"
-                      className="font-mono"
+                      onChange={(hsl) => setTheme({ ...theme, sidebarAccent: hsl })}
+                      label="Sidebar Accent Color"
                     />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.sidebarAccent)}
+                    </span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sidebarBorder">Sidebar Border Color (HSL)</Label>
+                  <Label htmlFor="sidebarBorder">Sidebar Border Color</Label>
                   <div className="flex items-center gap-3">
-                    <div 
-                      className="w-10 h-10 rounded-md border flex-shrink-0"
-                      style={{ backgroundColor: `hsl(${theme.sidebarBorder})` }}
-                    />
-                    <Input
-                      id="sidebarBorder"
-                      type="text"
+                    <ColorPicker
                       value={theme.sidebarBorder}
-                      onChange={(e) => setTheme({ ...theme, sidebarBorder: e.target.value })}
-                      placeholder="217 32% 24%"
-                      className="font-mono"
+                      onChange={(hsl) => setTheme({ ...theme, sidebarBorder: hsl })}
+                      label="Sidebar Border Color"
                     />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.sidebarBorder)}
+                    </span>
                   </div>
                 </div>
               </div>
-              
-              <p className="text-sm text-muted-foreground">
-                Enter colors in HSL format: hue saturation% lightness% (e.g., "215 28% 17%")
-              </p>
             </div>
 
             {/* Live Preview */}
@@ -978,88 +1026,64 @@ export const ThemeCustomizer = () => {
               <div>
                 <Label className="text-base font-semibold">Text & Font Colors</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Customize the colors of text elements throughout the dashboard.
+                  Click on the color swatches to customize text colors throughout the dashboard.
                 </p>
               </div>
               
               <div className="grid gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="headingColor">Heading Color (HSL)</Label>
+                  <Label htmlFor="headingColor">Heading Color</Label>
                   <div className="flex items-center gap-3">
-                    <div 
-                      className="w-10 h-10 rounded-md border flex-shrink-0 flex items-center justify-center"
-                      style={{ color: `hsl(${theme.headingColor})` }}
-                    >
-                      <span className="text-lg font-bold">H1</span>
-                    </div>
-                    <Input
-                      id="headingColor"
-                      type="text"
+                    <ColorPicker
                       value={theme.headingColor}
-                      onChange={(e) => setTheme({ ...theme, headingColor: e.target.value })}
-                      placeholder="215 25% 15%"
-                      className="font-mono"
+                      onChange={(hsl) => setTheme({ ...theme, headingColor: hsl })}
+                      label="Heading Color"
                     />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.headingColor)}
+                    </span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="textColor">Body Text Color (HSL)</Label>
+                  <Label htmlFor="textColor">Body Text Color</Label>
                   <div className="flex items-center gap-3">
-                    <div 
-                      className="w-10 h-10 rounded-md border flex-shrink-0 flex items-center justify-center"
-                      style={{ color: `hsl(${theme.textColor})` }}
-                    >
-                      <span className="text-sm">Aa</span>
-                    </div>
-                    <Input
-                      id="textColor"
-                      type="text"
+                    <ColorPicker
                       value={theme.textColor}
-                      onChange={(e) => setTheme({ ...theme, textColor: e.target.value })}
-                      placeholder="215 25% 15%"
-                      className="font-mono"
+                      onChange={(hsl) => setTheme({ ...theme, textColor: hsl })}
+                      label="Body Text Color"
                     />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.textColor)}
+                    </span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="mutedTextColor">Muted/Secondary Text (HSL)</Label>
+                  <Label htmlFor="mutedTextColor">Muted/Secondary Text</Label>
                   <div className="flex items-center gap-3">
-                    <div 
-                      className="w-10 h-10 rounded-md border flex-shrink-0 flex items-center justify-center"
-                      style={{ color: `hsl(${theme.mutedTextColor})` }}
-                    >
-                      <span className="text-sm opacity-70">Aa</span>
-                    </div>
-                    <Input
-                      id="mutedTextColor"
-                      type="text"
+                    <ColorPicker
                       value={theme.mutedTextColor}
-                      onChange={(e) => setTheme({ ...theme, mutedTextColor: e.target.value })}
-                      placeholder="215 16% 46%"
-                      className="font-mono"
+                      onChange={(hsl) => setTheme({ ...theme, mutedTextColor: hsl })}
+                      label="Muted Text Color"
                     />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.mutedTextColor)}
+                    </span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="linkColor">Link Color (HSL)</Label>
+                  <Label htmlFor="linkColor">Link Color</Label>
                   <div className="flex items-center gap-3">
-                    <div 
-                      className="w-10 h-10 rounded-md border flex-shrink-0 flex items-center justify-center"
-                      style={{ color: `hsl(${theme.linkColor})` }}
-                    >
-                      <span className="text-sm underline">Link</span>
-                    </div>
-                    <Input
-                      id="linkColor"
-                      type="text"
+                    <ColorPicker
                       value={theme.linkColor}
-                      onChange={(e) => setTheme({ ...theme, linkColor: e.target.value })}
-                      placeholder="212 85% 48%"
-                      className="font-mono"
+                      onChange={(hsl) => setTheme({ ...theme, linkColor: hsl })}
+                      label="Link Color"
                     />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.linkColor)}
+                    </span>
                   </div>
                 </div>
               </div>
