@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useToast } from "@/hooks/use-toast";
 import { Palette, Type, Image as ImageIcon, Upload, RotateCcw, Sun, Moon, PanelLeft, GripVertical, Eye, EyeOff, ChevronUp, ChevronDown, Ticket } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { THEME_STORAGE_KEY, defaultThemeSettings, ThemeSettings } from "@/lib/theme-constants";
 
 // Predefined color themes with HSL values
 const colorThemes = {
@@ -68,91 +69,8 @@ const sidebarPresets = {
   teal: { name: 'Teal', background: '180 40% 18%', foreground: '180 10% 95%' },
 };
 
-interface ThemeSettings {
-  primaryColor: string;
-  secondaryColor: string;
-  accentColor: string;
-  primaryColorHSL: string;
-  secondaryColorHSL: string;
-  accentColorHSL: string;
-  colorTheme: keyof typeof colorThemes | 'custom';
-  fontFamily: string;
-  fontSize: number;
-  logoUrl: string;
-  logoSize: number;
-  secondaryLogoUrl: string;
-  secondaryLogoSize: number;
-  layoutDensity: 'comfortable' | 'compact' | 'spacious';
-  darkMode: boolean;
-  // Sidebar colors
-  sidebarBackground: string;
-  sidebarForeground: string;
-  sidebarAccent: string;
-  sidebarAccentForeground: string;
-  sidebarBorder: string;
-  // Font colors
-  headingColor: string;
-  textColor: string;
-  mutedTextColor: string;
-  linkColor: string;
-  // Navigation order
-  navigationOrder: string[];
-  hiddenNavItems: string[];
-  // Ticket status colors (HSL format)
-  ticketStatusOpen: string;
-  ticketStatusInProgress: string;
-  ticketStatusPending: string;
-  ticketStatusResolved: string;
-  ticketStatusClosed: string;
-  // Ticket priority colors (HSL format)
-  ticketPriorityLow: string;
-  ticketPriorityMedium: string;
-  ticketPriorityHigh: string;
-  ticketPriorityUrgent: string;
-}
-
-const defaultTheme: ThemeSettings = {
-  primaryColor: '#1e40af',
-  secondaryColor: '#7c3aed',
-  accentColor: '#f59e0b',
-  primaryColorHSL: '212 85% 48%',
-  secondaryColorHSL: '271 91% 65%',
-  accentColorHSL: '38 92% 50%',
-  colorTheme: 'custom',
-  fontFamily: 'system-ui',
-  fontSize: 16,
-  logoUrl: '/src/assets/oricol-logo.png',
-  logoSize: 40,
-  secondaryLogoUrl: '/src/assets/zerobitone-logo.png',
-  secondaryLogoSize: 40,
-  layoutDensity: 'comfortable',
-  darkMode: false,
-  // Sidebar colors (defaults from CSS)
-  sidebarBackground: '215 28% 17%',
-  sidebarForeground: '210 20% 98%',
-  sidebarAccent: '217 32% 24%',
-  sidebarAccentForeground: '210 20% 98%',
-  sidebarBorder: '217 32% 24%',
-  // Font colors
-  headingColor: '215 25% 15%',
-  textColor: '215 25% 15%',
-  mutedTextColor: '215 16% 46%',
-  linkColor: '212 85% 48%',
-  // Navigation order
-  navigationOrder: [],
-  hiddenNavItems: [],
-  // Ticket status colors (HSL format - matching CSS defaults)
-  ticketStatusOpen: '212 85% 48%',
-  ticketStatusInProgress: '45 93% 47%',
-  ticketStatusPending: '38 92% 50%',
-  ticketStatusResolved: '142 71% 45%',
-  ticketStatusClosed: '215 16% 46%',
-  // Ticket priority colors (HSL format - matching CSS defaults)
-  ticketPriorityLow: '142 71% 45%',
-  ticketPriorityMedium: '45 93% 47%',
-  ticketPriorityHigh: '38 92% 50%',
-  ticketPriorityUrgent: '0 72% 51%',
-};
+// Use the shared default theme settings
+const defaultTheme = defaultThemeSettings;
 
 // Helper function to convert HSL string to hex
 const hslToHex = (hsl: string): string => {
@@ -431,7 +349,7 @@ export const ThemeCustomizer = () => {
   }, [theme]);
 
   const loadTheme = () => {
-    const savedTheme = localStorage.getItem('dashboardTheme');
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
     if (savedTheme) {
       try {
         const parsed = JSON.parse(savedTheme);
@@ -443,7 +361,7 @@ export const ThemeCustomizer = () => {
   };
 
   const saveTheme = () => {
-    localStorage.setItem('dashboardTheme', JSON.stringify(theme));
+    localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(theme));
     toast({
       title: "Theme Saved",
       description: "Your customizations have been saved successfully",
@@ -452,7 +370,7 @@ export const ThemeCustomizer = () => {
 
   const resetTheme = () => {
     setTheme(defaultTheme);
-    localStorage.removeItem('dashboardTheme');
+    localStorage.removeItem(THEME_STORAGE_KEY);
     toast({
       title: "Theme Reset",
       description: "Theme has been reset to default settings",

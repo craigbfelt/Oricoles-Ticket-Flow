@@ -1,42 +1,16 @@
 import { useEffect } from 'react';
-
-// Default theme values (should match defaults in ThemeCustomizer)
-const defaultTheme = {
-  primaryColorHSL: '212 85% 48%',
-  secondaryColorHSL: '271 91% 65%',
-  accentColorHSL: '38 92% 50%',
-  fontFamily: 'system-ui',
-  fontSize: 16,
-  layoutDensity: 'comfortable',
-  darkMode: false,
-  sidebarBackground: '215 28% 17%',
-  sidebarForeground: '210 20% 98%',
-  sidebarAccent: '217 32% 24%',
-  sidebarAccentForeground: '210 20% 98%',
-  sidebarBorder: '217 32% 24%',
-  textColor: '215 25% 15%',
-  mutedTextColor: '215 16% 46%',
-  ticketStatusOpen: '212 85% 48%',
-  ticketStatusInProgress: '45 93% 47%',
-  ticketStatusPending: '38 92% 50%',
-  ticketStatusResolved: '142 71% 45%',
-  ticketStatusClosed: '215 16% 46%',
-  ticketPriorityLow: '142 71% 45%',
-  ticketPriorityMedium: '45 93% 47%',
-  ticketPriorityHigh: '38 92% 50%',
-  ticketPriorityUrgent: '0 72% 51%',
-};
+import { THEME_STORAGE_KEY, defaultThemeSettings } from '@/lib/theme-constants';
 
 /**
  * Apply saved theme settings from localStorage to the document.
  * This ensures theme persists across page refreshes.
  */
 const applyThemeFromStorage = () => {
-  const savedTheme = localStorage.getItem('dashboardTheme');
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
   if (!savedTheme) return;
 
   try {
-    const theme = { ...defaultTheme, ...JSON.parse(savedTheme) };
+    const theme = { ...defaultThemeSettings, ...JSON.parse(savedTheme) };
     const root = document.documentElement;
 
     // Apply colors using HSL values
