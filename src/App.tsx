@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LiveChat } from "@/components/LiveChat";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useThemeInitializer } from "@/hooks/use-theme-initializer";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Tickets from "./pages/Tickets";
@@ -37,7 +38,11 @@ import Migrations from "./pages/Migrations";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  // Initialize theme from localStorage on app mount
+  useThemeInitializer();
+
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -80,6 +85,7 @@ const App = () => (
       <LiveChat />
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
