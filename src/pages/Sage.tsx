@@ -21,7 +21,8 @@ import {
   Receipt,
   CreditCard,
   Users,
-  Building2
+  Building2,
+  Key
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PlatformCredentials } from "@/components/PlatformCredentials";
 
 interface SageConnection {
   id: string;
@@ -290,6 +292,10 @@ const Sage = () => {
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Reports
               </TabsTrigger>
+              <TabsTrigger value="credentials">
+                <Key className="h-4 w-4 mr-2" />
+                Credentials
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="invoices">
@@ -416,16 +422,33 @@ const Sage = () => {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="credentials">
+              <PlatformCredentials 
+                platform="sage"
+                title="Sage Credentials"
+                description="Manage login credentials for Sage Evolution, Oricol RDP Server, Active Directory, and related services"
+              />
+            </TabsContent>
           </Tabs>
         ) : (
-          <Alert>
-            <Leaf className="h-4 w-4" />
-            <AlertTitle>Get Started with Sage</AlertTitle>
-            <AlertDescription>
-              Connect your Sage account to sync invoices, payments, customers, and financial reports.
-              You'll need your Sage API credentials to get started.
-            </AlertDescription>
-          </Alert>
+          <div className="space-y-4">
+            <Alert>
+              <Leaf className="h-4 w-4" />
+              <AlertTitle>Get Started with Sage</AlertTitle>
+              <AlertDescription>
+                Connect your Sage account to sync invoices, payments, customers, and financial reports.
+                You'll need your Sage API credentials to get started.
+              </AlertDescription>
+            </Alert>
+            
+            {/* Show credentials even when not connected */}
+            <PlatformCredentials 
+              platform="sage"
+              title="Sage Credentials"
+              description="Manage login credentials for Sage Evolution, Oricol RDP Server, Active Directory, and related services"
+            />
+          </div>
         )}
 
         {/* Configuration Dialog */}

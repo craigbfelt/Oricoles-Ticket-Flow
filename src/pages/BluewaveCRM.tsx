@@ -18,7 +18,8 @@ import {
   RefreshCw,
   Link2,
   CheckCircle,
-  XCircle
+  XCircle,
+  Key
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PlatformCredentials } from "@/components/PlatformCredentials";
 
 interface BluewaveConnection {
   id: string;
@@ -267,6 +269,10 @@ const BluewaveCRM = () => {
                 <Calendar className="h-4 w-4 mr-2" />
                 Activities
               </TabsTrigger>
+              <TabsTrigger value="credentials">
+                <Key className="h-4 w-4 mr-2" />
+                Credentials
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="customers">
@@ -338,16 +344,33 @@ const BluewaveCRM = () => {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="credentials">
+              <PlatformCredentials 
+                platform="bluewave"
+                title="Bluewave Credentials"
+                description="Manage login credentials for Bluewave CRM and related services (RDP, Active Directory, Email, etc.)"
+              />
+            </TabsContent>
           </Tabs>
         ) : (
-          <Alert>
-            <Waves className="h-4 w-4" />
-            <AlertTitle>Get Started with Bluewave CRM</AlertTitle>
-            <AlertDescription>
-              Connect your Bluewave CRM account to sync customers, opportunities, and activities.
-              You'll need your Bluewave server URL and API key to get started.
-            </AlertDescription>
-          </Alert>
+          <div className="space-y-4">
+            <Alert>
+              <Waves className="h-4 w-4" />
+              <AlertTitle>Get Started with Bluewave CRM</AlertTitle>
+              <AlertDescription>
+                Connect your Bluewave CRM account to sync customers, opportunities, and activities.
+                You'll need your Bluewave server URL and API key to get started.
+              </AlertDescription>
+            </Alert>
+            
+            {/* Show credentials even when not connected */}
+            <PlatformCredentials 
+              platform="bluewave"
+              title="Bluewave Credentials"
+              description="Manage login credentials for Bluewave CRM and related services (RDP, Active Directory, Email, etc.)"
+            />
+          </div>
         )}
 
         {/* Configuration Dialog */}
