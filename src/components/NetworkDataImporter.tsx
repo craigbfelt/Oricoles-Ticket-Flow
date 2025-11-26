@@ -21,6 +21,21 @@ import { toast } from "sonner";
 import mammoth from "mammoth";
 import * as pdfjsLib from "pdfjs-dist";
 
+interface ExtractedImage {
+  name: string;
+  dataUrl: string;
+  width: number;
+  height: number;
+}
+
+interface DocumentSection {
+  id: string;
+  sectionNumber: number;
+  title: string;
+  text: string;
+  images: ExtractedImage[];
+}
+
 interface ExtractedNetworkData {
   servers: Array<{
     name: string;
@@ -41,12 +56,8 @@ interface ExtractedNetworkData {
     city: string;
   }>;
   rawText: string;
-  extractedImages: Array<{
-    name: string;
-    dataUrl: string;
-    width: number;
-    height: number;
-  }>;
+  extractedImages: ExtractedImage[];
+  sections: DocumentSection[];
 }
 
 interface NetworkDataImporterProps {
@@ -193,7 +204,8 @@ export const NetworkDataImporter = ({ onDataImported, targetPage }: NetworkDataI
       ipAddresses,
       branches,
       rawText: text,
-      extractedImages: []
+      extractedImages: [],
+      sections: []
     };
   };
 
@@ -261,41 +273,160 @@ export const NetworkDataImporter = ({ onDataImported, targetPage }: NetworkDataI
     return { text: fullText, images };
   };
 
-  // Extract images from Word document
-  const extractWordContent = async (file: File): Promise<{ text: string; images: ExtractedNetworkData['extractedImages'] }> => {
+  // Extract images and sections from Word document (keeping text with images)
+  const extractWordContent = async (file: File): Promise<{ 
+    text: string; 
+    images: ExtractedImage[]; 
+    sections: DocumentSection[];
+  }> => {
     const arrayBuffer = await file.arrayBuffer();
     
-    // Extract text
+    // Extract raw text
     const textResult = await mammoth.extractRawText({ arrayBuffer });
     
-    // Extract images - mammoth can convert images to base64
-    // Note: mammoth doesn't provide image dimensions, so we set width/height to 0
-    // The images are still usable for display - the browser will render them at natural size
-    const images: ExtractedNetworkData['extractedImages'] = [];
+    // Extract HTML with images to get the document structure
+    const images: ExtractedImage[] = [];
+    let imageIndex = 0;
+    
+    // Track image placeholders in HTML for section extraction
+    const imagePlaceholders: Map<string, ExtractedImage> = new Map();
     
     try {
-      await mammoth.convertToHtml({ 
+      const htmlResult = await mammoth.convertToHtml({ 
         arrayBuffer,
         convertImage: mammoth.images.imgElement((image: MammothImage) => {
           return image.read("base64").then((imageBuffer: string) => {
             const contentType = image.contentType || 'image/png';
             const dataUrl = `data:${contentType};base64,${imageBuffer}`;
-            images.push({
-              name: `Image ${images.length + 1}`,
+            const imgName = `Image ${++imageIndex}`;
+            const imgData: ExtractedImage = {
+              name: imgName,
               dataUrl,
-              // Width/height are unknown from mammoth - browser will use natural dimensions
               width: 0,
               height: 0
-            });
-            return { src: dataUrl };
+            };
+            images.push(imgData);
+            // Use a unique placeholder we can find in HTML
+            const placeholderId = `__IMG_PLACEHOLDER_${imageIndex}__`;
+            imagePlaceholders.set(placeholderId, imgData);
+            return { src: placeholderId };
           });
         })
       });
-    } catch (imageError) {
-      console.log('Could not extract images from Word document:', imageError);
+      
+      // Parse HTML to create sections (keeping text with images)
+      const sections = parseHtmlIntoSections(htmlResult.value, imagePlaceholders);
+      
+      return { text: textResult.value, images, sections };
+    } catch (error) {
+      console.log('Could not extract content from Word document:', error);
+      return { text: textResult.value, images: [], sections: [] };
+    }
+  };
+
+  // Parse HTML output into logical sections (keeping text with associated images)
+  const parseHtmlIntoSections = (html: string, imagePlaceholders: Map<string, ExtractedImage>): DocumentSection[] => {
+    const sections: DocumentSection[] = [];
+    
+    // Create a DOM parser
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    
+    // Get all child elements of body
+    const bodyChildren = Array.from(doc.body.children);
+    
+    let currentSection: {
+      title: string;
+      textParts: string[];
+      images: ExtractedImage[];
+    } = {
+      title: '',
+      textParts: [],
+      images: []
+    };
+    
+    let sectionNumber = 0;
+    
+    // Function to save current section if it has content
+    const saveCurrentSection = () => {
+      const text = currentSection.textParts.join('\n').trim();
+      if (text || currentSection.images.length > 0) {
+        sectionNumber++;
+        sections.push({
+          id: `section-${sectionNumber}`,
+          sectionNumber,
+          title: currentSection.title || `Section ${sectionNumber}`,
+          text,
+          images: [...currentSection.images]
+        });
+      }
+      // Reset for next section
+      currentSection = {
+        title: '',
+        textParts: [],
+        images: []
+      };
+    };
+    
+    for (const element of bodyChildren) {
+      const tagName = element.tagName.toLowerCase();
+      const textContent = element.textContent?.trim() || '';
+      
+      // Check if this element contains an image
+      const imgElements = element.querySelectorAll('img');
+      const hasImage = imgElements.length > 0;
+      
+      // If it's a heading, start a new section
+      if (tagName.match(/^h[1-6]$/)) {
+        saveCurrentSection();
+        currentSection.title = textContent;
+        continue;
+      }
+      
+      // Check for images in this element
+      if (hasImage) {
+        imgElements.forEach(img => {
+          const src = img.getAttribute('src') || '';
+          // Check if this is one of our placeholders
+          if (src.startsWith('__IMG_PLACEHOLDER_')) {
+            const imgData = imagePlaceholders.get(src);
+            if (imgData) {
+              currentSection.images.push(imgData);
+            }
+          }
+        });
+        
+        // Also extract any text in the same element (caption, description, etc.)
+        // Remove the placeholder text from content
+        let cleanText = textContent;
+        imagePlaceholders.forEach((_, placeholder) => {
+          cleanText = cleanText.replace(placeholder, '');
+        });
+        if (cleanText.trim()) {
+          currentSection.textParts.push(cleanText.trim());
+        }
+        
+        // After finding images, save as a section (image + surrounding text)
+        // This keeps the image with its nearby text
+        if (currentSection.images.length > 0) {
+          saveCurrentSection();
+        }
+      } else if (textContent) {
+        // Regular text content
+        currentSection.textParts.push(textContent);
+        
+        // If text section gets too long without images, save it as its own section
+        const totalText = currentSection.textParts.join('\n');
+        if (totalText.length > 1000 && currentSection.images.length === 0) {
+          saveCurrentSection();
+        }
+      }
     }
     
-    return { text: textResult.value, images };
+    // Save any remaining content
+    saveCurrentSection();
+    
+    return sections;
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -312,18 +443,28 @@ export const NetworkDataImporter = ({ onDataImported, targetPage }: NetworkDataI
 
     try {
       let text = '';
-      let extractedImages: ExtractedNetworkData['extractedImages'] = [];
+      let extractedImages: ExtractedImage[] = [];
+      let sections: DocumentSection[] = [];
       
       if (selectedFile.name.toLowerCase().endsWith('.pdf')) {
         // Extract text and images from PDF
         const pdfContent = await extractPdfContent(selectedFile);
         text = pdfContent.text;
         extractedImages = pdfContent.images;
+        // Create sections from PDF pages (each page is a section)
+        sections = pdfContent.images.map((img, index) => ({
+          id: `pdf-page-${index + 1}`,
+          sectionNumber: index + 1,
+          title: `Page ${index + 1}`,
+          text: '', // PDF text is extracted as a whole, not per page in current implementation
+          images: [img]
+        }));
       } else if (selectedFile.name.toLowerCase().endsWith('.docx')) {
-        // Use mammoth to extract text and images from Word document
+        // Use mammoth to extract text, images, and sections from Word document
         const wordContent = await extractWordContent(selectedFile);
         text = wordContent.text;
         extractedImages = wordContent.images;
+        sections = wordContent.sections;
       } else if (selectedFile.name.toLowerCase().endsWith('.txt')) {
         text = await selectedFile.text();
       } else {
@@ -336,11 +477,13 @@ export const NetworkDataImporter = ({ onDataImported, targetPage }: NetworkDataI
       // Extract network data
       const data = extractNetworkData(text);
       data.extractedImages = extractedImages;
+      data.sections = sections;
       setExtractedData(data);
       
       const imageMsg = extractedImages.length > 0 ? `, ${extractedImages.length} images` : '';
+      const sectionMsg = sections.length > 0 ? `, ${sections.length} sections` : '';
       toast.success("Document processed successfully", {
-        description: `Found ${data.servers.length} servers, ${data.networkDevices.length} devices, ${data.ipAddresses.length} IP addresses${imageMsg}`
+        description: `Found ${data.servers.length} servers, ${data.networkDevices.length} devices, ${data.ipAddresses.length} IP addresses${imageMsg}${sectionMsg}`
       });
     } catch (error) {
       console.error("Error processing document:", error);
@@ -358,6 +501,63 @@ export const NetworkDataImporter = ({ onDataImported, targetPage }: NetworkDataI
       if (!user) {
         toast.error("You must be logged in to import data");
         return;
+      }
+
+      let importedSections = 0;
+      let importedDevices = 0;
+
+      // Import sections (images with their associated text) as network diagrams
+      if (extractedData.sections && extractedData.sections.length > 0) {
+        for (const section of extractedData.sections) {
+          // Upload each image in the section to storage
+          for (const image of section.images) {
+            try {
+              // Convert data URL to blob
+              const response = await fetch(image.dataUrl);
+              const blob = await response.blob();
+              
+              const fileExt = image.name.split('.').pop() || 'png';
+              const fileName = `${Date.now()}_section_${section.sectionNumber}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+              const storagePath = targetPage === 'nymbis-cloud' 
+                ? `nymbis-cloud/${fileName}` 
+                : `company-network/${fileName}`;
+
+              // Upload to storage
+              const { error: uploadError } = await supabase.storage
+                .from('diagrams')
+                .upload(storagePath, blob, {
+                  metadata: { owner: user.id }
+                });
+
+              if (uploadError) {
+                console.error('Upload error:', uploadError);
+                continue;
+              }
+
+              // Create network diagram record with the section's text as description
+              const diagramName = section.title !== `Section ${section.sectionNumber}` 
+                ? section.title 
+                : `Network Diagram - Section ${section.sectionNumber}`;
+              
+              const { error: dbError } = await (supabase as any)
+                .from('network_diagrams')
+                .insert({
+                  diagram_name: diagramName,
+                  diagram_url: storagePath,
+                  description: section.text || null,
+                  branch_id: null
+                });
+
+              if (dbError) {
+                console.error('DB error:', dbError);
+              } else {
+                importedSections++;
+              }
+            } catch (err) {
+              console.error('Error importing section:', err);
+            }
+          }
+        }
       }
 
       // Save extracted data to appropriate tables
@@ -391,9 +591,17 @@ export const NetworkDataImporter = ({ onDataImported, targetPage }: NetworkDataI
           .insert(devices);
         
         if (error) throw error;
+        importedDevices = devices.length;
       }
 
-      toast.success("Network data imported successfully!");
+      const successMessage = [];
+      if (importedSections > 0) successMessage.push(`${importedSections} diagram sections`);
+      if (importedDevices > 0) successMessage.push(`${importedDevices} devices`);
+      if (extractedData.servers.length > 0) successMessage.push(`${extractedData.servers.length} servers`);
+
+      toast.success("Network data imported successfully!", {
+        description: successMessage.length > 0 ? `Imported: ${successMessage.join(', ')}` : undefined
+      });
       
       if (onDataImported) {
         onDataImported(extractedData);
@@ -499,9 +707,71 @@ export const NetworkDataImporter = ({ onDataImported, targetPage }: NetworkDataI
                       <Badge variant="secondary">
                         {extractedData.branches.length} Locations
                       </Badge>
+                      {extractedData.sections && extractedData.sections.length > 0 && (
+                        <Badge variant="default" className="bg-primary">
+                          <ImageIcon className="mr-1 h-3 w-3" />
+                          {extractedData.sections.length} Sections (with images)
+                        </Badge>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Sections - Images with their associated text */}
+                {extractedData.sections && extractedData.sections.length > 0 && (
+                  <Card className="border-primary/50">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <ImageIcon className="h-4 w-4 text-primary" />
+                        Document Sections (Images with Text)
+                      </CardTitle>
+                      <p className="text-xs text-muted-foreground">
+                        Each section contains an image/diagram with its associated text preserved together
+                      </p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {extractedData.sections.map((section) => (
+                          <div key={section.id} className="border rounded-lg p-3 bg-muted/30">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge variant="outline">Section {section.sectionNumber}</Badge>
+                              {section.title && section.title !== `Section ${section.sectionNumber}` && (
+                                <span className="font-medium text-sm">{section.title}</span>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {/* Images */}
+                              {section.images.length > 0 && (
+                                <div className="space-y-2">
+                                  {section.images.map((img, imgIdx) => (
+                                    <div key={imgIdx} className="border rounded-lg p-2 bg-white">
+                                      <img 
+                                        src={img.dataUrl} 
+                                        alt={img.name}
+                                        className="w-full max-h-48 object-contain rounded"
+                                      />
+                                      <p className="text-xs text-center mt-1 text-muted-foreground">{img.name}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              {/* Associated Text */}
+                              {section.text && (
+                                <div className="bg-muted p-2 rounded text-xs overflow-y-auto max-h-48">
+                                  <p className="font-medium text-muted-foreground mb-1">Associated Text:</p>
+                                  <p className="whitespace-pre-wrap">{section.text}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-3">
+                        These sections will be imported as network diagrams with their descriptions preserved.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Servers */}
                 {extractedData.servers.length > 0 && (
@@ -641,7 +911,7 @@ export const NetworkDataImporter = ({ onDataImported, targetPage }: NetworkDataI
             Cancel
           </Button>
           <Button onClick={handleImport} disabled={!extractedData || isProcessing}>
-            Import {extractedData?.servers.length || 0} Servers, {extractedData?.networkDevices.length || 0} Devices{extractedData?.extractedImages?.length ? `, ${extractedData.extractedImages.length} Images` : ''}
+            Import {extractedData?.sections?.length ? `${extractedData.sections.length} Sections, ` : ''}{extractedData?.servers.length || 0} Servers, {extractedData?.networkDevices.length || 0} Devices
           </Button>
         </DialogFooter>
       </DialogContent>

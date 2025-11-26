@@ -45,16 +45,18 @@ import {
   FileSpreadsheet,
   FileCode,
   Loader2,
-  Share2
+  Share2,
+  Users
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { StorageDiagnostics, logUploadError } from "@/components/StorageDiagnostics";
 import { StorageUsageChart } from "@/components/StorageUsageChart";
-import { UserProfilesSection } from "@/components/UserProfilesSection";
 import { ShareFileDialog } from "@/components/ShareFileDialog";
 import { UserGroupsManagement } from "@/components/UserGroupsManagement";
+import { UserDocumentBoxes } from "@/components/UserDocumentBoxes";
+import { RecentDocuments } from "@/components/RecentDocuments";
 
 interface Document {
   id: string;
@@ -522,8 +524,11 @@ const DocumentHub = () => {
           </Dialog>
         </div>
 
-        {/* User Profiles Section */}
-        <UserProfilesSection />
+        {/* Recent Documents - Now at the top */}
+        <RecentDocuments limit={5} />
+
+        {/* User Document Boxes - Shows numbered user folders */}
+        <UserDocumentBoxes />
 
         {/* User Groups Management */}
         <UserGroupsManagement />
