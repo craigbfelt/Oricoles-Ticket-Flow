@@ -9,7 +9,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { Palette, Type, Image as ImageIcon, Upload, RotateCcw, Sun, Moon, PanelLeft, GripVertical, Eye, EyeOff, ChevronUp, ChevronDown } from "lucide-react";
+import { Palette, Type, Image as ImageIcon, Upload, RotateCcw, Sun, Moon, PanelLeft, GripVertical, Eye, EyeOff, ChevronUp, ChevronDown, Ticket } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 // Predefined color themes with HSL values
@@ -98,6 +98,17 @@ interface ThemeSettings {
   // Navigation order
   navigationOrder: string[];
   hiddenNavItems: string[];
+  // Ticket status colors (HSL format)
+  ticketStatusOpen: string;
+  ticketStatusInProgress: string;
+  ticketStatusPending: string;
+  ticketStatusResolved: string;
+  ticketStatusClosed: string;
+  // Ticket priority colors (HSL format)
+  ticketPriorityLow: string;
+  ticketPriorityMedium: string;
+  ticketPriorityHigh: string;
+  ticketPriorityUrgent: string;
 }
 
 const defaultTheme: ThemeSettings = {
@@ -130,6 +141,17 @@ const defaultTheme: ThemeSettings = {
   // Navigation order
   navigationOrder: [],
   hiddenNavItems: [],
+  // Ticket status colors (HSL format - matching CSS defaults)
+  ticketStatusOpen: '212 85% 48%',
+  ticketStatusInProgress: '45 93% 47%',
+  ticketStatusPending: '38 92% 50%',
+  ticketStatusResolved: '142 71% 45%',
+  ticketStatusClosed: '215 16% 46%',
+  // Ticket priority colors (HSL format - matching CSS defaults)
+  ticketPriorityLow: '142 71% 45%',
+  ticketPriorityMedium: '45 93% 47%',
+  ticketPriorityHigh: '38 92% 50%',
+  ticketPriorityUrgent: '0 72% 51%',
 };
 
 // Helper function to convert HSL string to hex
@@ -470,6 +492,19 @@ export const ThemeCustomizer = () => {
                    theme.layoutDensity === 'spacious' ? '1.25' : '1';
     root.style.setProperty('--theme-spacing', spacing);
     
+    // Apply ticket status colors
+    root.style.setProperty('--status-open', theme.ticketStatusOpen);
+    root.style.setProperty('--status-in-progress', theme.ticketStatusInProgress);
+    root.style.setProperty('--status-pending', theme.ticketStatusPending);
+    root.style.setProperty('--status-resolved', theme.ticketStatusResolved);
+    root.style.setProperty('--status-closed', theme.ticketStatusClosed);
+    
+    // Apply ticket priority colors
+    root.style.setProperty('--priority-low', theme.ticketPriorityLow);
+    root.style.setProperty('--priority-medium', theme.ticketPriorityMedium);
+    root.style.setProperty('--priority-high', theme.ticketPriorityHigh);
+    root.style.setProperty('--priority-urgent', theme.ticketPriorityUrgent);
+    
     // Apply dark mode
     if (theme.darkMode) {
       root.classList.add('dark');
@@ -577,7 +612,7 @@ export const ThemeCustomizer = () => {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="colors" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="colors">
               <Palette className="h-4 w-4 mr-2" />
               Colors
@@ -585,6 +620,10 @@ export const ThemeCustomizer = () => {
             <TabsTrigger value="sidebar">
               <PanelLeft className="h-4 w-4 mr-2" />
               Sidebar
+            </TabsTrigger>
+            <TabsTrigger value="tickets">
+              <Ticket className="h-4 w-4 mr-2" />
+              Tickets
             </TabsTrigger>
             <TabsTrigger value="fonts">
               <Type className="h-4 w-4 mr-2" />
@@ -865,6 +904,230 @@ export const ThemeCustomizer = () => {
                   style={{ color: `hsl(${theme.sidebarForeground})` }}
                 >
                   <span className="text-sm">Menu Item</span>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Tickets Tab */}
+          <TabsContent value="tickets" className="space-y-6 mt-6">
+            {/* Status Colors Section */}
+            <div className="space-y-4">
+              <div>
+                <Label className="text-base font-semibold">Ticket Status Colors</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Customize the colors used for different ticket statuses.
+                </p>
+              </div>
+              
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label>Open Status</Label>
+                  <div className="flex items-center gap-3">
+                    <ColorPicker
+                      value={theme.ticketStatusOpen}
+                      onChange={(hsl) => setTheme({ ...theme, ticketStatusOpen: hsl })}
+                      label="Open Status Color"
+                    />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.ticketStatusOpen)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>In Progress Status</Label>
+                  <div className="flex items-center gap-3">
+                    <ColorPicker
+                      value={theme.ticketStatusInProgress}
+                      onChange={(hsl) => setTheme({ ...theme, ticketStatusInProgress: hsl })}
+                      label="In Progress Status Color"
+                    />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.ticketStatusInProgress)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Pending Status</Label>
+                  <div className="flex items-center gap-3">
+                    <ColorPicker
+                      value={theme.ticketStatusPending}
+                      onChange={(hsl) => setTheme({ ...theme, ticketStatusPending: hsl })}
+                      label="Pending Status Color"
+                    />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.ticketStatusPending)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Resolved Status</Label>
+                  <div className="flex items-center gap-3">
+                    <ColorPicker
+                      value={theme.ticketStatusResolved}
+                      onChange={(hsl) => setTheme({ ...theme, ticketStatusResolved: hsl })}
+                      label="Resolved Status Color"
+                    />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.ticketStatusResolved)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Closed Status</Label>
+                  <div className="flex items-center gap-3">
+                    <ColorPicker
+                      value={theme.ticketStatusClosed}
+                      onChange={(hsl) => setTheme({ ...theme, ticketStatusClosed: hsl })}
+                      label="Closed Status Color"
+                    />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.ticketStatusClosed)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Priority Colors Section */}
+            <div className="space-y-4 pt-4 border-t">
+              <div>
+                <Label className="text-base font-semibold">Ticket Priority Colors</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Customize the colors used for different ticket priorities.
+                </p>
+              </div>
+              
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label>Low Priority</Label>
+                  <div className="flex items-center gap-3">
+                    <ColorPicker
+                      value={theme.ticketPriorityLow}
+                      onChange={(hsl) => setTheme({ ...theme, ticketPriorityLow: hsl })}
+                      label="Low Priority Color"
+                    />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.ticketPriorityLow)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Medium Priority</Label>
+                  <div className="flex items-center gap-3">
+                    <ColorPicker
+                      value={theme.ticketPriorityMedium}
+                      onChange={(hsl) => setTheme({ ...theme, ticketPriorityMedium: hsl })}
+                      label="Medium Priority Color"
+                    />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.ticketPriorityMedium)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>High Priority</Label>
+                  <div className="flex items-center gap-3">
+                    <ColorPicker
+                      value={theme.ticketPriorityHigh}
+                      onChange={(hsl) => setTheme({ ...theme, ticketPriorityHigh: hsl })}
+                      label="High Priority Color"
+                    />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.ticketPriorityHigh)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Urgent Priority</Label>
+                  <div className="flex items-center gap-3">
+                    <ColorPicker
+                      value={theme.ticketPriorityUrgent}
+                      onChange={(hsl) => setTheme({ ...theme, ticketPriorityUrgent: hsl })}
+                      label="Urgent Priority Color"
+                    />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.ticketPriorityUrgent)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Live Preview */}
+            <div className="space-y-4 pt-4 border-t">
+              <Label className="text-base font-semibold">Live Preview</Label>
+              <div className="rounded-lg border p-6 space-y-4 bg-card">
+                <div>
+                  <p className="text-sm font-medium mb-2">Status Badges</p>
+                  <div className="flex flex-wrap gap-2">
+                    <span 
+                      className="px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                      style={{ backgroundColor: `hsl(${theme.ticketStatusOpen})` }}
+                    >
+                      open
+                    </span>
+                    <span 
+                      className="px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                      style={{ backgroundColor: `hsl(${theme.ticketStatusInProgress})` }}
+                    >
+                      in progress
+                    </span>
+                    <span 
+                      className="px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                      style={{ backgroundColor: `hsl(${theme.ticketStatusPending})` }}
+                    >
+                      pending
+                    </span>
+                    <span 
+                      className="px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                      style={{ backgroundColor: `hsl(${theme.ticketStatusResolved})` }}
+                    >
+                      resolved
+                    </span>
+                    <span 
+                      className="px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                      style={{ backgroundColor: `hsl(${theme.ticketStatusClosed})` }}
+                    >
+                      closed
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-2">Priority Badges</p>
+                  <div className="flex flex-wrap gap-2">
+                    <span 
+                      className="px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                      style={{ backgroundColor: `hsl(${theme.ticketPriorityLow})` }}
+                    >
+                      low
+                    </span>
+                    <span 
+                      className="px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                      style={{ backgroundColor: `hsl(${theme.ticketPriorityMedium})` }}
+                    >
+                      medium
+                    </span>
+                    <span 
+                      className="px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                      style={{ backgroundColor: `hsl(${theme.ticketPriorityHigh})` }}
+                    >
+                      high
+                    </span>
+                    <span 
+                      className="px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                      style={{ backgroundColor: `hsl(${theme.ticketPriorityUrgent})` }}
+                    >
+                      urgent
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
