@@ -39,8 +39,11 @@ const applyThemeFromStorage = () => {
     root.style.setProperty('--theme-font-size', `${theme.fontSize}px`);
 
     // Apply layout density
-    const spacing = theme.layoutDensity === 'compact' ? '0.75' : 
-                   theme.layoutDensity === 'spacious' ? '1.25' : '1';
+    const DENSITY_COMPACT = '0.75';
+    const DENSITY_COMFORTABLE = '1';
+    const DENSITY_SPACIOUS = '1.25';
+    const spacing = theme.layoutDensity === 'compact' ? DENSITY_COMPACT : 
+                   theme.layoutDensity === 'spacious' ? DENSITY_SPACIOUS : DENSITY_COMFORTABLE;
     root.style.setProperty('--theme-spacing', spacing);
 
     // Apply ticket status colors
@@ -76,6 +79,3 @@ export const useThemeInitializer = () => {
     applyThemeFromStorage();
   }, []);
 };
-
-// Also export a function that can be called immediately (before React mounts)
-export { applyThemeFromStorage };
