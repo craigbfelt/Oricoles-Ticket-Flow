@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Palette, Type, Image as ImageIcon, Upload, RotateCcw, Sun, Moon } from "lucide-react";
+import { Palette, Type, Image as ImageIcon, Upload, RotateCcw, Sun, Moon, PanelLeft, GripVertical, Eye, EyeOff, ChevronUp, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 // Predefined color themes with HSL values
@@ -18,31 +18,53 @@ const colorThemes = {
     primary: '25 90% 55%',
     secondary: '45 85% 60%',
     accent: '15 85% 50%',
+    sidebar: '25 30% 20%',
+    sidebarText: '45 10% 95%',
   },
   cool: {
     name: 'Cool',
     primary: '210 85% 55%',
     secondary: '195 75% 50%',
     accent: '230 70% 60%',
+    sidebar: '215 28% 17%',
+    sidebarText: '210 20% 98%',
   },
   forest: {
     name: 'Forest',
     primary: '150 60% 40%',
     secondary: '120 50% 45%',
     accent: '90 55% 50%',
+    sidebar: '150 30% 15%',
+    sidebarText: '120 10% 95%',
   },
   ocean: {
     name: 'Ocean',
     primary: '200 80% 50%',
     secondary: '180 70% 45%',
     accent: '220 75% 55%',
+    sidebar: '200 40% 18%',
+    sidebarText: '195 15% 95%',
   },
   sunset: {
     name: 'Sunset',
     primary: '350 80% 55%',
     secondary: '30 85% 55%',
     accent: '15 90% 60%',
+    sidebar: '350 30% 18%',
+    sidebarText: '30 10% 95%',
   },
+};
+
+// Sidebar color presets
+const sidebarPresets = {
+  dark: { name: 'Dark Gray', background: '215 28% 17%', foreground: '210 20% 98%' },
+  charcoal: { name: 'Charcoal', background: '220 15% 12%', foreground: '220 10% 95%' },
+  navy: { name: 'Navy Blue', background: '225 50% 18%', foreground: '225 10% 95%' },
+  slate: { name: 'Slate', background: '215 20% 25%', foreground: '215 10% 95%' },
+  midnight: { name: 'Midnight', background: '230 30% 10%', foreground: '230 10% 95%' },
+  olive: { name: 'Olive', background: '80 20% 20%', foreground: '80 10% 95%' },
+  burgundy: { name: 'Burgundy', background: '350 40% 18%', foreground: '350 10% 95%' },
+  teal: { name: 'Teal', background: '180 40% 18%', foreground: '180 10% 95%' },
 };
 
 interface ThemeSettings {
@@ -61,6 +83,20 @@ interface ThemeSettings {
   secondaryLogoSize: number;
   layoutDensity: 'comfortable' | 'compact' | 'spacious';
   darkMode: boolean;
+  // Sidebar colors
+  sidebarBackground: string;
+  sidebarForeground: string;
+  sidebarAccent: string;
+  sidebarAccentForeground: string;
+  sidebarBorder: string;
+  // Font colors
+  headingColor: string;
+  textColor: string;
+  mutedTextColor: string;
+  linkColor: string;
+  // Navigation order
+  navigationOrder: string[];
+  hiddenNavItems: string[];
 }
 
 const defaultTheme: ThemeSettings = {
@@ -79,6 +115,20 @@ const defaultTheme: ThemeSettings = {
   secondaryLogoSize: 40,
   layoutDensity: 'comfortable',
   darkMode: false,
+  // Sidebar colors (defaults from CSS)
+  sidebarBackground: '215 28% 17%',
+  sidebarForeground: '210 20% 98%',
+  sidebarAccent: '217 32% 24%',
+  sidebarAccentForeground: '210 20% 98%',
+  sidebarBorder: '217 32% 24%',
+  // Font colors
+  headingColor: '215 25% 15%',
+  textColor: '215 25% 15%',
+  mutedTextColor: '215 16% 46%',
+  linkColor: '212 85% 48%',
+  // Navigation order
+  navigationOrder: [],
+  hiddenNavItems: [],
 };
 
 // Helper function to convert HSL string to hex
@@ -112,6 +162,151 @@ const hslToHex = (hsl: string): string => {
   };
   
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+};
+
+// Default navigation items that can be reordered
+const defaultNavItems = [
+  { name: "Dashboard", href: "/dashboard" },
+  { name: "Tickets", href: "/tickets" },
+  { name: "Oricol CRM", href: "/crm" },
+  { name: "Remote Support", href: "/remote-support" },
+  { name: "Document Hub", href: "/document-hub" },
+  { name: "Shared Files", href: "/shared-files" },
+  { name: "Migrations", href: "/migrations" },
+  { name: "Jobs", href: "/jobs" },
+  { name: "Maintenance", href: "/maintenance" },
+  { name: "Logistics", href: "/logistics" },
+  { name: "Assets", href: "/assets" },
+  { name: "Branches", href: "/branches" },
+  { name: "Microsoft 365", href: "/microsoft-365" },
+  { name: "Hardware", href: "/hardware" },
+  { name: "Software", href: "/software" },
+  { name: "Licenses", href: "/licenses" },
+  { name: "Provider Emails", href: "/provider-emails" },
+  { name: "VPN", href: "/vpn" },
+  { name: "RDP", href: "/rdp" },
+  { name: "Nymbis RDP Cloud", href: "/nymbis-rdp-cloud" },
+  { name: "Company Network", href: "/company-network" },
+  { name: "Reports", href: "/reports" },
+  { name: "Users", href: "/users" },
+  { name: "Settings", href: "/settings" },
+];
+
+// Navigation Editor Component
+interface NavigationEditorProps {
+  navigationOrder: string[];
+  hiddenNavItems: string[];
+  onOrderChange: (order: string[]) => void;
+  onHiddenChange: (hidden: string[]) => void;
+}
+
+const NavigationEditor = ({ navigationOrder, hiddenNavItems, onOrderChange, onHiddenChange }: NavigationEditorProps) => {
+  // Get ordered items - use saved order or default
+  const getOrderedItems = () => {
+    if (navigationOrder.length === 0) {
+      return defaultNavItems;
+    }
+    
+    const orderedItems: typeof defaultNavItems = [];
+    navigationOrder.forEach(href => {
+      const item = defaultNavItems.find(i => i.href === href);
+      if (item) orderedItems.push(item);
+    });
+    
+    // Add any items not in the order (new items)
+    defaultNavItems.forEach(item => {
+      if (!orderedItems.find(i => i.href === item.href)) {
+        orderedItems.push(item);
+      }
+    });
+    
+    return orderedItems;
+  };
+
+  const orderedItems = getOrderedItems();
+
+  const moveItem = (index: number, direction: 'up' | 'down') => {
+    const newOrder = [...orderedItems];
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= newOrder.length) return;
+    
+    [newOrder[index], newOrder[newIndex]] = [newOrder[newIndex], newOrder[index]];
+    onOrderChange(newOrder.map(item => item.href));
+  };
+
+  const toggleVisibility = (href: string) => {
+    if (hiddenNavItems.includes(href)) {
+      onHiddenChange(hiddenNavItems.filter(h => h !== href));
+    } else {
+      onHiddenChange([...hiddenNavItems, href]);
+    }
+  };
+
+  const resetOrder = () => {
+    onOrderChange([]);
+    onHiddenChange([]);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <Button variant="outline" size="sm" onClick={resetOrder}>
+          <RotateCcw className="h-4 w-4 mr-2" />
+          Reset Order
+        </Button>
+      </div>
+      <div className="border rounded-lg divide-y max-h-[400px] overflow-y-auto">
+        {orderedItems.map((item, index) => {
+          const isHidden = hiddenNavItems.includes(item.href);
+          return (
+            <div 
+              key={item.href}
+              className={`flex items-center justify-between p-3 ${isHidden ? 'opacity-50 bg-muted/50' : ''}`}
+            >
+              <div className="flex items-center gap-3">
+                <GripVertical className="h-4 w-4 text-muted-foreground" />
+                <span className={`font-medium ${isHidden ? 'line-through' : ''}`}>
+                  {item.name}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => moveItem(index, 'up')}
+                  disabled={index === 0}
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => moveItem(index, 'down')}
+                  disabled={index === orderedItems.length - 1}
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => toggleVisibility(item.href)}
+                >
+                  {isHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Use the arrows to reorder menu items. Click the eye icon to hide/show items. 
+        Hidden items will not appear in the sidebar navigation.
+      </p>
+    </div>
+  );
 };
 
 export const ThemeCustomizer = () => {
@@ -168,6 +363,18 @@ export const ThemeCustomizer = () => {
     root.style.setProperty('--primary', theme.primaryColorHSL);
     root.style.setProperty('--accent', theme.accentColorHSL);
     
+    // Apply sidebar colors
+    root.style.setProperty('--sidebar-background', theme.sidebarBackground);
+    root.style.setProperty('--sidebar-foreground', theme.sidebarForeground);
+    root.style.setProperty('--sidebar-accent', theme.sidebarAccent);
+    root.style.setProperty('--sidebar-accent-foreground', theme.sidebarAccentForeground);
+    root.style.setProperty('--sidebar-border', theme.sidebarBorder);
+    
+    // Apply font colors
+    root.style.setProperty('--foreground', theme.textColor);
+    root.style.setProperty('--muted-foreground', theme.mutedTextColor);
+    root.style.setProperty('--card-foreground', theme.textColor);
+    
     // Apply font
     root.style.setProperty('--theme-font-family', theme.fontFamily);
     root.style.setProperty('--theme-font-size', `${theme.fontSize}px`);
@@ -199,6 +406,8 @@ export const ThemeCustomizer = () => {
         primaryColor: hslToHex(selectedTheme.primary),
         secondaryColor: hslToHex(selectedTheme.secondary),
         accentColor: hslToHex(selectedTheme.accent),
+        sidebarBackground: selectedTheme.sidebar,
+        sidebarForeground: selectedTheme.sidebarText,
       });
     }
   };
@@ -282,10 +491,14 @@ export const ThemeCustomizer = () => {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="colors" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="colors">
               <Palette className="h-4 w-4 mr-2" />
               Colors
+            </TabsTrigger>
+            <TabsTrigger value="sidebar">
+              <PanelLeft className="h-4 w-4 mr-2" />
+              Sidebar
             </TabsTrigger>
             <TabsTrigger value="fonts">
               <Type className="h-4 w-4 mr-2" />
@@ -294,6 +507,10 @@ export const ThemeCustomizer = () => {
             <TabsTrigger value="logos">
               <ImageIcon className="h-4 w-4 mr-2" />
               Logo
+            </TabsTrigger>
+            <TabsTrigger value="layout">
+              <GripVertical className="h-4 w-4 mr-2" />
+              Layout
             </TabsTrigger>
           </TabsList>
 
@@ -426,6 +643,182 @@ export const ThemeCustomizer = () => {
                 checked={theme.darkMode}
                 onCheckedChange={(checked) => setTheme({ ...theme, darkMode: checked })}
               />
+            </div>
+          </TabsContent>
+
+          {/* Sidebar Tab */}
+          <TabsContent value="sidebar" className="space-y-6 mt-6">
+            {/* Sidebar Preset Selection */}
+            <div className="space-y-4">
+              <div>
+                <Label className="text-base font-semibold">Sidebar Color Presets</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Choose a preset sidebar color scheme or customize your own.
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {(Object.keys(sidebarPresets) as Array<keyof typeof sidebarPresets>).map((presetName) => {
+                  const preset = sidebarPresets[presetName];
+                  return (
+                    <button
+                      key={presetName}
+                      onClick={() => setTheme({
+                        ...theme,
+                        sidebarBackground: preset.background,
+                        sidebarForeground: preset.foreground,
+                        sidebarAccent: preset.background.replace(/(\d+)%\s*$/, (_, l) => `${Math.min(100, parseInt(l, 10) + 10)}%`),
+                        sidebarAccentForeground: preset.foreground,
+                        sidebarBorder: preset.background.replace(/(\d+)%\s*$/, (_, l) => `${Math.min(100, parseInt(l, 10) + 10)}%`),
+                      })}
+                      className={`flex flex-col items-center p-4 rounded-lg border-2 transition-all hover:shadow-md ${
+                        theme.sidebarBackground === preset.background
+                          ? 'border-primary bg-primary/5 ring-2 ring-primary/20' 
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <div 
+                        className="w-12 h-12 rounded-md mb-2 flex items-center justify-center"
+                        style={{ backgroundColor: `hsl(${preset.background})` }}
+                      >
+                        <span 
+                          className="text-xs font-medium"
+                          style={{ color: `hsl(${preset.foreground})` }}
+                        >Aa</span>
+                      </div>
+                      <span className="text-sm font-medium">{preset.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Custom Sidebar Colors */}
+            <div className="space-y-4 pt-4 border-t">
+              <div>
+                <Label className="text-base font-semibold">Custom Sidebar Colors</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Fine-tune your sidebar appearance with custom HSL colors.
+                </p>
+              </div>
+              
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="sidebarBackground">Sidebar Background (HSL)</Label>
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-md border flex-shrink-0"
+                      style={{ backgroundColor: `hsl(${theme.sidebarBackground})` }}
+                    />
+                    <Input
+                      id="sidebarBackground"
+                      type="text"
+                      value={theme.sidebarBackground}
+                      onChange={(e) => setTheme({ ...theme, sidebarBackground: e.target.value })}
+                      placeholder="215 28% 17%"
+                      className="font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="sidebarForeground">Sidebar Text Color (HSL)</Label>
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-md border flex-shrink-0 flex items-center justify-center"
+                      style={{ 
+                        backgroundColor: `hsl(${theme.sidebarBackground})`,
+                        color: `hsl(${theme.sidebarForeground})`
+                      }}
+                    >
+                      <span className="text-sm font-bold">Aa</span>
+                    </div>
+                    <Input
+                      id="sidebarForeground"
+                      type="text"
+                      value={theme.sidebarForeground}
+                      onChange={(e) => setTheme({ ...theme, sidebarForeground: e.target.value })}
+                      placeholder="210 20% 98%"
+                      className="font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="sidebarAccent">Sidebar Accent/Hover Color (HSL)</Label>
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-md border flex-shrink-0"
+                      style={{ backgroundColor: `hsl(${theme.sidebarAccent})` }}
+                    />
+                    <Input
+                      id="sidebarAccent"
+                      type="text"
+                      value={theme.sidebarAccent}
+                      onChange={(e) => setTheme({ ...theme, sidebarAccent: e.target.value })}
+                      placeholder="217 32% 24%"
+                      className="font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="sidebarBorder">Sidebar Border Color (HSL)</Label>
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-md border flex-shrink-0"
+                      style={{ backgroundColor: `hsl(${theme.sidebarBorder})` }}
+                    />
+                    <Input
+                      id="sidebarBorder"
+                      type="text"
+                      value={theme.sidebarBorder}
+                      onChange={(e) => setTheme({ ...theme, sidebarBorder: e.target.value })}
+                      placeholder="217 32% 24%"
+                      className="font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <p className="text-sm text-muted-foreground">
+                Enter colors in HSL format: hue saturation% lightness% (e.g., "215 28% 17%")
+              </p>
+            </div>
+
+            {/* Live Preview */}
+            <div className="space-y-4 pt-4 border-t">
+              <Label className="text-base font-semibold">Live Preview</Label>
+              <div 
+                className="rounded-lg p-4 space-y-2"
+                style={{ backgroundColor: `hsl(${theme.sidebarBackground})` }}
+              >
+                <div 
+                  className="px-4 py-2 rounded"
+                  style={{ 
+                    backgroundColor: `hsl(${theme.sidebarAccent})`,
+                    color: `hsl(${theme.sidebarForeground})`
+                  }}
+                >
+                  <span className="font-medium">Active Link</span>
+                </div>
+                <div 
+                  className="px-4 py-2 rounded"
+                  style={{ color: `hsl(${theme.sidebarForeground})` }}
+                >
+                  <span>Regular Link</span>
+                </div>
+                <div 
+                  className="h-px w-full"
+                  style={{ backgroundColor: `hsl(${theme.sidebarBorder})` }}
+                />
+                <div 
+                  className="px-4 py-2 rounded opacity-70"
+                  style={{ color: `hsl(${theme.sidebarForeground})` }}
+                >
+                  <span className="text-sm">Menu Item</span>
+                </div>
+              </div>
             </div>
           </TabsContent>
 
@@ -574,6 +967,152 @@ export const ThemeCustomizer = () => {
                     className="w-full"
                   />
                 </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Layout & Navigation Tab */}
+          <TabsContent value="layout" className="space-y-6 mt-6">
+            {/* Font Colors Section */}
+            <div className="space-y-4">
+              <div>
+                <Label className="text-base font-semibold">Text & Font Colors</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Customize the colors of text elements throughout the dashboard.
+                </p>
+              </div>
+              
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="headingColor">Heading Color (HSL)</Label>
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-md border flex-shrink-0 flex items-center justify-center"
+                      style={{ color: `hsl(${theme.headingColor})` }}
+                    >
+                      <span className="text-lg font-bold">H1</span>
+                    </div>
+                    <Input
+                      id="headingColor"
+                      type="text"
+                      value={theme.headingColor}
+                      onChange={(e) => setTheme({ ...theme, headingColor: e.target.value })}
+                      placeholder="215 25% 15%"
+                      className="font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="textColor">Body Text Color (HSL)</Label>
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-md border flex-shrink-0 flex items-center justify-center"
+                      style={{ color: `hsl(${theme.textColor})` }}
+                    >
+                      <span className="text-sm">Aa</span>
+                    </div>
+                    <Input
+                      id="textColor"
+                      type="text"
+                      value={theme.textColor}
+                      onChange={(e) => setTheme({ ...theme, textColor: e.target.value })}
+                      placeholder="215 25% 15%"
+                      className="font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="mutedTextColor">Muted/Secondary Text (HSL)</Label>
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-md border flex-shrink-0 flex items-center justify-center"
+                      style={{ color: `hsl(${theme.mutedTextColor})` }}
+                    >
+                      <span className="text-sm opacity-70">Aa</span>
+                    </div>
+                    <Input
+                      id="mutedTextColor"
+                      type="text"
+                      value={theme.mutedTextColor}
+                      onChange={(e) => setTheme({ ...theme, mutedTextColor: e.target.value })}
+                      placeholder="215 16% 46%"
+                      className="font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="linkColor">Link Color (HSL)</Label>
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-md border flex-shrink-0 flex items-center justify-center"
+                      style={{ color: `hsl(${theme.linkColor})` }}
+                    >
+                      <span className="text-sm underline">Link</span>
+                    </div>
+                    <Input
+                      id="linkColor"
+                      type="text"
+                      value={theme.linkColor}
+                      onChange={(e) => setTheme({ ...theme, linkColor: e.target.value })}
+                      placeholder="212 85% 48%"
+                      className="font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation Order Section */}
+            <div className="space-y-4 pt-4 border-t">
+              <div>
+                <Label className="text-base font-semibold">Navigation Menu Editor</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Reorder menu items using the arrows or hide items you don't need. Changes are saved with your theme.
+                </p>
+              </div>
+              
+              <NavigationEditor 
+                navigationOrder={theme.navigationOrder}
+                hiddenNavItems={theme.hiddenNavItems}
+                onOrderChange={(order) => setTheme({ ...theme, navigationOrder: order })}
+                onHiddenChange={(hidden) => setTheme({ ...theme, hiddenNavItems: hidden })}
+              />
+            </div>
+
+            {/* Typography Preview */}
+            <div className="space-y-4 pt-4 border-t">
+              <Label className="text-base font-semibold">Typography Preview</Label>
+              <div className="rounded-lg border p-6 space-y-4 bg-card">
+                <h1 
+                  className="text-2xl font-bold"
+                  style={{ color: `hsl(${theme.headingColor})` }}
+                >
+                  Heading Example
+                </h1>
+                <p 
+                  className="text-base"
+                  style={{ color: `hsl(${theme.textColor})` }}
+                >
+                  This is an example of body text that appears throughout the dashboard. 
+                  It uses the text color you've selected above.
+                </p>
+                <p 
+                  className="text-sm"
+                  style={{ color: `hsl(${theme.mutedTextColor})` }}
+                >
+                  This is muted or secondary text, often used for descriptions and helper text.
+                </p>
+                <a 
+                  href="#"
+                  className="text-base underline"
+                  style={{ color: `hsl(${theme.linkColor})` }}
+                  onClick={(e) => e.preventDefault()}
+                >
+                  This is a sample link
+                </a>
               </div>
             </div>
           </TabsContent>

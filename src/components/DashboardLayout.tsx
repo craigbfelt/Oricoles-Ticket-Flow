@@ -19,7 +19,6 @@ import {
   Wrench,
   Truck,
   Network,
-  FileText,
   FolderOpen,
   Settings,
   FolderTree,
@@ -35,6 +34,15 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
+interface ThemeSettings {
+  navigationOrder?: string[];
+  hiddenNavItems?: string[];
+  logoUrl?: string;
+  logoSize?: number;
+  secondaryLogoUrl?: string;
+  secondaryLogoSize?: number;
+}
+
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -43,9 +51,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCEO, setIsCEO] = useState(false);
   const [isSupportStaff, setIsSupportStaff] = useState(false);
+  const [themeSettings, setThemeSettings] = useState<ThemeSettings>({});
 
   useEffect(() => {
     checkUserRoles();
+    loadThemeSettings();
   }, []);
 
   const checkUserRoles = async () => {
@@ -56,13 +66,25 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       .from("user_roles")
       .select("role")
       .eq("user_id", session.user.id)
-      .in("role", ["admin", "support_staff"] as any);
+      .in("role", ["admin", "support_staff"]);
 
     if (data) {
-      const roles = data.map(r => r.role);
-      setIsAdmin(roles.includes('admin' as any));
-      setIsCEO(roles.includes('admin' as any)); // Using admin role for CEO check
-      setIsSupportStaff(roles.includes('support_staff' as any));
+      const roles = data.map(r => r.role as string);
+      setIsAdmin(roles.includes('admin'));
+      setIsCEO(roles.includes('admin')); // Using admin role for CEO check
+      setIsSupportStaff(roles.includes('support_staff'));
+    }
+  };
+
+  const loadThemeSettings = () => {
+    const savedTheme = localStorage.getItem('dashboardTheme');
+    if (savedTheme) {
+      try {
+        const parsed = JSON.parse(savedTheme);
+        setThemeSettings(parsed);
+      } catch (error) {
+        console.error('Error loading theme settings:', error);
+      }
     }
   };
 
@@ -122,26 +144,60 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Settings", href: "/settings", icon: Settings, requiredRoles: [] }, // Everyone
   ];
 
-  // Filter navigation based on user roles
-  const navigation = allNavigation.filter(item => {
-    // If no roles required, show to everyone
-    if (item.requiredRoles.length === 0) return true;
-    
-    // Check if user has any of the required roles
-    if (item.requiredRoles.includes('admin') && isAdmin) return true;
-    if (item.requiredRoles.includes('ceo') && isCEO) return true;
-    if (item.requiredRoles.includes('support_staff') && isSupportStaff) return true;
-    
-    return false;
-  });
+  // Filter and order navigation based on user roles and theme settings
+  const getOrderedNavigation = () => {
+    // First filter by roles
+    const filteredByRoles = allNavigation.filter(item => {
+      // If no roles required, show to everyone
+      if (item.requiredRoles.length === 0) return true;
+      
+      // Check if user has any of the required roles
+      if (item.requiredRoles.includes('admin') && isAdmin) return true;
+      if (item.requiredRoles.includes('ceo') && isCEO) return true;
+      if (item.requiredRoles.includes('support_staff') && isSupportStaff) return true;
+      
+      return false;
+    });
+
+    // Filter out hidden items
+    const hiddenItems = themeSettings.hiddenNavItems || [];
+    const visibleItems = filteredByRoles.filter(item => !hiddenItems.includes(item.href));
+
+    // Apply custom order if set
+    const customOrder = themeSettings.navigationOrder || [];
+    if (customOrder.length > 0) {
+      const orderedItems: typeof visibleItems = [];
+      customOrder.forEach(href => {
+        const item = visibleItems.find(i => i.href === href);
+        if (item) orderedItems.push(item);
+      });
+      // Add any items not in the custom order
+      visibleItems.forEach(item => {
+        if (!orderedItems.find(i => i.href === item.href)) {
+          orderedItems.push(item);
+        }
+      });
+      return orderedItems;
+    }
+
+    return visibleItems;
+  };
+
+  const navigation = getOrderedNavigation();
+
+  // Get logo URLs and sizes from theme settings or use defaults
+  const primaryLogoUrl = themeSettings.logoUrl || oricolLogo;
+  const primaryLogoSize = themeSettings.logoSize || 40;
+  const secondaryLogoUrl = themeSettings.secondaryLogoUrl || zerobitOneLogo;
+  const secondaryLogoSize = themeSettings.secondaryLogoSize || 40;
 
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex md:flex-col md:w-64 bg-sidebar border-r border-sidebar-border">
         <div className="flex items-center justify-between gap-3 h-20 px-4 border-b border-sidebar-border">
-          <img src={oricolLogo} alt="Oricol Environmental Services" className="h-10 w-auto object-contain" />
-          <img src={zerobitOneLogo} alt="Zero Bit One" className="h-10 w-auto object-contain" />
+          <img src={primaryLogoUrl} alt="Oricol Environmental Services" style={{ height: `${primaryLogoSize}px` }} className="w-auto object-contain" />
+          <img src={secondaryLogoUrl} alt="Zero Bit One" style={{ height: `${secondaryLogoSize}px` }} className="w-auto object-contain" />
         </div>
         <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
           {navigation.map((item) => {
@@ -181,8 +237,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <aside className="fixed top-0 left-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border flex flex-col">
             <div className="flex items-center justify-between h-20 px-4 border-b border-sidebar-border">
               <div className="flex items-center gap-2 flex-1">
-                <img src={oricolLogo} alt="Oricol Environmental Services" className="h-8 w-auto object-contain" />
-                <img src={zerobitOneLogo} alt="Zero Bit One" className="h-8 w-auto object-contain" />
+                <img src={primaryLogoUrl} alt="Oricol Environmental Services" style={{ height: `${Math.min(primaryLogoSize, 32)}px` }} className="w-auto object-contain" />
+                <img src={secondaryLogoUrl} alt="Zero Bit One" style={{ height: `${Math.min(secondaryLogoSize, 32)}px` }} className="w-auto object-contain" />
               </div>
               <Button
                 variant="ghost"
@@ -232,8 +288,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         {/* Mobile Header */}
         <header className="md:hidden flex items-center justify-between h-16 px-4 border-b border-border bg-card">
           <div className="flex items-center gap-2">
-            <img src={oricolLogo} alt="Oricol" className="h-7 w-auto object-contain" />
-            <img src={zerobitOneLogo} alt="Zero Bit One" className="h-7 w-auto object-contain" />
+            <img src={primaryLogoUrl} alt="Oricol" style={{ height: `${Math.min(primaryLogoSize, 28)}px` }} className="w-auto object-contain" />
+            <img src={secondaryLogoUrl} alt="Zero Bit One" style={{ height: `${Math.min(secondaryLogoSize, 28)}px` }} className="w-auto object-contain" />
           </div>
           <Button
             variant="ghost"
