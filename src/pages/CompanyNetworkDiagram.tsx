@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Network, Download, Upload, Plus, Save, Image as ImageIcon, Trash2 } from "lucide-react";
+import { Network, Download, Upload, Plus, Save, Image as ImageIcon, Trash2, Wand2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ImportHistory } from "@/components/ImportHistory";
 import { Tables } from "@/integrations/supabase/types";
@@ -24,7 +24,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageDocumentsView } from "@/components/PageDocumentsView";
 import { DiagramRedrawer } from "@/components/DiagramRedrawer";
-import { Wand2 } from "lucide-react";
+import { NetworkDataImporter } from "@/components/NetworkDataImporter";
+import { CopilotAssistant } from "@/components/CopilotAssistant";
 
 type NetworkDiagram = Tables<"network_diagrams">;
 
@@ -431,7 +432,7 @@ const CompanyNetworkDiagram = () => {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Network className="w-8 h-8" />
@@ -446,6 +447,10 @@ const CompanyNetworkDiagram = () => {
               <Wand2 className="h-4 w-4 mr-2" />
               AI Modernize
             </Button>
+            <NetworkDataImporter 
+              targetPage="company-network" 
+              onDataImported={() => queryClient.invalidateQueries({ queryKey: ["network-diagrams-company"] })}
+            />
             <Button variant="outline" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
               CSV Template
@@ -614,48 +619,61 @@ const CompanyNetworkDiagram = () => {
           </Card>
         </div>
 
-        <Tabs value={currentTab} onValueChange={setCurrentTab}>
-          <TabsList>
-            <TabsTrigger value="diagrams">Network Diagrams</TabsTrigger>
-            <TabsTrigger value="history">Import History</TabsTrigger>
-          </TabsList>
+        {/* Main Content with Copilot Sidebar */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Tabs value={currentTab} onValueChange={setCurrentTab}>
+              <TabsList>
+                <TabsTrigger value="diagrams">Network Diagrams</TabsTrigger>
+                <TabsTrigger value="history">Import History</TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="diagrams">
-            {/* Saved Diagrams */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Saved Network Diagrams</CardTitle>
-                <CardDescription>
-                  Network topology diagrams and uploaded images
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <p className="text-sm text-muted-foreground">Loading diagrams...</p>
-                ) : diagrams && diagrams.length > 0 ? (
-                  <div className="space-y-3">
-                    {diagrams.map((diagram) => (
-                      <DiagramCard 
-                        key={diagram.id} 
-                        diagram={diagram} 
-                        onDelete={() => deleteDiagram.mutate(diagram.id)}
-                        onExport={() => handleExportDiagram(diagram)}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    No diagrams yet. Click "Generate Diagram" or "Upload Image" to create one.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+              <TabsContent value="diagrams">
+                {/* Saved Diagrams */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Saved Network Diagrams</CardTitle>
+                    <CardDescription>
+                      Network topology diagrams and uploaded images
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoading ? (
+                      <p className="text-sm text-muted-foreground">Loading diagrams...</p>
+                    ) : diagrams && diagrams.length > 0 ? (
+                      <div className="space-y-3">
+                        {diagrams.map((diagram) => (
+                          <DiagramCard 
+                            key={diagram.id} 
+                            diagram={diagram} 
+                            onDelete={() => deleteDiagram.mutate(diagram.id)}
+                            onExport={() => handleExportDiagram(diagram)}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        No diagrams yet. Click "Generate Diagram" or "Upload Image" to create one.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-          <TabsContent value="history">
-            <ImportHistory />
-          </TabsContent>
-        </Tabs>
+              <TabsContent value="history">
+                <ImportHistory />
+              </TabsContent>
+            </Tabs>
+          </div>
+          
+          {/* AI Copilot Sidebar */}
+          <div className="lg:col-span-1">
+            <CopilotAssistant 
+              compact 
+              placeholder="Ask Copilot to help with network diagrams, import data, or generate configurations..."
+            />
+          </div>
+        </div>
 
         {/* Documents Section - Files moved to Network Diagrams */}
         <div className="mt-6">
