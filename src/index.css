@@ -140,35 +140,35 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
-  /* Status colors for tickets */
+  /* Status colors for tickets - using CSS variables for customization */
   .bg-status-open {
-    @apply bg-blue-500;
+    background-color: hsl(var(--status-open));
   }
   .bg-status-in-progress {
-    @apply bg-yellow-500;
+    background-color: hsl(var(--status-in-progress));
   }
   .bg-status-pending {
-    @apply bg-orange-500;
+    background-color: hsl(var(--status-pending));
   }
   .bg-status-resolved {
-    @apply bg-green-500;
+    background-color: hsl(var(--status-resolved));
   }
   .bg-status-closed {
-    @apply bg-gray-500;
+    background-color: hsl(var(--status-closed));
   }
 
-  /* Priority colors */
+  /* Priority colors - using CSS variables for customization */
   .bg-priority-low {
-    @apply bg-green-500;
+    background-color: hsl(var(--priority-low));
   }
   .bg-priority-medium {
-    @apply bg-yellow-500;
+    background-color: hsl(var(--priority-medium));
   }
   .bg-priority-high {
-    @apply bg-orange-500;
+    background-color: hsl(var(--priority-high));
   }
   .bg-priority-urgent {
-    @apply bg-red-500;
+    background-color: hsl(var(--priority-urgent));
   }
   
   /* Mobile utility classes */
