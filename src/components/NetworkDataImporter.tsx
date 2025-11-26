@@ -243,7 +243,8 @@ export const NetworkDataImporter = ({ onDataImported, targetPage }: NetworkDataI
         
         await page.render({
           canvasContext: context,
-          viewport: viewport
+          viewport: viewport,
+          canvas: canvas
         }).promise;
         
         // Only save pages that might contain diagrams (based on minimum size)
@@ -275,7 +276,8 @@ export const NetworkDataImporter = ({ onDataImported, targetPage }: NetworkDataI
     
     try {
       await mammoth.convertToHtml({ 
-        arrayBuffer,
+        arrayBuffer
+      }, {
         convertImage: mammoth.images.imgElement((image: MammothImage) => {
           return image.read("base64").then((imageBuffer: string) => {
             const contentType = image.contentType || 'image/png';

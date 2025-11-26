@@ -178,11 +178,6 @@ const CRM = () => {
   }, [navigate]);
 
   const fetchCRMData = async () => {
-    // CRM tables don't exist yet - show setup required message
-    setSetupRequired(true);
-    return;
-    
-    /* TODO: Uncomment once CRM tables are created in database
     try {
       // Fetch companies
       const { data: companiesData, error: companiesError } = await supabase
@@ -251,6 +246,8 @@ const CRM = () => {
         activeDeals: activeDealsCount || 0,
         revenueOpportunity: totalValue,
       });
+      
+      setSetupRequired(false);
     } catch (error: any) {
       console.error("Error fetching CRM data:", error);
       toast({
@@ -260,42 +257,8 @@ const CRM = () => {
       });
       setSetupRequired(true);
     }
-    */
   };
 
-  const handleAddCompany = async () => {
-    toast({
-      title: "Feature Not Available",
-      description: "CRM database tables need to be created first. Contact your administrator.",
-      variant: "destructive",
-    });
-  };
-
-  const handleAddContact = async () => {
-    toast({
-      title: "Feature Not Available",
-      description: "CRM database tables need to be created first. Contact your administrator.",
-      variant: "destructive",
-    });
-  };
-
-  const handleAddDeal = async () => {
-    toast({
-      title: "Feature Not Available",
-      description: "CRM database tables need to be created first. Contact your administrator.",
-      variant: "destructive",
-    });
-  };
-
-  const handleAddActivity = async () => {
-    toast({
-      title: "Feature Not Available",
-      description: "CRM database tables need to be created first. Contact your administrator.",
-      variant: "destructive",
-    });
-  };
-
-  /* TODO: Restore once CRM tables are created
   const handleAddCompany = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -305,6 +268,8 @@ const CRM = () => {
         ...newCompany,
         created_by: user.id,
       });
+
+      if (error) throw error;
 
       toast({
         title: "Success",
@@ -327,17 +292,149 @@ const CRM = () => {
         status: "active",
       });
       fetchCRMData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding company:", error);
       toast({
         title: "Error",
-        description: "Failed to add company",
+        description: error.message || "Failed to add company",
         variant: "destructive",
       });
     }
   };
 
-  */
+  const handleAddContact = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase.from("crm_contacts").insert({
+        ...newContact,
+        created_by: user.id,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Contact added successfully",
+      });
+
+      setIsAddContactOpen(false);
+      setNewContact({
+        first_name: "",
+        last_name: "",
+        email: "",
+        phone: "",
+        mobile: "",
+        job_title: "",
+        department: "",
+        company_id: "",
+        notes: "",
+        status: "active",
+      });
+      fetchCRMData();
+    } catch (error: any) {
+      console.error("Error adding contact:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add contact",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddDeal = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase.from("crm_deals").insert({
+        title: newDeal.title,
+        description: newDeal.description,
+        value: newDeal.value ? parseFloat(newDeal.value) : null,
+        currency: newDeal.currency,
+        stage: newDeal.stage,
+        probability: parseInt(newDeal.probability),
+        company_id: newDeal.company_id || null,
+        contact_id: newDeal.contact_id || null,
+        expected_close_date: newDeal.expected_close_date || null,
+        notes: newDeal.notes,
+        created_by: user.id,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Deal added successfully",
+      });
+
+      setIsAddDealOpen(false);
+      setNewDeal({
+        title: "",
+        description: "",
+        value: "",
+        currency: "USD",
+        stage: "lead",
+        probability: "0",
+        company_id: "",
+        contact_id: "",
+        expected_close_date: "",
+        notes: "",
+      });
+      fetchCRMData();
+    } catch (error: any) {
+      console.error("Error adding deal:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add deal",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddActivity = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase.from("crm_activities").insert({
+        ...newActivity,
+        company_id: newActivity.company_id || null,
+        contact_id: newActivity.contact_id || null,
+        deal_id: newActivity.deal_id || null,
+        scheduled_date: newActivity.scheduled_date || null,
+        created_by: user.id,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Activity added successfully",
+      });
+
+      setIsAddActivityOpen(false);
+      setNewActivity({
+        activity_type: "call",
+        subject: "",
+        description: "",
+        company_id: "",
+        contact_id: "",
+        deal_id: "",
+        scheduled_date: "",
+        status: "pending",
+      });
+      fetchCRMData();
+    } catch (error: any) {
+      console.error("Error adding activity:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add activity",
+        variant: "destructive",
+      });
+    }
+  };
 
   const getStageColor = (stage: string) => {
     const colors: Record<string, string> = {
