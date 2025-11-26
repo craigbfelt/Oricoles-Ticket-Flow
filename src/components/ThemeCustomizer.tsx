@@ -406,8 +406,8 @@ export const ThemeCustomizer = () => {
     root.style.setProperty('--theme-font-size', `${theme.fontSize}px`);
     
     // Apply layout density
-    const spacing = theme.layoutDensity === 'compact' ? '0.75' : 
-                   theme.layoutDensity === 'spacious' ? '1.25' : '1';
+    const spacing = (theme.layoutDensity as string) === 'compact' ? '0.75' : 
+                   (theme.layoutDensity as string) === 'spacious' ? '1.25' : '1';
     root.style.setProperty('--theme-spacing', spacing);
     
     // Apply ticket status colors
@@ -433,12 +433,12 @@ export const ThemeCustomizer = () => {
 
   const handleColorThemeChange = (themeName: keyof typeof colorThemes | 'custom') => {
     if (themeName === 'custom') {
-      setTheme({ ...theme, colorTheme: 'custom' });
+      setTheme({ ...theme, colorTheme: 'custom' as any });
     } else {
       const selectedTheme = colorThemes[themeName];
       setTheme({
         ...theme,
-        colorTheme: themeName,
+        colorTheme: themeName as any,
         primaryColorHSL: selectedTheme.primary,
         secondaryColorHSL: selectedTheme.secondary,
         accentColorHSL: selectedTheme.accent,
@@ -575,7 +575,7 @@ export const ThemeCustomizer = () => {
                       key={themeName}
                       onClick={() => handleColorThemeChange(themeName)}
                       className={`flex flex-col items-center p-4 rounded-lg border-2 transition-all hover:shadow-md ${
-                        theme.colorTheme === themeName 
+                        (theme.colorTheme as any) === themeName
                           ? 'border-primary bg-primary/5 ring-2 ring-primary/20' 
                           : 'border-border hover:border-primary/50'
                       }`}
@@ -1090,7 +1090,7 @@ export const ThemeCustomizer = () => {
                 <Label htmlFor="layoutDensity">Layout Density</Label>
                 <Select 
                   value={theme.layoutDensity} 
-                  onValueChange={(value: 'comfortable' | 'compact' | 'spacious') => setTheme({ ...theme, layoutDensity: value })}
+                  onValueChange={(value) => setTheme({ ...theme, layoutDensity: value as any })}
                 >
                   <SelectTrigger>
                     <SelectValue />

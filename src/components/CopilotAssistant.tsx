@@ -41,7 +41,7 @@ export const CopilotAssistant = ({
   const [taskHistory, setTaskHistory] = useState<CopilotTask[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   // Check for speech recognition support
   useEffect(() => {

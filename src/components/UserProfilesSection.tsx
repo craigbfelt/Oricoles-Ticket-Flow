@@ -62,6 +62,7 @@ export const UserProfilesSection = () => {
   const fetchUserProfiles = async () => {
     try {
       setIsLoading(true);
+      console.log('[UserProfiles] Starting fetch...');
       
       // Fetch all user profiles
       const { data: profiles, error: profilesError } = await supabase
@@ -69,9 +70,15 @@ export const UserProfilesSection = () => {
         .select("*")
         .order("full_name");
 
+      console.log('[UserProfiles] Profiles fetch result:', { 
+        count: profiles?.length, 
+        error: profilesError?.message 
+      });
+
       if (profilesError) throw profilesError;
 
       setUserProfiles(profiles as any || []);
+      console.log('[UserProfiles] Set profiles state:', profiles?.length);
 
       // Fetch all documents in a single query (optimized for performance)
       if (profiles && profiles.length > 0) {
@@ -113,9 +120,10 @@ export const UserProfilesSection = () => {
         }
       }
     } catch (error) {
-      console.error("Error fetching user profiles:", error);
+      console.error("[UserProfiles] Error fetching user profiles:", error);
       toast.error("Failed to fetch user profiles");
     } finally {
+      console.log('[UserProfiles] Setting loading to false');
       setIsLoading(false);
     }
   };
