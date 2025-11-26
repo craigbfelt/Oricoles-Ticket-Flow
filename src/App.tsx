@@ -34,6 +34,8 @@ import SharedFiles from "./pages/SharedFiles";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import CRM from "./pages/CRM";
+import BluewaveCRM from "./pages/BluewaveCRM";
+import Sage from "./pages/Sage";
 import Migrations from "./pages/Migrations";
 
 const queryClient = new QueryClient();
@@ -77,6 +79,8 @@ const App = () => {
           <Route path="/document-hub" element={<DocumentHub />} />
           <Route path="/shared-files" element={<SharedFiles />} />
           <Route path="/crm" element={<CRM />} />
+          <Route path="/bluewave-crm" element={<BluewaveCRM />} />
+          <Route path="/sage" element={<Sage />} />
           <Route path="/migrations" element={<Migrations />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />

@@ -2,6 +2,10 @@
 
 export const THEME_STORAGE_KEY = 'dashboardTheme';
 
+// Logo position options
+export type LogoPosition = 'left' | 'center' | 'right';
+export type LogoLayout = 'horizontal' | 'stacked';
+
 // Default theme settings - used for initialization and reset
 export const defaultThemeSettings = {
   primaryColor: '#1e40af',
@@ -17,6 +21,10 @@ export const defaultThemeSettings = {
   logoSize: 40,
   secondaryLogoUrl: '/src/assets/zerobitone-logo.png',
   secondaryLogoSize: 40,
+  logoPosition: 'left' as LogoPosition,
+  logoLayout: 'horizontal' as LogoLayout,
+  showPrimaryLogo: true,
+  showSecondaryLogo: true,
   layoutDensity: 'comfortable' as const,
   darkMode: false,
   // Sidebar colors (defaults from CSS)

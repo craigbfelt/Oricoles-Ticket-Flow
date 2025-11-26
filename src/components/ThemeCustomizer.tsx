@@ -9,9 +9,13 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { Palette, Type, Image as ImageIcon, Upload, RotateCcw, Sun, Moon, PanelLeft, GripVertical, Eye, EyeOff, ChevronUp, ChevronDown, Ticket } from "lucide-react";
+import { Palette, Type, Image as ImageIcon, Upload, RotateCcw, Sun, Moon, PanelLeft, GripVertical, Eye, EyeOff, ChevronUp, ChevronDown, Ticket, Trash2, AlignLeft, AlignCenter, AlignRight, LayoutGrid, Rows } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { THEME_STORAGE_KEY, defaultThemeSettings, ThemeSettings } from "@/lib/theme-constants";
+import { THEME_STORAGE_KEY, defaultThemeSettings, ThemeSettings, LogoPosition, LogoLayout } from "@/lib/theme-constants";
+
+// Logo preview size constants
+const MAX_LOGO_PREVIEW_HEIGHT = 100; // Maximum height in logo settings preview
+const MAX_LIVE_PREVIEW_HEIGHT = 60; // Maximum height in live preview section
 
 // Predefined color themes with HSL values
 const colorThemes = {
@@ -195,6 +199,8 @@ const defaultNavItems = [
   { name: "Dashboard", href: "/dashboard" },
   { name: "Tickets", href: "/tickets" },
   { name: "Oricol CRM", href: "/crm" },
+  { name: "Bluewave CRM", href: "/bluewave-crm" },
+  { name: "Sage", href: "/sage" },
   { name: "Remote Support", href: "/remote-support" },
   { name: "Document Hub", href: "/document-hub" },
   { name: "Shared Files", href: "/shared-files" },
@@ -1109,92 +1115,285 @@ export const ThemeCustomizer = () => {
           </TabsContent>
 
           <TabsContent value="logos" className="space-y-6 mt-6">
+            {/* Logo Position & Layout */}
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Primary Logo</Label>
-                <div className="flex items-center gap-4">
-                  {theme.logoUrl && (
-                    <img 
-                      src={theme.logoUrl} 
-                      alt="Primary Logo" 
-                      style={{ height: `${theme.logoSize}px` }}
-                      className="object-contain border rounded p-2"
-                    />
-                  )}
+              <div>
+                <Label className="text-base font-semibold">Logo Position & Layout</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Configure where and how logos appear in the sidebar header.
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Position in Header</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={theme.logoPosition === 'left' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setTheme({ ...theme, logoPosition: 'left' as LogoPosition })}
+                    >
+                      <AlignLeft className="h-4 w-4 mr-1" />
+                      Left
+                    </Button>
+                    <Button
+                      variant={theme.logoPosition === 'center' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setTheme({ ...theme, logoPosition: 'center' as LogoPosition })}
+                    >
+                      <AlignCenter className="h-4 w-4 mr-1" />
+                      Center
+                    </Button>
+                    <Button
+                      variant={theme.logoPosition === 'right' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setTheme({ ...theme, logoPosition: 'right' as LogoPosition })}
+                    >
+                      <AlignRight className="h-4 w-4 mr-1" />
+                      Right
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Logo Arrangement</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={theme.logoLayout === 'horizontal' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setTheme({ ...theme, logoLayout: 'horizontal' as LogoLayout })}
+                    >
+                      <LayoutGrid className="h-4 w-4 mr-1" />
+                      Side by Side
+                    </Button>
+                    <Button
+                      variant={theme.logoLayout === 'stacked' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setTheme({ ...theme, logoLayout: 'stacked' as LogoLayout })}
+                    >
+                      <Rows className="h-4 w-4 mr-1" />
+                      Stacked
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Primary Logo Section */}
+            <div className="space-y-4 pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold">Primary Logo</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="showPrimaryLogo" className="text-sm">Show</Label>
+                  <Switch
+                    id="showPrimaryLogo"
+                    checked={theme.showPrimaryLogo}
+                    onCheckedChange={(checked) => setTheme({ ...theme, showPrimaryLogo: checked })}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4 flex-wrap">
+                {theme.logoUrl && theme.showPrimaryLogo && (
+                  <img 
+                    src={theme.logoUrl} 
+                    alt="Primary Logo" 
+                    style={{ height: `${Math.min(theme.logoSize, MAX_LOGO_PREVIEW_HEIGHT)}px` }}
+                    className="object-contain border rounded p-2 max-w-[200px]"
+                  />
+                )}
+                <div className="flex gap-2">
                   <Button
                     variant="outline"
                     onClick={() => document.getElementById('primary-logo-input')?.click()}
                     disabled={isUploading}
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    Upload New Logo
+                    Upload Logo
                   </Button>
-                  <input
-                    id="primary-logo-input"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleLogoUpload(file, 'primary');
-                    }}
-                  />
+                  {theme.logoUrl && theme.logoUrl !== defaultTheme.logoUrl && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setTheme({ ...theme, logoUrl: defaultTheme.logoUrl });
+                        toast({
+                          title: "Logo Reset",
+                          description: "Primary logo has been reset to default",
+                        });
+                      }}
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Reset
+                    </Button>
+                  )}
+                  {theme.logoUrl && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        setTheme({ ...theme, logoUrl: '', showPrimaryLogo: false });
+                        toast({
+                          title: "Logo Removed",
+                          description: "Primary logo has been removed",
+                        });
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Remove
+                    </Button>
+                  )}
                 </div>
-                <div className="space-y-2 mt-2">
-                  <Label htmlFor="logoSize">Logo Size: {theme.logoSize}px</Label>
-                  <Slider
-                    id="logoSize"
-                    min={20}
-                    max={80}
-                    step={5}
-                    value={[theme.logoSize]}
-                    onValueChange={([value]) => setTheme({ ...theme, logoSize: value })}
-                    className="w-full"
+                <input
+                  id="primary-logo-input"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleLogoUpload(file, 'primary');
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="logoSize">Logo Size: {theme.logoSize}px</Label>
+                <Slider
+                  id="logoSize"
+                  min={20}
+                  max={200}
+                  step={5}
+                  value={[theme.logoSize]}
+                  onValueChange={([value]) => setTheme({ ...theme, logoSize: value })}
+                  className="w-full"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Adjust slider to resize the primary logo (20px - 200px)
+                </p>
+              </div>
+            </div>
+
+            {/* Secondary Logo Section */}
+            <div className="space-y-4 pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold">Secondary Logo</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="showSecondaryLogo" className="text-sm">Show</Label>
+                  <Switch
+                    id="showSecondaryLogo"
+                    checked={theme.showSecondaryLogo}
+                    onCheckedChange={(checked) => setTheme({ ...theme, showSecondaryLogo: checked })}
                   />
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <Label>Secondary Logo</Label>
-                <div className="flex items-center gap-4">
-                  {theme.secondaryLogoUrl && (
-                    <img 
-                      src={theme.secondaryLogoUrl} 
-                      alt="Secondary Logo" 
-                      style={{ height: `${theme.secondaryLogoSize}px` }}
-                      className="object-contain border rounded p-2"
-                    />
-                  )}
+              
+              <div className="flex items-center gap-4 flex-wrap">
+                {theme.secondaryLogoUrl && theme.showSecondaryLogo && (
+                  <img 
+                    src={theme.secondaryLogoUrl} 
+                    alt="Secondary Logo" 
+                    style={{ height: `${Math.min(theme.secondaryLogoSize, MAX_LOGO_PREVIEW_HEIGHT)}px` }}
+                    className="object-contain border rounded p-2 max-w-[200px]"
+                  />
+                )}
+                <div className="flex gap-2">
                   <Button
                     variant="outline"
                     onClick={() => document.getElementById('secondary-logo-input')?.click()}
                     disabled={isUploading}
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    Upload New Logo
+                    Upload Logo
                   </Button>
-                  <input
-                    id="secondary-logo-input"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleLogoUpload(file, 'secondary');
-                    }}
-                  />
+                  {theme.secondaryLogoUrl && theme.secondaryLogoUrl !== defaultTheme.secondaryLogoUrl && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setTheme({ ...theme, secondaryLogoUrl: defaultTheme.secondaryLogoUrl });
+                        toast({
+                          title: "Logo Reset",
+                          description: "Secondary logo has been reset to default",
+                        });
+                      }}
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Reset
+                    </Button>
+                  )}
+                  {theme.secondaryLogoUrl && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        setTheme({ ...theme, secondaryLogoUrl: '', showSecondaryLogo: false });
+                        toast({
+                          title: "Logo Removed",
+                          description: "Secondary logo has been removed",
+                        });
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Remove
+                    </Button>
+                  )}
                 </div>
-                <div className="space-y-2 mt-2">
-                  <Label htmlFor="secondaryLogoSize">Logo Size: {theme.secondaryLogoSize}px</Label>
-                  <Slider
-                    id="secondaryLogoSize"
-                    min={20}
-                    max={80}
-                    step={5}
-                    value={[theme.secondaryLogoSize]}
-                    onValueChange={([value]) => setTheme({ ...theme, secondaryLogoSize: value })}
-                    className="w-full"
-                  />
+                <input
+                  id="secondary-logo-input"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleLogoUpload(file, 'secondary');
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="secondaryLogoSize">Logo Size: {theme.secondaryLogoSize}px</Label>
+                <Slider
+                  id="secondaryLogoSize"
+                  min={20}
+                  max={200}
+                  step={5}
+                  value={[theme.secondaryLogoSize]}
+                  onValueChange={([value]) => setTheme({ ...theme, secondaryLogoSize: value })}
+                  className="w-full"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Adjust slider to resize the secondary logo (20px - 200px)
+                </p>
+              </div>
+            </div>
+
+            {/* Live Preview */}
+            <div className="space-y-4 pt-4 border-t">
+              <Label className="text-base font-semibold">Live Preview</Label>
+              <div 
+                className="rounded-lg p-4 border"
+                style={{ backgroundColor: `hsl(${theme.sidebarBackground})` }}
+              >
+                <div className={`flex ${theme.logoLayout === 'stacked' ? 'flex-col' : 'flex-row'} gap-3 ${
+                  theme.logoPosition === 'center' ? 'justify-center items-center' :
+                  theme.logoPosition === 'right' ? 'justify-end items-center' :
+                  'justify-start items-center'
+                }`}>
+                  {theme.showPrimaryLogo && theme.logoUrl && (
+                    <img 
+                      src={theme.logoUrl} 
+                      alt="Primary Logo Preview" 
+                      style={{ height: `${Math.min(theme.logoSize, MAX_LIVE_PREVIEW_HEIGHT)}px` }}
+                      className="object-contain"
+                    />
+                  )}
+                  {theme.showSecondaryLogo && theme.secondaryLogoUrl && (
+                    <img 
+                      src={theme.secondaryLogoUrl} 
+                      alt="Secondary Logo Preview" 
+                      style={{ height: `${Math.min(theme.secondaryLogoSize, MAX_LIVE_PREVIEW_HEIGHT)}px` }}
+                      className="object-contain"
+                    />
+                  )}
+                  {!theme.showPrimaryLogo && !theme.showSecondaryLogo && (
+                    <p style={{ color: `hsl(${theme.sidebarForeground})` }} className="text-sm">
+                      No logos visible - enable at least one logo above
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
