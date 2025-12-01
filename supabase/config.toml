@@ -1,8 +1,4 @@
-# Supabase Project Configuration
-# Replace this with your own Supabase project ID from:
-# https://supabase.com/dashboard/project/YOUR_PROJECT/settings/general
-# This is used by the Supabase CLI for linking and migrations
-project_id = "your-project-id"
+project_id = "kwmeqvrmtivmljujwocp"
 
 [functions.route-ticket-email]
 verify_jwt = true  # SECURITY: Require authentication to prevent email spam/XSS
