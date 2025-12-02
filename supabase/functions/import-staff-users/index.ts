@@ -190,13 +190,14 @@ const handler = async (req: Request): Promise<Response> => {
         console.log(`import-staff-users: User created successfully ${staffUser.email}, updating profile`);
         
         // Update the profile with additional information
+        // Note: The handle_new_user trigger creates the profile automatically,
+        // we're updating it to ensure full_name is set correctly
         const { error: profileError } = await supabaseAdmin
           .from("profiles")
           .update({
             full_name: staffUser.username,
-            username: staffUser.username,
           })
-          .eq("id", newUser.user.id);
+          .eq("user_id", newUser.user.id);
 
         if (profileError) {
           console.error(`import-staff-users: Failed to update profile for ${staffUser.email}`, profileError);

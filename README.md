@@ -6,68 +6,71 @@ A modern, professional helpdesk and asset management system built with React, Ty
 
 ## ✅ Deployment Status
 
-**🎯 INDEPENDENT DEPLOYMENT** - This app is now fully independent from Lovable
+**🚀 DEPLOYED ON VERCEL + SUPABASE**
 
-This app runs on:
-- **GitHub**: Version control, CI/CD
-- **Supabase**: Backend database (Project ID: `blhidceerkrumgxjhidq`)
-- **Vercel**: Frontend hosting (linked via GitHub integration)
+This app is deployed using:
+- **Vercel**: Frontend hosting with automatic deployments from GitHub
+- **Supabase**: Backend database, authentication, and storage
+- **GitHub Actions**: CI/CD pipeline for builds, tests, and database migrations
 
-## 🚀 Database Setup (Post-Lovable)
+### Deployment Flow
 
-**⭐ [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)** - **Complete database setup guide**
-**⭐ [COMPLETE_DATABASE_SETUP.sql](./COMPLETE_DATABASE_SETUP.sql)** - **Run this in SQL Editor to set up all tables**
+```
+Push to main → GitHub Actions → Apply Supabase Migrations → Deploy to Vercel
+     │
+     └→ Pull Request → Preview Deployment on Vercel
+```
 
-Quick setup:
-1. Go to [Supabase SQL Editor](https://supabase.com/dashboard/project/blhidceerkrumgxjhidq/sql)
-2. Copy contents of `COMPLETE_DATABASE_SETUP.sql`
-3. Paste and click "Run"
-4. Done! Your database is ready.
+## 🔧 Required GitHub Secrets
 
-## 🚀 Migrate to New Vercel & Supabase Account
+To enable automated deployments, configure these secrets in your GitHub repository:
 
-**⭐ [VERCEL_SUPABASE_MIGRATION.md](./VERCEL_SUPABASE_MIGRATION.md)** - **Complete migration guide to new accounts**
+### Vercel Secrets
+| Secret | Description |
+|--------|-------------|
+| `VERCEL_TOKEN` | Vercel API token from [vercel.com/account/tokens](https://vercel.com/account/tokens) |
+| `VERCEL_ORG_ID` | Your Vercel organization/team ID |
+| `VERCEL_PROJECT_ID` | Your Vercel project ID |
 
-If you need to migrate this app to a new Vercel and Supabase account:
-1. **In-App Migration Tracker** - Access at `/migration-tracker` for visual step-by-step progress
-2. **Full Documentation** - See [VERCEL_SUPABASE_MIGRATION.md](./VERCEL_SUPABASE_MIGRATION.md)
-3. **Required Credentials**:
-   - Supabase: Project URL, Anon Key, Project ID, Access Token, DB Password
-   - Vercel: Token, Org ID, Project ID
+### Supabase Secrets
+| Secret | Description |
+|--------|-------------|
+| `SUPABASE_ACCESS_TOKEN` | Supabase access token from [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) |
+| `SUPABASE_DB_PASSWORD` | Database password set during Supabase project creation |
+| `VITE_SUPABASE_URL` | Supabase project URL (e.g., `https://your-project.supabase.co`) |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon/public key |
+| `VITE_SUPABASE_PROJECT_ID` | Supabase project reference ID |
 
 ## 🚀 Working with this project
 
-**This app runs on GitHub + Supabase** - A modern, independent tech stack:
+**This app runs on GitHub + Vercel + Supabase** - A modern, production-ready tech stack:
 - **GitHub**: Version control, CI/CD, and collaborative development
+- **Vercel**: Frontend hosting with edge network and preview deployments
 - **Supabase**: Backend database, authentication, and storage
-- **Deployment**: Multiple free hosting options (Netlify, Vercel, GitHub Pages, Cloudflare)
 
 ### 🎯 Quick Start
 
-**⭐ NEW: [Auto Installer](./INSTALLER_README.md)** - **One-click installation to local `lpc` folder!**  
-**⭐ [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)** - **Database setup guide**
+**⭐ [VERCEL_SUPABASE_MIGRATION.md](./VERCEL_SUPABASE_MIGRATION.md)** - **Complete setup guide**  
 **⭐ [QUICKSTART_GITHUB_SUPABASE.md](./QUICKSTART_GITHUB_SUPABASE.md)** - **5-minute setup guide**  
-**⭐ [GITHUB_SUPABASE_DEPLOYMENT.md](./GITHUB_SUPABASE_DEPLOYMENT.md)** - **Complete deployment guide**  
 **⭐ [IFRAME_SETUP.md](./IFRAME_SETUP.md)** - **Embed app as iframe on your website**
 
 Choose your setup path:
-1. **Auto Installer** - Automated setup to local `lpc` folder (Recommended for first-time users)
-2. **Local Development** - Run everything on your computer (100% free)
-3. **Cloud Deployment** - Deploy to production using free tiers
-4. **Custom Setup** - Advanced configuration options
+1. **Vercel + Supabase** - Production deployment (Recommended)
+2. **Local Development** - Run everything on your computer
+3. **Custom Setup** - Advanced configuration options
 
 ### Making Changes:
 1. **Clone or fork the repository** - Get a copy on your GitHub account
 2. **Make code changes** - Edit locally or on GitHub
 3. **Push to GitHub** - Changes are committed to your repository
-4. **Automatic deployment** - GitHub Actions builds and deploys your app
-5. **Database migrations auto-deploy** - Migrations are automatically applied to Supabase on PR merge (see [AUTOMATED_MIGRATION_SETUP.md](./AUTOMATED_MIGRATION_SETUP.md))
+4. **Automatic deployment** - GitHub Actions builds and deploys to Vercel
+5. **Database migrations auto-deploy** - Migrations are automatically applied to Supabase
 
 ### 🔄 Database Migrations (Automated!)
 
-**✨ NEW: Automated Migration Deployment**
+**✨ Automated Migration Deployment**
 
-Database migrations are now **automatically applied** when you merge PRs to main!
+Database migrations are **automatically applied** when you merge PRs to main!
 
 **Quick Setup** (5 minutes):
 1. **[AUTOMATED_MIGRATION_SETUP.md](./AUTOMATED_MIGRATION_SETUP.md)** - 5-minute setup guide
@@ -534,27 +537,27 @@ For support, please create a ticket in the system or contact the development tea
 
 ## Deployment
 
-### 🆓 Free Deployment Options
+### 🚀 Primary Deployment: Vercel + Supabase
 
-You can deploy this app **completely free** using various hosting platforms:
-
-#### Backend Options (Database + API)
-- **Supabase Free Tier** - 500MB database, unlimited API requests
-- **Local Supabase on Docker** - 100% free, self-hosted
-
-#### Frontend Options
-- **GitHub Pages** - Built-in GitHub hosting
-- **Netlify** - 100GB bandwidth/month
-- **Vercel** - 100GB bandwidth/month
-- **Cloudflare Pages** - Unlimited bandwidth
-
-**See [GITHUB_SUPABASE_DEPLOYMENT.md](./GITHUB_SUPABASE_DEPLOYMENT.md) for complete deployment instructions.**
+This app is configured for automated deployment using:
+- **Vercel** - Frontend hosting with edge network and preview deployments
+- **Supabase** - Backend database, authentication, and storage
 
 ### Continuous Deployment with GitHub Actions
 
 The repository includes automated workflows for:
 - **CI/CD**: Automatic builds and tests on every push
-- **GitHub Pages**: Automatic deployment to GitHub Pages
-- **Netlify**: Automatic deployment to Netlify (requires secrets)
+- **Vercel Deployment**: Automatic deployment to Vercel on push to main
+- **Database Migrations**: Automatic migration deployment to Supabase
+- **Preview Deployments**: Automatic preview URLs for pull requests
+
+### Free Tier Limits
+
+| Service | Free Tier |
+|---------|-----------|
+| **Vercel** | 100GB bandwidth/month, unlimited deployments |
+| **Supabase** | 500MB database, 1GB storage, 50K monthly active users |
+
+**See [VERCEL_SUPABASE_MIGRATION.md](./VERCEL_SUPABASE_MIGRATION.md) for complete deployment instructions.**
 
 See `.github/workflows/` for workflow configurations.
