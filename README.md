@@ -50,6 +50,7 @@ To enable automated deployments, configure these secrets in your GitHub reposito
 
 ### 🎯 Quick Start
 
+**⭐ [NEXT_STEPS_AFTER_SQL_SETUP.md](./NEXT_STEPS_AFTER_SQL_SETUP.md)** - **Database done? Configure Vercel next!**  
 **⭐ [VERCEL_SUPABASE_MIGRATION.md](./VERCEL_SUPABASE_MIGRATION.md)** - **Complete setup guide**  
 **⭐ [QUICKSTART_GITHUB_SUPABASE.md](./QUICKSTART_GITHUB_SUPABASE.md)** - **5-minute setup guide**  
 **⭐ [IFRAME_SETUP.md](./IFRAME_SETUP.md)** - **Embed app as iframe on your website**
