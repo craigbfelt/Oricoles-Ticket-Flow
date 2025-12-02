@@ -37,6 +37,7 @@ import CRM from "./pages/CRM";
 import BluewaveCRM from "./pages/BluewaveCRM";
 import Sage from "./pages/Sage";
 import Migrations from "./pages/Migrations";
+import MigrationTrackerPage from "./pages/MigrationTrackerPage";
 
 const queryClient = new QueryClient();
 
@@ -82,6 +83,7 @@ const App = () => {
           <Route path="/bluewave-crm" element={<BluewaveCRM />} />
           <Route path="/sage" element={<Sage />} />
           <Route path="/migrations" element={<Migrations />} />
+          <Route path="/migration-tracker" element={<MigrationTrackerPage />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -14,6 +14,17 @@ This app is configured to work BOTH with Lovable platform AND independently:
 
 See [LOVABLE_DEPLOYMENT_VERIFIED.md](./LOVABLE_DEPLOYMENT_VERIFIED.md) for complete verification details.
 
+## 🚀 Migrate to New Vercel & Supabase Account
+
+**⭐ [VERCEL_SUPABASE_MIGRATION.md](./VERCEL_SUPABASE_MIGRATION.md)** - **Complete migration guide to new accounts**
+
+If you need to migrate this app to a new Vercel and Supabase account:
+1. **In-App Migration Tracker** - Access at `/migration-tracker` for visual step-by-step progress
+2. **Full Documentation** - See [VERCEL_SUPABASE_MIGRATION.md](./VERCEL_SUPABASE_MIGRATION.md)
+3. **Required Credentials**:
+   - Supabase: Project URL, Anon Key, Project ID, Access Token, DB Password
+   - Vercel: Token, Org ID, Project ID
+
 ## 🚀 Working with this project
 
 **This app runs on GitHub + Supabase** - A modern, independent tech stack:
