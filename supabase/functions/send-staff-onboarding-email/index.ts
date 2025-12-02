@@ -88,8 +88,8 @@ const handler = async (req: Request): Promise<Response> => {
     const confirmationToken = tokenData || crypto.randomUUID();
     const confirmationUrl = `${supabaseUrl.replace('/rest/v1', '')}/functions/v1/confirm-provider-task?token=${confirmationToken}`;
     
-    // Use WEB_APP_URL environment variable or fall back to constructing from SUPABASE_URL
-    const webAppUrl = Deno.env.get("WEB_APP_URL") || Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '.lovable.app') || '';
+    // Use WEB_APP_URL environment variable for the deployed web app URL
+    const webAppUrl = Deno.env.get("WEB_APP_URL") || 'https://oricol-ticket-flow-ten.vercel.app';
     const webConfirmUrl = `${webAppUrl}/provider-confirm?token=${confirmationToken}`;
 
     // Generate Qwerti email content
@@ -235,8 +235,8 @@ const handler = async (req: Request): Promise<Response> => {
       const { data: armataTokenData } = await supabase.rpc('generate_confirmation_token');
       const armataConfirmationToken = armataTokenData || crypto.randomUUID();
       
-      // Use WEB_APP_URL environment variable or fall back to constructing from SUPABASE_URL
-      const webAppUrl = Deno.env.get("WEB_APP_URL") || Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '.lovable.app') || '';
+      // Use WEB_APP_URL environment variable for the deployed web app URL
+      const webAppUrl = Deno.env.get("WEB_APP_URL") || 'https://oricol-ticket-flow-ten.vercel.app';
       const armataWebConfirmUrl = `${webAppUrl}/provider-confirm?token=${armataConfirmationToken}`;
 
       const vpnEmailHtml = `
