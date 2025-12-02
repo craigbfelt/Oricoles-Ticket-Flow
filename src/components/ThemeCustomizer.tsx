@@ -205,6 +205,7 @@ const defaultNavItems = [
   { name: "Document Hub", href: "/document-hub" },
   { name: "Shared Files", href: "/shared-files" },
   { name: "Migrations", href: "/migrations" },
+  { name: "Migration Tracker", href: "/migration-tracker" },
   { name: "Jobs", href: "/jobs" },
   { name: "Maintenance", href: "/maintenance" },
   { name: "Logistics", href: "/logistics" },
