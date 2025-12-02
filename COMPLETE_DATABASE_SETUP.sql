@@ -73,19 +73,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- Function for role checking
-CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role app_role)
-RETURNS BOOLEAN
-LANGUAGE SQL
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.user_roles
-    WHERE user_id = _user_id AND role = _role
-  )
-$$;
+-- NOTE: The has_role function is defined after the user_roles table is created
+-- in PART 4 to avoid the "relation does not exist" error.
 
 -- ============================================================================
 -- PART 3: TENANTS TABLE (Multi-tenancy support)
@@ -127,6 +116,20 @@ CREATE TABLE IF NOT EXISTS public.user_roles (
 );
 
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+
+-- Function for role checking (defined here after user_roles table is created)
+CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role app_role)
+RETURNS BOOLEAN
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = _user_id AND role = _role
+  )
+$$;
 
 CREATE TABLE IF NOT EXISTS public.user_tenant_memberships (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
