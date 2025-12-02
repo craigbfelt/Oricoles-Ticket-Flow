@@ -1,7 +1,8 @@
 name: Deploy Database Migrations
 
-# This workflow automatically applies Supabase migrations when PRs are merged to main
-# This ensures that database schema changes are deployed alongside code changes
+# This workflow applies Supabase migrations when migration files change
+# For regular deployments, migrations are handled by the Vercel deployment workflow
+# Use this workflow for manual migration deployments or when only migration files change
 
 on:
   push:
@@ -34,7 +35,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'npm'
     
     - name: Install Supabase CLI
       run: npm install -g supabase
@@ -47,16 +47,13 @@ jobs:
         SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       run: |
-        # Extract project ID from config.toml
         PROJECT_ID=$(grep -m 1 'project_id' supabase/config.toml | cut -d '"' -f 2)
         echo "Project ID: $PROJECT_ID"
-        
-        # Link to the Supabase project
         supabase link --project-ref $PROJECT_ID --password "$SUPABASE_DB_PASSWORD"
     
     - name: Check migration status
       run: |
-        echo "Checking migration status..."
+        echo "📋 Current migration status:"
         supabase migration list || echo "Unable to check migration status"
     
     - name: Apply migrations
@@ -64,15 +61,21 @@ jobs:
         SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       run: |
-        echo "Applying migrations to Supabase database..."
+        echo "🚀 Applying migrations to Supabase database..."
         supabase db push
-        
         echo "✅ Migrations applied successfully!"
     
     - name: Verify migrations
       run: |
-        echo "Verifying migrations..."
+        echo "📋 Updated migration status:"
         supabase migration list
+    
+    - name: Migration Summary
+      if: success()
+      run: |
+        echo "## ✅ Database Migrations Applied" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "All pending migrations have been applied to the Supabase database." >> $GITHUB_STEP_SUMMARY
     
     - name: Comment on commit (on success)
       if: success()
@@ -80,7 +83,7 @@ jobs:
       with:
         script: |
           const sha = context.sha;
-          const message = `✅ Database migrations deployed successfully!\n\nAll pending migrations have been applied to the Supabase database.`;
+          const message = `✅ **Database migrations deployed successfully!**\n\nAll pending migrations have been applied to the Supabase database.`;
           
           await github.rest.repos.createCommitComment({
             owner: context.repo.owner,
@@ -95,7 +98,7 @@ jobs:
       with:
         script: |
           const sha = context.sha;
-          const message = `❌ Database migration deployment failed!\n\nPlease check the workflow logs for details and apply migrations manually if needed.`;
+          const message = `❌ **Database migration deployment failed!**\n\nPlease check the workflow logs for details and apply migrations manually if needed.\n\n[View Workflow Run](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`;
           
           await github.rest.repos.createCommitComment({
             owner: context.repo.owner,
