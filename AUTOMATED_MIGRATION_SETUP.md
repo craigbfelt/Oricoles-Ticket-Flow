@@ -15,7 +15,7 @@ Enable automatic database migration deployment when you squash and merge PRs to 
 
 ### Step 2: Get Your Database Password
 
-1. Go to [Your Supabase Project Settings](https://supabase.com/dashboard/project/kwmeqvrmtivmljujwocp/settings/database)
+1. Go to [Your Supabase Project Settings](https://supabase.com/dashboard/project/blhidceerkrumgxjhidq/settings/database)
 2. Find the **"Database password"** section
 3. **Copy your password** (or reset it if you don't have it)
 
@@ -133,7 +133,7 @@ If automated deployment fails, apply manually:
 
 ```bash
 # Link to your project
-npx supabase link --project-ref kwmeqvrmtivmljujwocp
+npx supabase link --project-ref blhidceerkrumgxjhidq
 
 # Apply migrations
 npx supabase db push
@@ -142,7 +142,7 @@ npx supabase db push
 Or use Supabase SQL Editor:
 1. Open migration file in `supabase/migrations/`
 2. Copy the SQL content
-3. Go to [Supabase SQL Editor](https://supabase.com/dashboard/project/kwmeqvrmtivmljujwocp/sql)
+3. Go to [Supabase SQL Editor](https://supabase.com/dashboard/project/blhidceerkrumgxjhidq/sql)
 4. Paste and run
 
 ## 📋 What Was Added
