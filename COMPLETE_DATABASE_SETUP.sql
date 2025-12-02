@@ -855,6 +855,7 @@ ALTER TABLE public.schema_migrations ENABLE ROW LEVEL SECURITY;
 DROP TRIGGER IF EXISTS set_updated_at_profiles ON public.profiles;
 DROP TRIGGER IF EXISTS set_updated_at_tickets ON public.tickets;
 DROP TRIGGER IF EXISTS set_updated_at_assets ON public.assets;
+DROP TRIGGER IF EXISTS set_updated_at_tenants ON public.tenants;
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
 -- Create triggers
@@ -870,6 +871,12 @@ CREATE TRIGGER set_updated_at_tickets
 
 CREATE TRIGGER set_updated_at_assets
   BEFORE UPDATE ON public.assets
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_updated_at();
+
+-- Add trigger for tenants table
+CREATE TRIGGER set_updated_at_tenants
+  BEFORE UPDATE ON public.tenants
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_updated_at();
 
@@ -1027,6 +1034,12 @@ CREATE POLICY "Allow authenticated deletes from diagrams"
 
 -- ============================================================================
 -- PART 20: DEFAULT TENANT
+-- ============================================================================
+-- NOTE: The default tenant UUID '00000000-0000-0000-0000-000000000001' is a 
+-- system constant used across all environments. It provides a fallback tenant
+-- for single-tenant deployments. This UUID is documented here and in the
+-- application code (see src/integrations/supabase/types.ts for reference).
+-- Do not change this UUID unless you also update all references in the codebase.
 -- ============================================================================
 
 INSERT INTO tenants (id, name, slug, is_active, settings)
