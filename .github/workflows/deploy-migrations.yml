@@ -53,7 +53,7 @@ jobs:
     
     - name: Check migration status
       run: |
-        echo "📋 Current migration status:"
+        echo "[INFO] Current migration status:"
         supabase migration list || echo "Unable to check migration status"
     
     - name: Apply migrations
@@ -61,19 +61,19 @@ jobs:
         SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       run: |
-        echo "🚀 Applying migrations to Supabase database..."
+        echo "[DEPLOY] Applying migrations to Supabase database..."
         supabase db push
-        echo "✅ Migrations applied successfully!"
+        echo "[SUCCESS] Migrations applied successfully!"
     
     - name: Verify migrations
       run: |
-        echo "📋 Updated migration status:"
+        echo "[INFO] Updated migration status:"
         supabase migration list
     
     - name: Migration Summary
       if: success()
       run: |
-        echo "## ✅ Database Migrations Applied" >> $GITHUB_STEP_SUMMARY
+        echo "## Database Migrations Applied" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "All pending migrations have been applied to the Supabase database." >> $GITHUB_STEP_SUMMARY
     
