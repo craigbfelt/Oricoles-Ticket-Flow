@@ -62,18 +62,8 @@ export function AddSystemUserDialog({ onSuccess }: { onSuccess: () => void }) {
       if (authError) throw authError;
 
       if (authData.user) {
-        // Create profile entry
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .insert([{
-            user_id: authData.user.id,
-            email: email,
-            full_name: fullName || null,
-          }]);
-
-        if (profileError) {
-          console.error("Profile creation error:", profileError);
-        }
+        // Note: The handle_new_user trigger automatically creates the profile
+        // when a new user signs up, so we don't need to manually insert it
 
         // Assign roles using secure backend function
         if (roles.length > 0) {
