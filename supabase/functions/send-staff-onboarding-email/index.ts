@@ -89,6 +89,7 @@ const handler = async (req: Request): Promise<Response> => {
     const confirmationUrl = `${supabaseUrl.replace('/rest/v1', '')}/functions/v1/confirm-provider-task?token=${confirmationToken}`;
     
     // Use WEB_APP_URL environment variable for the deployed web app URL
+    // Set WEB_APP_URL in Supabase Dashboard → Edge Functions → Environment Variables
     const webAppUrl = Deno.env.get("WEB_APP_URL") || 'https://oricol-ticket-flow-ten.vercel.app';
     const webConfirmUrl = `${webAppUrl}/provider-confirm?token=${confirmationToken}`;
 
@@ -236,6 +237,7 @@ const handler = async (req: Request): Promise<Response> => {
       const armataConfirmationToken = armataTokenData || crypto.randomUUID();
       
       // Use WEB_APP_URL environment variable for the deployed web app URL
+      // Set WEB_APP_URL in Supabase Dashboard → Edge Functions → Environment Variables
       const webAppUrl = Deno.env.get("WEB_APP_URL") || 'https://oricol-ticket-flow-ten.vercel.app';
       const armataWebConfirmUrl = `${webAppUrl}/provider-confirm?token=${armataConfirmationToken}`;
 
