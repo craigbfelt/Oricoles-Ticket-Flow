@@ -2,6 +2,8 @@
 
 Congratulations! The SQL setup has been run successfully on Supabase. Here's exactly what needs to happen next.
 
+> **Note**: This guide uses the project ID `blhidceerkrumgxjhidq` which is configured in `supabase/config.toml`. If you're using a different project, replace this ID with your own project ID from Supabase Dashboard → Settings → General → Reference ID.
+
 ## 📋 Quick Status Check
 
 | Step | Status | Action Required |
