@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LiveChat } from "@/components/LiveChat";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useThemeInitializer } from "@/hooks/use-theme-initializer";
+import { isSupabaseConfigured } from "@/integrations/supabase/client";
+import ConfigurationError from "@/components/ConfigurationError";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Tickets from "./pages/Tickets";
@@ -44,6 +46,11 @@ const queryClient = new QueryClient();
 const App = () => {
   // Initialize theme from localStorage on app mount
   useThemeInitializer();
+
+  // Show configuration error if Supabase is not properly configured
+  if (!isSupabaseConfigured) {
+    return <ConfigurationError />;
+  }
 
   return (
   <QueryClientProvider client={queryClient}>
