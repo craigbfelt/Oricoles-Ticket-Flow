@@ -162,18 +162,38 @@ const Tickets = () => {
 
   const checkAdminRole = async (userId: string) => {
     // Check if user has admin role
-    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin");
-    setIsAdmin(roles && roles.length > 0);
+    try {
+      const { data: roles, error } = await supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin");
+      if (error) {
+        console.error("Error checking admin role:", error);
+        setIsAdmin(false);
+        return;
+      }
+      setIsAdmin(roles && roles.length > 0);
+    } catch (err) {
+      console.error("Unexpected error checking admin role:", err);
+      setIsAdmin(false);
+    }
   };
 
   const checkSupportRole = async (userId: string) => {
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("role", "support_staff");
+    try {
+      const { data: roles, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "support_staff");
 
-    setIsSupportStaff(roles && roles.length > 0);
+      if (error) {
+        console.error("Error checking support role:", error);
+        setIsSupportStaff(false);
+        return;
+      }
+      setIsSupportStaff(roles && roles.length > 0);
+    } catch (err) {
+      console.error("Unexpected error checking support role:", err);
+      setIsSupportStaff(false);
+    }
   };
 
   const fetchTickets = async () => {

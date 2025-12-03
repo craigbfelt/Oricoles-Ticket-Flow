@@ -131,6 +131,22 @@ AS $$
   )
 $$;
 
+-- Helper function to check if a user is an admin (uses SECURITY DEFINER to bypass RLS)
+CREATE OR REPLACE FUNCTION public.is_admin(_user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = _user_id AND role = 'admin'
+  )
+$$;
+
+GRANT EXECUTE ON FUNCTION public.is_admin(UUID) TO authenticated;
+
 CREATE TABLE IF NOT EXISTS public.user_tenant_memberships (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL,
@@ -923,12 +939,7 @@ DROP POLICY IF EXISTS "Admins can manage roles" ON public.user_roles;
 CREATE POLICY "Admins can manage roles"
   ON public.user_roles FOR ALL
   TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin(auth.uid()));
 
 -- Tickets policies
 DROP POLICY IF EXISTS "Authenticated users can view tickets" ON public.tickets;

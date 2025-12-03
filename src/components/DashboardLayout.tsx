@@ -69,17 +69,34 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", session.user.id)
-      .in("role", ["admin", "support_staff"]);
+    try {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .in("role", ["admin", "support_staff"]);
 
-    if (data) {
-      const roles = data.map(r => r.role as string);
-      setIsAdmin(roles.includes('admin'));
-      setIsCEO(roles.includes('admin')); // Using admin role for CEO check
-      setIsSupportStaff(roles.includes('support_staff'));
+      if (error) {
+        console.error("Error fetching user roles:", error);
+        // Set default roles on error - users will have basic access
+        setIsAdmin(false);
+        setIsCEO(false);
+        setIsSupportStaff(false);
+        return;
+      }
+
+      if (data) {
+        const roles = data.map(r => r.role as string);
+        setIsAdmin(roles.includes('admin'));
+        setIsCEO(roles.includes('admin')); // Using admin role for CEO check
+        setIsSupportStaff(roles.includes('support_staff'));
+      }
+    } catch (err) {
+      console.error("Unexpected error fetching user roles:", err);
+      // Set default roles on error
+      setIsAdmin(false);
+      setIsCEO(false);
+      setIsSupportStaff(false);
     }
   };
 
