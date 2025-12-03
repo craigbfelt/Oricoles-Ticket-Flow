@@ -112,6 +112,36 @@ Before starting, you'll need to gather:
   ON CONFLICT (id) DO NOTHING;
   ```
 
+- [ ] **2.4** Set Up Admin User
+  After creating your first user account, you need to assign admin privileges.
+  
+  **Option A: Use Pre-configured Admin Emails**
+  
+  Sign up with one of these emails to automatically get admin access:
+  - `admin@oricol.co.za`
+  - `admin@zerobitone.co.za`
+  - `craig@zerobitone.co.za`
+  
+  **Option B: Manually Assign Admin Role**
+  
+  If using a different email, run this SQL in the SQL Editor after signing up:
+  ```sql
+  -- First, find your user ID by checking the profiles table
+  SELECT user_id, email FROM public.profiles;
+  
+  -- Then assign admin role (replace YOUR_USER_ID with actual UUID)
+  INSERT INTO public.user_roles (user_id, role)
+  VALUES ('YOUR_USER_ID', 'admin')
+  ON CONFLICT (user_id, role) DO NOTHING;
+  
+  -- Or use this to make ALL existing users admins (useful for initial setup)
+  INSERT INTO public.user_roles (user_id, role)
+  SELECT user_id, 'admin'::app_role FROM public.profiles
+  ON CONFLICT (user_id, role) DO NOTHING;
+  ```
+  
+  **⚠️ Important:** Without admin role, you will only see Dashboard, Remote Support, and Settings pages!
+
 ### ✅ Phase 3: Connect Vercel
 
 - [ ] **3.1** Create Vercel Account
@@ -179,7 +209,12 @@ Before starting, you'll need to gather:
   - Verify it appears in the list
   - Check data persists after refresh
 
-- [ ] **5.4** Test GitHub Actions
+- [ ] **5.4** Verify Admin Access
+  - After logging in, you should see ALL navigation items in the sidebar
+  - If you only see Dashboard, Remote Support, and Settings, run the admin SQL from step 2.4
+  - Log out and log back in after assigning admin role
+
+- [ ] **5.5** Test GitHub Actions
   - Make a small change to a migration file
   - Create a PR and merge to main
   - Check Actions tab for successful deployment
@@ -189,6 +224,39 @@ Before starting, you'll need to gather:
 ## 🚨 Troubleshooting
 
 ### Common Issues
+
+#### Only seeing Dashboard, Remote Support & Settings (Blank/Limited Access)
+**Problem:** After logging in, you can only access 3 pages and other pages appear blank or inaccessible.
+
+**Cause:** Your user account doesn't have an admin role assigned.
+
+**Solution:**
+1. Go to Supabase Dashboard → SQL Editor
+2. Run this query to find your user ID:
+   ```sql
+   SELECT user_id, email FROM public.profiles;
+   ```
+3. Assign admin role:
+   ```sql
+   INSERT INTO public.user_roles (user_id, role)
+   VALUES ('YOUR_USER_ID_HERE', 'admin')
+   ON CONFLICT (user_id, role) DO NOTHING;
+   ```
+4. Log out of the app and log back in
+5. You should now see all navigation items
+
+#### Pages Show "Configuration Required" Error
+**Problem:** All pages show a configuration error message.
+
+**Cause:** Supabase environment variables are not set in Vercel.
+
+**Solution:**
+1. Go to Vercel Dashboard → Your Project → Settings → Environment Variables
+2. Add these variables:
+   - `VITE_SUPABASE_URL` - Your Supabase project URL
+   - `VITE_SUPABASE_PUBLISHABLE_KEY` - Your Supabase anon/public key
+   - `VITE_SUPABASE_PROJECT_ID` - Your project ID
+3. Redeploy the application
 
 #### "Invalid API key"
 - Double-check you're using the `anon` key, not `service_role`

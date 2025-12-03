@@ -42,9 +42,10 @@ if (isSupabaseConfigured) {
 } else {
   // Create a placeholder URL that won't throw during client creation
   // The isSupabaseConfigured check in App.tsx will prevent usage
+  // Using example.com (reserved per RFC 2606) to ensure we never connect to a real service
   supabaseClient = createClient<Database>(
-    'https://placeholder.supabase.co',
-    'placeholder-key',
+    'https://example.supabase.co',
+    'UNCONFIGURED-KEY-DO-NOT-USE',
     {
       auth: {
         storage: localStorage,
