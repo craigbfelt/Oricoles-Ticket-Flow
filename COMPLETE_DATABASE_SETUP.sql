@@ -1000,6 +1000,184 @@ CREATE POLICY "Allow authenticated users to view migrations"
   USING (true);
 
 -- ============================================================================
+-- PART 18B: ADDITIONAL RLS POLICIES FOR ALL TABLES
+-- ============================================================================
+-- These policies grant authenticated users access to all remaining tables
+
+-- Branches policies
+DROP POLICY IF EXISTS "Authenticated users can view branches" ON public.branches;
+CREATE POLICY "Authenticated users can view branches"
+  ON public.branches FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Authenticated users can manage branches" ON public.branches;
+CREATE POLICY "Authenticated users can manage branches"
+  ON public.branches FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Jobs policies
+DROP POLICY IF EXISTS "Authenticated users can view jobs" ON public.jobs;
+CREATE POLICY "Authenticated users can view jobs"
+  ON public.jobs FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Authenticated users can manage jobs" ON public.jobs;
+CREATE POLICY "Authenticated users can manage jobs"
+  ON public.jobs FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Job update requests policies
+DROP POLICY IF EXISTS "Authenticated users can manage job_update_requests" ON public.job_update_requests;
+CREATE POLICY "Authenticated users can manage job_update_requests"
+  ON public.job_update_requests FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Maintenance requests policies
+DROP POLICY IF EXISTS "Authenticated users can manage maintenance_requests" ON public.maintenance_requests;
+CREATE POLICY "Authenticated users can manage maintenance_requests"
+  ON public.maintenance_requests FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Hardware inventory policies
+DROP POLICY IF EXISTS "Authenticated users can manage hardware_inventory" ON public.hardware_inventory;
+CREATE POLICY "Authenticated users can manage hardware_inventory"
+  ON public.hardware_inventory FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Software inventory policies
+DROP POLICY IF EXISTS "Authenticated users can manage software_inventory" ON public.software_inventory;
+CREATE POLICY "Authenticated users can manage software_inventory"
+  ON public.software_inventory FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Licenses policies
+DROP POLICY IF EXISTS "Authenticated users can manage licenses" ON public.licenses;
+CREATE POLICY "Authenticated users can manage licenses"
+  ON public.licenses FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- VPN/RDP credentials policies
+DROP POLICY IF EXISTS "Authenticated users can manage vpn_rdp_credentials" ON public.vpn_rdp_credentials;
+CREATE POLICY "Authenticated users can manage vpn_rdp_credentials"
+  ON public.vpn_rdp_credentials FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Provider emails policies
+DROP POLICY IF EXISTS "Authenticated users can manage provider_emails" ON public.provider_emails;
+CREATE POLICY "Authenticated users can manage provider_emails"
+  ON public.provider_emails FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Remote clients policies
+DROP POLICY IF EXISTS "Authenticated users can manage remote_clients" ON public.remote_clients;
+CREATE POLICY "Authenticated users can manage remote_clients"
+  ON public.remote_clients FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Remote sessions policies
+DROP POLICY IF EXISTS "Authenticated users can manage remote_sessions" ON public.remote_sessions;
+CREATE POLICY "Authenticated users can manage remote_sessions"
+  ON public.remote_sessions FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Chat messages policies
+DROP POLICY IF EXISTS "Authenticated users can manage chat_messages" ON public.chat_messages;
+CREATE POLICY "Authenticated users can manage chat_messages"
+  ON public.chat_messages FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Ticket comments policies
+DROP POLICY IF EXISTS "Authenticated users can manage ticket_comments" ON public.ticket_comments;
+CREATE POLICY "Authenticated users can manage ticket_comments"
+  ON public.ticket_comments FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Ticket time logs policies
+DROP POLICY IF EXISTS "Authenticated users can manage ticket_time_logs" ON public.ticket_time_logs;
+CREATE POLICY "Authenticated users can manage ticket_time_logs"
+  ON public.ticket_time_logs FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Network devices policies
+DROP POLICY IF EXISTS "Authenticated users can manage network_devices" ON public.network_devices;
+CREATE POLICY "Authenticated users can manage network_devices"
+  ON public.network_devices FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Network diagrams policies
+DROP POLICY IF EXISTS "Authenticated users can manage network_diagrams" ON public.network_diagrams;
+CREATE POLICY "Authenticated users can manage network_diagrams"
+  ON public.network_diagrams FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Cloud networks policies
+DROP POLICY IF EXISTS "Authenticated users can manage cloud_networks" ON public.cloud_networks;
+CREATE POLICY "Authenticated users can manage cloud_networks"
+  ON public.cloud_networks FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Internet connectivity policies
+DROP POLICY IF EXISTS "Authenticated users can manage internet_connectivity" ON public.internet_connectivity;
+CREATE POLICY "Authenticated users can manage internet_connectivity"
+  ON public.internet_connectivity FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Directory users policies
+DROP POLICY IF EXISTS "Authenticated users can manage directory_users" ON public.directory_users;
+CREATE POLICY "Authenticated users can manage directory_users"
+  ON public.directory_users FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Import jobs policies
+DROP POLICY IF EXISTS "Authenticated users can manage import_jobs" ON public.import_jobs;
+CREATE POLICY "Authenticated users can manage import_jobs"
+  ON public.import_jobs FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- CRM companies policies
+DROP POLICY IF EXISTS "Authenticated users can manage crm_companies" ON public.crm_companies;
+CREATE POLICY "Authenticated users can manage crm_companies"
+  ON public.crm_companies FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- CRM contacts policies
+DROP POLICY IF EXISTS "Authenticated users can manage crm_contacts" ON public.crm_contacts;
+CREATE POLICY "Authenticated users can manage crm_contacts"
+  ON public.crm_contacts FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- CRM deals policies
+DROP POLICY IF EXISTS "Authenticated users can manage crm_deals" ON public.crm_deals;
+CREATE POLICY "Authenticated users can manage crm_deals"
+  ON public.crm_deals FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- CRM activities policies
+DROP POLICY IF EXISTS "Authenticated users can manage crm_activities" ON public.crm_activities;
+CREATE POLICY "Authenticated users can manage crm_activities"
+  ON public.crm_activities FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- User groups policies
+DROP POLICY IF EXISTS "Authenticated users can manage user_groups" ON public.user_groups;
+CREATE POLICY "Authenticated users can manage user_groups"
+  ON public.user_groups FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- User group members policies
+DROP POLICY IF EXISTS "Authenticated users can manage user_group_members" ON public.user_group_members;
+CREATE POLICY "Authenticated users can manage user_group_members"
+  ON public.user_group_members FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Group permissions policies
+DROP POLICY IF EXISTS "Authenticated users can manage group_permissions" ON public.group_permissions;
+CREATE POLICY "Authenticated users can manage group_permissions"
+  ON public.group_permissions FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- User permissions policies
+DROP POLICY IF EXISTS "Authenticated users can manage user_permissions" ON public.user_permissions;
+CREATE POLICY "Authenticated users can manage user_permissions"
+  ON public.user_permissions FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Shared files policies
+DROP POLICY IF EXISTS "Authenticated users can manage shared_files" ON public.shared_files;
+CREATE POLICY "Authenticated users can manage shared_files"
+  ON public.shared_files FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Shared folders policies
+DROP POLICY IF EXISTS "Authenticated users can manage shared_folders" ON public.shared_folders;
+CREATE POLICY "Authenticated users can manage shared_folders"
+  ON public.shared_folders FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Shared folder files policies
+DROP POLICY IF EXISTS "Authenticated users can manage shared_folder_files" ON public.shared_folder_files;
+CREATE POLICY "Authenticated users can manage shared_folder_files"
+  ON public.shared_folder_files FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Shared folder permissions policies
+DROP POLICY IF EXISTS "Authenticated users can manage shared_folder_permissions" ON public.shared_folder_permissions;
+CREATE POLICY "Authenticated users can manage shared_folder_permissions"
+  ON public.shared_folder_permissions FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- User tenant memberships policies
+DROP POLICY IF EXISTS "Authenticated users can manage user_tenant_memberships" ON public.user_tenant_memberships;
+CREATE POLICY "Authenticated users can manage user_tenant_memberships"
+  ON public.user_tenant_memberships FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- ============================================================================
 -- PART 19: STORAGE BUCKETS
 -- ============================================================================
 
