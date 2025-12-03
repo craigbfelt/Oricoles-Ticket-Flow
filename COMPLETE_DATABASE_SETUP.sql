@@ -101,10 +101,18 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
   full_name TEXT,
   email TEXT,
+  branch_id UUID,
+  device_serial_number TEXT,
+  vpn_username TEXT,
+  vpn_password TEXT,
+  rdp_username TEXT,
+  rdp_password TEXT,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
+-- Add foreign key constraint for branch_id separately (branch table may be created later)
+-- This will be added after branches table is created
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 CREATE TABLE IF NOT EXISTS public.user_roles (
@@ -163,6 +171,28 @@ CREATE TABLE IF NOT EXISTS public.global_admins (
   user_id UUID NOT NULL UNIQUE,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- ============================================================================
+-- PART 4B: USER ACTIVITY LOG (for tracking user actions)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS public.user_activity_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  activity_type TEXT NOT NULL, -- 'document_upload', 'document_download', 'ticket_create', etc.
+  activity_details JSONB,
+  ip_address INET,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+-- Create indexes for faster queries
+CREATE INDEX IF NOT EXISTS idx_user_activity_log_user_id ON public.user_activity_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_activity_log_created_at ON public.user_activity_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_activity_log_activity_type ON public.user_activity_log(activity_type);
+
+-- Enable RLS on user_activity_log table
+ALTER TABLE public.user_activity_log ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
 -- PART 5: TICKETS SYSTEM
@@ -1188,6 +1218,33 @@ DROP POLICY IF EXISTS "Authenticated users can manage user_tenant_memberships" O
 CREATE POLICY "Authenticated users can manage user_tenant_memberships"
   ON public.user_tenant_memberships FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
+-- User activity log policies
+-- Users can view their own activity
+DROP POLICY IF EXISTS "Users can view own activity" ON public.user_activity_log;
+CREATE POLICY "Users can view own activity"
+  ON public.user_activity_log FOR SELECT
+  TO authenticated
+  USING (auth.uid() = user_id);
+
+-- Admins can view all activity
+DROP POLICY IF EXISTS "Admins can view all activity" ON public.user_activity_log;
+CREATE POLICY "Admins can view all activity"
+  ON public.user_activity_log FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.user_roles
+      WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'
+    )
+  );
+
+-- Authenticated users can insert activity (for logging)
+DROP POLICY IF EXISTS "Authenticated users can insert activity" ON public.user_activity_log;
+CREATE POLICY "Authenticated users can insert activity"
+  ON public.user_activity_log FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
 -- ============================================================================
 -- PART 19: STORAGE BUCKETS
 -- ============================================================================
@@ -1224,6 +1281,31 @@ CREATE POLICY "Allow authenticated deletes from diagrams"
   TO authenticated
   USING (bucket_id = 'diagrams');
 
+-- Storage policies for documents bucket
+DROP POLICY IF EXISTS "Allow authenticated uploads to documents" ON storage.objects;
+CREATE POLICY "Allow authenticated uploads to documents"
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK (bucket_id = 'documents');
+
+DROP POLICY IF EXISTS "Allow public reads from documents" ON storage.objects;
+CREATE POLICY "Allow public reads from documents"
+  ON storage.objects FOR SELECT
+  TO public
+  USING (bucket_id = 'documents');
+
+DROP POLICY IF EXISTS "Allow authenticated updates to documents" ON storage.objects;
+CREATE POLICY "Allow authenticated updates to documents"
+  ON storage.objects FOR UPDATE
+  TO authenticated
+  USING (bucket_id = 'documents');
+
+DROP POLICY IF EXISTS "Allow authenticated deletes from documents" ON storage.objects;
+CREATE POLICY "Allow authenticated deletes from documents"
+  ON storage.objects FOR DELETE
+  TO authenticated
+  USING (bucket_id = 'documents');
+
 -- ============================================================================
 -- PART 20: DEFAULT TENANT
 -- ============================================================================
@@ -1255,12 +1337,13 @@ BEGIN
   RAISE NOTICE '============================================================';
   RAISE NOTICE 'Created:';
   RAISE NOTICE '  - All core tables (profiles, tickets, assets, etc.)';
+  RAISE NOTICE '  - User activity log table for tracking user actions';
   RAISE NOTICE '  - CRM tables (companies, contacts, deals, activities)';
   RAISE NOTICE '  - Document and file sharing tables';
   RAISE NOTICE '  - Network and infrastructure tables';
   RAISE NOTICE '  - Jobs and maintenance tables';
   RAISE NOTICE '  - Remote support tables';
-  RAISE NOTICE '  - Storage buckets (diagrams, documents)';
+  RAISE NOTICE '  - Storage buckets with RLS (diagrams, documents)';
   RAISE NOTICE '  - RLS policies for security';
   RAISE NOTICE '  - Triggers for automatic timestamps';
   RAISE NOTICE '============================================================';
