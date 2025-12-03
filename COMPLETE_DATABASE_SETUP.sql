@@ -111,8 +111,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
--- Add foreign key constraint for branch_id separately (branch table may be created later)
--- This will be added after branches table is created
+-- Note: branch_id foreign key constraint is added after branches table is created
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 CREATE TABLE IF NOT EXISTS public.user_roles (
@@ -361,6 +360,15 @@ CREATE TABLE IF NOT EXISTS public.branches (
 );
 
 ALTER TABLE public.branches ENABLE ROW LEVEL SECURITY;
+
+-- Add foreign key constraint for profiles.branch_id now that branches table exists
+DO $$ BEGIN
+  ALTER TABLE public.profiles 
+  ADD CONSTRAINT profiles_branch_id_fkey 
+  FOREIGN KEY (branch_id) REFERENCES public.branches(id) ON DELETE SET NULL;
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.network_devices (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
