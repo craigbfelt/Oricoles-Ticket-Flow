@@ -63,10 +63,14 @@ ON CONFLICT (id) DO NOTHING;
    | Variable Name | Value | Where to Find |
    |--------------|-------|---------------|
    | `VITE_SUPABASE_URL` | `https://blhidceerkrumgxjhidq.supabase.co` | Supabase → Settings → API |
-   | `VITE_SUPABASE_PUBLISHABLE_KEY` | Your anon/public key | Supabase → Settings → API → anon public |
-   | `VITE_SUPABASE_PROJECT_ID` | `blhidceerkrumgxjhidq` | Supabase → Settings → General |
+   | `VITE_SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_85ybnzNpHHTwTledDEDPAg_5ADZ_Hp5` | Supabase → Settings → API → anon public |
+   | `VITE_SUPABASE_PROJECT_ID` | `blhidceerkrumgxjhidq` | Supabase → Settings → General (NOT the publishable key!) |
 
    **Important**: Set these for **all environments** (Production, Preview, Development)
+   
+   **⚠️ Common Mistake**: Don't confuse the Project ID with the Publishable Key!
+   - Project ID is extracted from your URL: `blhidceerkrumgxjhidq`
+   - Publishable Key is a longer string: `sb_publishable_85ybnzNpHHTwTledDEDPAg_5ADZ_Hp5`
 
 5. **Deploy**
    - Click **"Deploy"**
