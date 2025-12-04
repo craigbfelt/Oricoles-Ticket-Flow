@@ -24,9 +24,6 @@ verify_jwt = true  # SECURITY: Require authentication for admin operations
 [functions.check-migrations]
 verify_jwt = true  # SECURITY: Require authentication to view migration status
 
-[functions.apply-migrations]
-verify_jwt = true  # SECURITY: Require authentication for migration operations
-
 [functions.manage-user-roles]
 verify_jwt = true  # SECURITY: Require authentication for user role management
 

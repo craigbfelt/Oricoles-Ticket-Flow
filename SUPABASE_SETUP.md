@@ -237,6 +237,7 @@ Row Level Security is blocking access. Ensure:
 ## 📚 Additional Resources
 
 - [AUTOMATED_MIGRATION_SETUP.md](./AUTOMATED_MIGRATION_SETUP.md) - GitHub Actions automation
+- [EDGE_FUNCTIONS_DEPLOYMENT.md](./EDGE_FUNCTIONS_DEPLOYMENT.md) - Deploy Edge Functions to Supabase
 - [VERCEL_SUPABASE_MIGRATION.md](./VERCEL_SUPABASE_MIGRATION.md) - Full migration guide
 - [SUPABASE_MIGRATIONS.md](./SUPABASE_MIGRATIONS.md) - Complete migration reference
 - [Supabase Documentation](https://supabase.com/docs)
@@ -250,6 +251,8 @@ Row Level Security is blocking access. Ensure:
 - [ ] Updated `.env` file with credentials
 - [ ] Applied database migrations
 - [ ] Created storage buckets (diagrams, documents)
+- [ ] Deployed edge functions (see [EDGE_FUNCTIONS_DEPLOYMENT.md](./EDGE_FUNCTIONS_DEPLOYMENT.md))
+- [ ] Set up edge function secrets (RESEND_API_KEY, Microsoft credentials, etc.)
 - [ ] (Optional) Added GitHub secrets for automation
 - [ ] Tested the app loads without errors
 

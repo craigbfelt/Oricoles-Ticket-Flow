@@ -550,7 +550,31 @@ The repository includes automated workflows for:
 - **CI/CD**: Automatic builds and tests on every push
 - **Vercel Deployment**: Automatic deployment to Vercel on push to main
 - **Database Migrations**: Automatic migration deployment to Supabase
+- **Edge Functions**: Automatic deployment of serverless functions to Supabase
 - **Preview Deployments**: Automatic preview URLs for pull requests
+
+### Edge Functions
+
+This app includes 13 Supabase Edge Functions for backend operations:
+
+| Function | Description |
+|----------|-------------|
+| `check-migrations` | Check database migration status |
+| `confirm-provider-task` | Confirm service provider task completion |
+| `import-staff-users` | Import staff users from credentials |
+| `m365-ediscovery-search` | Microsoft 365 eDiscovery search |
+| `manage-user-roles` | Manage user roles (admin only) |
+| `notify-ticket-assignment` | Email notifications for tickets |
+| `register-remote-client` | Register remote support clients |
+| `resend-provider-email` | Resend emails to providers |
+| `reset-user-password` | Reset user passwords (admin only) |
+| `route-ticket-email` | Route ticket emails to providers |
+| `send-staff-onboarding-email` | Staff onboarding emails |
+| `send-ticket-reminders` | Ticket reminder emails |
+| `storage-admin-operations` | Admin storage operations |
+| `sync-microsoft-365` | Sync data from Microsoft 365 |
+
+**See [EDGE_FUNCTIONS_DEPLOYMENT.md](./EDGE_FUNCTIONS_DEPLOYMENT.md) for deployment instructions.**
 
 ### Free Tier Limits
 
