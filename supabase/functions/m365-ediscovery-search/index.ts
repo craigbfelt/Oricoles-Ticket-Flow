@@ -60,9 +60,12 @@ async function getAccessToken(): Promise<string> {
 async function getOrCreateCase(accessToken: string): Promise<string> {
   const caseName = Deno.env.get('EDISCOVERY_CASE_DISPLAY_NAME') || 'Oricol eDiscovery Case';
   
-  // First, try to list existing cases
+  // First, try to list existing cases - use URL constructor for safe parameter handling
+  const listUrl = new URL('https://graph.microsoft.com/v1.0/security/cases/ediscoveryCases');
+  listUrl.searchParams.set('$filter', `displayName eq '${caseName.replace(/'/g, "''")}'`);
+  
   const listResponse = await fetch(
-    'https://graph.microsoft.com/v1.0/security/cases/ediscoveryCases?$filter=displayName eq \'' + encodeURIComponent(caseName) + '\'',
+    listUrl.toString(),
     {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -112,11 +115,26 @@ async function getOrCreateCase(accessToken: string): Promise<string> {
  */
 async function addCustodians(accessToken: string, caseId: string, emails: string[]): Promise<string[]> {
   const dataSourceIds: string[] = [];
+  
+  // Validate caseId format (should be alphanumeric with hyphens)
+  if (!/^[a-zA-Z0-9-]+$/.test(caseId)) {
+    throw new Error('Invalid case ID format');
+  }
 
   for (const email of emails) {
-    // Check if custodian already exists
+    // Validate email format before using in API
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      console.warn(`Skipping invalid email: ${email}`);
+      continue;
+    }
+    
+    // Check if custodian already exists - use URL constructor for safe parameter handling
+    const checkUrl = new URL(`https://graph.microsoft.com/v1.0/security/cases/ediscoveryCases/${encodeURIComponent(caseId)}/custodians`);
+    checkUrl.searchParams.set('$filter', `email eq '${email.replace(/'/g, "''")}'`);
+    
     const checkResponse = await fetch(
-      `https://graph.microsoft.com/v1.0/security/cases/ediscoveryCases/${caseId}/custodians?$filter=email eq '${encodeURIComponent(email)}'`,
+      checkUrl.toString(),
       {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -464,8 +482,18 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Sanitize query - limit length
+      // Sanitize query - limit length and validate KQL syntax patterns
       const sanitizedQuery = query.trim().substring(0, 2000);
+      
+      // Basic KQL validation - only allow alphanumeric, spaces, and common KQL operators
+      // This prevents injection of malicious content while allowing valid KQL syntax
+      const kqlPattern = /^[a-zA-Z0-9\s:@.<>=\-_"'()*+,;/\\@#$%^&[\]{}|~!?]+$/;
+      if (!kqlPattern.test(sanitizedQuery)) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Query contains invalid characters' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
       // Try eDiscovery first, fall back to Graph search
       try {

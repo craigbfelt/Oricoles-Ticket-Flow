@@ -57,10 +57,13 @@ const ContentSearchPanel = ({ isAdmin }: ContentSearchPanelProps) => {
         body: null,
       });
 
-      // For GET requests, we need to pass query params differently
-      // Using a workaround by making a POST request to check status
+      // For GET requests, use URLSearchParams for safe URL construction
+      const statusUrl = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/m365-ediscovery-search`);
+      statusUrl.searchParams.set('caseId', caseId);
+      statusUrl.searchParams.set('searchId', searchId);
+      
       const statusResponse = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/m365-ediscovery-search?caseId=${caseId}&searchId=${searchId}`,
+        statusUrl.toString(),
         {
           method: 'GET',
           headers: {

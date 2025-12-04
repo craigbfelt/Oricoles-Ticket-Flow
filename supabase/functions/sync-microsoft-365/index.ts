@@ -93,7 +93,31 @@ async function getAccessToken(): Promise<string> {
  */
 async function fetchDevices(accessToken: string): Promise<MicrosoftDevice[]> {
   const devices: MicrosoftDevice[] = [];
-  let nextLink: string | null = 'https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$select=id,deviceName,operatingSystem,osVersion,manufacturer,model,serialNumber,totalStorageSpaceInBytes,freeStorageSpaceInBytes,physicalMemoryInBytes,managedDeviceOwnerType,enrolledDateTime,lastSyncDateTime,complianceState,userPrincipalName';
+  
+  // Build the initial URL with select parameters for better readability
+  const baseUrl = 'https://graph.microsoft.com/v1.0/deviceManagement/managedDevices';
+  const selectFields = [
+    'id',
+    'deviceName',
+    'operatingSystem',
+    'osVersion',
+    'manufacturer',
+    'model',
+    'serialNumber',
+    'totalStorageSpaceInBytes',
+    'freeStorageSpaceInBytes',
+    'physicalMemoryInBytes',
+    'managedDeviceOwnerType',
+    'enrolledDateTime',
+    'lastSyncDateTime',
+    'complianceState',
+    'userPrincipalName'
+  ].join(',');
+  
+  const initialUrl = new URL(baseUrl);
+  initialUrl.searchParams.set('$select', selectFields);
+  
+  let nextLink: string | null = initialUrl.toString();
 
   while (nextLink) {
     const response = await fetch(nextLink, {
@@ -123,7 +147,25 @@ async function fetchDevices(accessToken: string): Promise<MicrosoftDevice[]> {
  */
 async function fetchUsers(accessToken: string): Promise<MicrosoftUser[]> {
   const users: MicrosoftUser[] = [];
-  let nextLink: string | null = 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,mail,userPrincipalName,jobTitle,department,officeLocation,mobilePhone,accountEnabled';
+  
+  // Build the initial URL with select parameters for better readability
+  const baseUrl = 'https://graph.microsoft.com/v1.0/users';
+  const selectFields = [
+    'id',
+    'displayName',
+    'mail',
+    'userPrincipalName',
+    'jobTitle',
+    'department',
+    'officeLocation',
+    'mobilePhone',
+    'accountEnabled'
+  ].join(',');
+  
+  const initialUrl = new URL(baseUrl);
+  initialUrl.searchParams.set('$select', selectFields);
+  
+  let nextLink: string | null = initialUrl.toString();
 
   while (nextLink) {
     const response = await fetch(nextLink, {
