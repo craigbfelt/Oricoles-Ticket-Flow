@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RefreshCw, Plus, Edit, Loader2 } from "lucide-react";
+import { Plus, Edit, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -20,7 +20,6 @@ const HardwareInventory = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<any | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -188,42 +187,6 @@ const HardwareInventory = () => {
     }
   };
 
-  const handleMicrosoftSync = async () => {
-    setIsSyncing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('sync-microsoft-365');
-      
-      if (error) {
-        // Handle FunctionsHttpError or other invocation errors
-        console.error('Microsoft sync invocation error:', error);
-        toast.error(error.message || 'Failed to invoke sync function');
-        return;
-      }
-      
-      if (data?.success) {
-        const { results } = data;
-        toast.success(
-          `Sync completed! Devices: ${results.devices}, Users: ${results.users}, Licenses: ${results.licenses}`
-        );
-        if (results.errors.length > 0) {
-          console.warn('Sync errors:', results.errors);
-        }
-        fetchDevices();
-      } else {
-        // Handle success: false response with error details
-        const errorMsg = data?.error || 'Sync failed';
-        console.error('Microsoft sync error:', errorMsg);
-        toast.error(errorMsg);
-      }
-    } catch (error) {
-      console.error('Microsoft sync error:', error);
-      const message = error instanceof Error ? error.message : 'Failed to sync with Microsoft 365';
-      toast.error(message);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
   const handleDeviceClick = (device: any) => {
     setSelectedDevice(device);
     setFormData({
@@ -347,14 +310,6 @@ const HardwareInventory = () => {
           </div>
           {isAdmin && (
             <div className="flex gap-2">
-              <Button 
-                onClick={handleMicrosoftSync}
-                disabled={isSyncing}
-                variant="outline"
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-                {isSyncing ? 'Syncing...' : 'Sync Microsoft 365'}
-              </Button>
               <Button 
                 variant="outline" 
                 onClick={handleRemoveDuplicates}
