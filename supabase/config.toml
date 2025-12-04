@@ -38,3 +38,9 @@ verify_jwt = true  # SECURITY: Require authentication to prevent email abuse
 
 [functions.reset-user-password]
 verify_jwt = true  # SECURITY: Require authentication for password reset operations
+
+[functions.sync-microsoft-365]
+verify_jwt = true  # SECURITY: Require authentication for Microsoft 365 sync operations
+
+[functions.m365-ediscovery-search]
+verify_jwt = true  # SECURITY: Require authentication for eDiscovery searches
