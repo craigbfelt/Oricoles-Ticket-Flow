@@ -1,11 +1,30 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createServiceRoleClient } from '../_shared/supabase.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
+
+/**
+ * Creates a Supabase client with the SERVICE ROLE key
+ * This client BYPASSES all Row Level Security (RLS) policies
+ */
+function createServiceRoleClient() {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Missing required environment variables: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
+  }
+
+  return createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
 
 interface MicrosoftDevice {
   id: string;
@@ -41,7 +60,7 @@ interface MicrosoftLicense {
   };
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -89,7 +108,7 @@ serve(async (req) => {
       'Content-Type': 'application/json',
     };
 
-    let syncResults = {
+    const syncResults = {
       devices: 0,
       users: 0,
       licenses: 0,
@@ -301,13 +320,22 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in sync-microsoft-365 function:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    // Return a 200 status with success: false to avoid FunctionsHttpError on client
+    // This allows the frontend to receive and display the actual error message
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: errorMessage 
+        error: errorMessage,
+        results: {
+          devices: 0,
+          users: 0,
+          licenses: 0,
+          errors: [errorMessage],
+        }
       }),
       {
-        status: 500,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );

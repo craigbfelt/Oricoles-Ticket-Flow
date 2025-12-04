@@ -84,7 +84,36 @@ const Microsoft365Dashboard = () => {
     try {
       const { data, error } = await supabase.functions.invoke("sync-microsoft-365");
 
-      if (error) throw error;
+      if (error) {
+        // Handle FunctionsHttpError or other invocation errors
+        console.error('Microsoft sync invocation error:', error);
+        toast({
+          title: "Sync Failed",
+          description: error.message || 'Failed to invoke sync function',
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!data?.success) {
+        // Handle success: false response with error details
+        const errorMsg = data?.error || 'Sync failed';
+        setSyncStatus({
+          lastSync: new Date(),
+          results: data?.results || {
+            devices: 0,
+            users: 0,
+            licenses: 0,
+            errors: [errorMsg],
+          },
+        });
+        toast({
+          title: "Sync Failed",
+          description: errorMsg,
+          variant: "destructive",
+        });
+        return;
+      }
 
       setSyncStatus({
         lastSync: new Date(),
@@ -103,9 +132,10 @@ const Microsoft365Dashboard = () => {
 
       fetchData();
     } catch (error: any) {
+      console.error('Microsoft sync error:', error);
       toast({
         title: "Sync Failed",
-        description: error.message,
+        description: error.message || 'Failed to sync with Microsoft 365',
         variant: "destructive",
       });
     } finally {
