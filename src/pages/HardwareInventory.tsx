@@ -193,7 +193,12 @@ const HardwareInventory = () => {
     try {
       const { data, error } = await supabase.functions.invoke('sync-microsoft-365');
       
-      if (error) throw error;
+      if (error) {
+        // Handle FunctionsHttpError or other invocation errors
+        console.error('Microsoft sync invocation error:', error);
+        toast.error(error.message || 'Failed to invoke sync function');
+        return;
+      }
       
       if (data?.success) {
         const { results } = data;
@@ -205,11 +210,15 @@ const HardwareInventory = () => {
         }
         fetchDevices();
       } else {
-        throw new Error(data?.error || 'Sync failed');
+        // Handle success: false response with error details
+        const errorMsg = data?.error || 'Sync failed';
+        console.error('Microsoft sync error:', errorMsg);
+        toast.error(errorMsg);
       }
     } catch (error) {
       console.error('Microsoft sync error:', error);
-      toast.error('Failed to sync with Microsoft 365');
+      const message = error instanceof Error ? error.message : 'Failed to sync with Microsoft 365';
+      toast.error(message);
     } finally {
       setIsSyncing(false);
     }
