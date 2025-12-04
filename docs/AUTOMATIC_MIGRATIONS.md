@@ -62,7 +62,7 @@ YYYYMMDDHHMMSS_description.sql
 
 Example:
 ```
-20251204143000_add_user_preferences.sql
+20241115143000_add_user_preferences.sql
 ```
 
 ### Creating a Migration

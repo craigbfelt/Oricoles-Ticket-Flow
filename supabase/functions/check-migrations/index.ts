@@ -29,26 +29,19 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Query Supabase's internal schema migrations table
-    // This is where Supabase CLI tracks applied migrations
-    const { data: supabaseMigrations, error: supabaseError } = await supabaseClient
-      .rpc('get_applied_migrations');
-
-    // If the RPC doesn't exist, fall back to checking our custom table
+    // Check our custom schema_migrations table for applied migrations
+    // This is where we track which migrations have been applied
     let appliedVersions = new Set<string>();
     
-    if (supabaseError) {
-      // Try our custom schema_migrations table
-      const { data: customMigrations, error: customError } = await supabaseClient
-        .from('schema_migrations')
-        .select('version, applied_at');
+    const { data: customMigrations, error: customError } = await supabaseClient
+      .from('schema_migrations')
+      .select('version, applied_at');
 
-      if (!customError && customMigrations) {
-        appliedVersions = new Set(customMigrations.map((m: { version: string }) => m.version));
-      }
-    } else if (supabaseMigrations) {
-      appliedVersions = new Set(supabaseMigrations.map((m: { version: string }) => m.version));
+    if (!customError && customMigrations) {
+      appliedVersions = new Set(customMigrations.map((m: { version: string }) => m.version));
     }
+    // Note: If the table doesn't exist, we'll show all migrations as pending
+    // This is expected for fresh installations
 
     // Current migrations in the repository (as of this deployment)
     // This list is updated when the function is deployed
@@ -165,7 +158,7 @@ Deno.serve(async (req) => {
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200, // Return 200 to avoid FunctionsHttpError
+        status: 500,
       }
     );
   }
