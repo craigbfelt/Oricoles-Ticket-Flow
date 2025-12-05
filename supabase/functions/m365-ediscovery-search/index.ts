@@ -6,6 +6,22 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 };
 
+/**
+ * Check if Supabase credentials are configured
+ * Returns an object with the status and any missing credentials
+ */
+function checkSupabaseCredentials(): { configured: boolean; missing: string[] } {
+  const missing: string[] = [];
+  
+  if (!Deno.env.get('SUPABASE_URL')) missing.push('SUPABASE_URL');
+  if (!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) missing.push('SUPABASE_SERVICE_ROLE_KEY');
+  
+  return {
+    configured: missing.length === 0,
+    missing,
+  };
+}
+
 interface SearchRequest {
   query: string;
   targetMailboxes?: string[];
@@ -389,6 +405,20 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Early check for Supabase credentials configuration
+    const supabaseCredCheck = checkSupabaseCredentials();
+    if (!supabaseCredCheck.configured) {
+      console.error('Supabase credentials not configured. Missing:', supabaseCredCheck.missing.join(', '));
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Supabase integration is not configured. Missing environment variables: ${supabaseCredCheck.missing.join(', ')}. The SUPABASE_SERVICE_ROLE_KEY is required for this function to work. You can find it in your Supabase Dashboard → Settings → API → Service Role Key. Add it to your Edge Function secrets (Dashboard → Edge Functions → m365-ediscovery-search → Settings → Secrets).`,
+          missingCredentials: supabaseCredCheck.missing,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Get the authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {

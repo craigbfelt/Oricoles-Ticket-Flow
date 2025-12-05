@@ -118,6 +118,14 @@ These are automatically available to all edge functions:
 - `SUPABASE_ANON_KEY` - Your Supabase anon/public key
 - `SUPABASE_SERVICE_ROLE_KEY` - Your Supabase service role key (for admin operations)
 
+> **Important**: The `SUPABASE_SERVICE_ROLE_KEY` is required for functions that need to bypass Row Level Security (RLS), such as `sync-microsoft-365`, `manage-user-roles`, and other admin functions. While `SUPABASE_URL` and `SUPABASE_ANON_KEY` are usually auto-injected by Supabase, you may need to manually add `SUPABASE_SERVICE_ROLE_KEY` to your Edge Function secrets if it's not available.
+>
+> To find your Service Role Key:
+> 1. Go to your Supabase Dashboard
+> 2. Navigate to **Settings** → **API**
+> 3. Copy the **Service Role Key** (under "Project API keys")
+> 4. Add it to your Edge Function secrets
+
 ### Function-Specific Variables
 
 For Microsoft 365 integration (`sync-microsoft-365`, `m365-ediscovery-search`):
