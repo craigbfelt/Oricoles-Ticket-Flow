@@ -68,17 +68,12 @@ function checkMicrosoftCredentials(): { configured: boolean; missing: string[] }
 
 /**
  * Get an access token from Azure AD using client credentials flow
+ * Note: Assumes credentials have already been validated by checkMicrosoftCredentials()
  */
 async function getAccessToken(): Promise<string> {
-  const tenantId = Deno.env.get('AZURE_TENANT_ID');
-  const clientId = Deno.env.get('AZURE_CLIENT_ID');
-  const clientSecret = Deno.env.get('AZURE_CLIENT_SECRET');
-
-  if (!tenantId || !clientId || !clientSecret) {
-    const credCheck = checkMicrosoftCredentials();
-    console.error('Microsoft 365 credentials not configured. Missing:', credCheck.missing.join(', '));
-    throw new Error(`Microsoft 365 credentials not configured. Missing environment variables: ${credCheck.missing.join(', ')}. Please set these in Supabase Edge Functions settings.`);
-  }
+  const tenantId = Deno.env.get('AZURE_TENANT_ID')!;
+  const clientId = Deno.env.get('AZURE_CLIENT_ID')!;
+  const clientSecret = Deno.env.get('AZURE_CLIENT_SECRET')!;
 
   const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
   

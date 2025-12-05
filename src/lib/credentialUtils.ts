@@ -33,29 +33,34 @@ async function checkRpcFunctionExists(): Promise<boolean> {
       // Try calling the function with a test that should work if it exists
       const { error } = await supabase.rpc('get_decrypted_credentials', { p_service_type: null });
       
-      // If there's no error, or the error is not a "function not found" error, the function exists
+      // If there's no error, the function exists
       if (!error) {
         rpcFunctionExists = true;
         return true;
       }
       
-      // Check if the error indicates the function doesn't exist
+      // Check if the error indicates the function doesn't exist using error codes
       // PostgreSQL error code 42883 = undefined_function
-      // Also check for 404 status or "not found" message
+      // PostgREST error code PGRST202 = function not found
+      const errorCode = error.code;
       const isNotFoundError = 
-        error.code === '42883' ||
-        error.message?.includes('not found') ||
-        error.message?.includes('does not exist') ||
-        (error as any).status === 404 ||
-        error.code === 'PGRST202'; // PostgREST error for function not found
+        errorCode === '42883' ||
+        errorCode === 'PGRST202';
       
       if (isNotFoundError) {
         rpcFunctionExists = false;
         return false;
       }
       
-      // For other errors (e.g., permission denied), the function might exist
-      // but we can't use it - treat as not available
+      // For permission errors (42501 = insufficient_privilege), the function exists
+      // but user can't access it - we should fall back to direct query
+      if (errorCode === '42501') {
+        // Function exists but access denied - cache as not available for this user
+        rpcFunctionExists = false;
+        return false;
+      }
+      
+      // For other errors, assume function doesn't exist to avoid noise
       rpcFunctionExists = false;
       return false;
     } catch {
@@ -107,10 +112,10 @@ export async function fetchCredentials(
         return { data: data as VpnRdpCredential[], error: null };
       }
       
-      // If RPC failed with a permission error, that's expected for non-admin users
-      // Fall through to direct query
-      if (error?.message?.includes('Access denied')) {
-        console.debug('get_decrypted_credentials: Access denied, falling back to direct query');
+      // If RPC failed with a permission error (42501 = insufficient_privilege),
+      // that's expected for non-admin users - fall through to direct query
+      if (error?.code === '42501') {
+        console.debug('get_decrypted_credentials: Permission denied, falling back to direct query');
       }
     }
     
@@ -165,9 +170,10 @@ export async function fetchCredentialsWithEmail(): Promise<{
         return { data: withEmail, error: null };
       }
       
-      // If RPC failed with a permission error, fall through to direct query
-      if (error?.message?.includes('Access denied')) {
-        console.debug('get_decrypted_credentials: Access denied, falling back to direct query');
+      // If RPC failed with a permission error (42501 = insufficient_privilege),
+      // fall through to direct query
+      if (error?.code === '42501') {
+        console.debug('get_decrypted_credentials: Permission denied, falling back to direct query');
       }
     }
     
