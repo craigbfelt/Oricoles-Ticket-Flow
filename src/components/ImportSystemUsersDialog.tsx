@@ -45,11 +45,28 @@ export function ImportSystemUsersDialog() {
     console.log("ImportSystemUsersDialog: Fetching staff users from vpn_rdp_credentials");
     
     try {
-      const { data, error } = await supabase
-        .from("vpn_rdp_credentials")
-        .select("id, username, email, service_type, notes")
-        .not("email", "is", null) // Only users with email can become system users
-        .order("username");
+      // Try using the secure decryption function first (for encrypted credentials)
+      const { data: decryptedData, error: rpcError } = await supabase
+        .rpc('get_decrypted_credentials');
+      
+      let data;
+      let error;
+      
+      if (!rpcError && decryptedData) {
+        // Filter decrypted data to only users with email
+        data = decryptedData.filter((u: any) => u.email != null);
+        data.sort((a: any, b: any) => (a.username || '').localeCompare(b.username || ''));
+      } else {
+        // Fallback to direct table query (for backward compatibility)
+        const result = await supabase
+          .from("vpn_rdp_credentials")
+          .select("id, username, email, service_type, notes")
+          .not("email", "is", null) // Only users with email can become system users
+          .order("username");
+        
+        data = result.data;
+        error = result.error;
+      }
 
       if (error) {
         console.error("ImportSystemUsersDialog: Error fetching staff users:", error);

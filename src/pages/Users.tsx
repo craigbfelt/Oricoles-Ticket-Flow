@@ -124,6 +124,21 @@ const Users = () => {
 
   const fetchVpnRdpUsers = async () => {
     setLoading(true);
+    
+    // Try using the secure decryption function first (for encrypted credentials)
+    const { data: decryptedData, error: rpcError } = await supabase
+      .rpc('get_decrypted_credentials');
+    
+    if (!rpcError && decryptedData) {
+      const allData = decryptedData || [];
+      setRdpUsers(allData.filter((u: any) => u.service_type === 'RDP'));
+      setVpnUsers(allData.filter((u: any) => u.service_type === 'VPN'));
+      setStaffUsers(allData);
+      setLoading(false);
+      return;
+    }
+    
+    // Fallback to direct table query (for backward compatibility)
     const { data, error } = await supabase
       .from("vpn_rdp_credentials")
       .select("*")
@@ -137,8 +152,8 @@ const Users = () => {
       });
     } else {
       const allData = data || [];
-      setRdpUsers(allData.filter(u => u.service_type === 'rdp'));
-      setVpnUsers(allData.filter(u => u.service_type === 'vpn'));
+      setRdpUsers(allData.filter(u => u.service_type === 'RDP'));
+      setVpnUsers(allData.filter(u => u.service_type === 'VPN'));
       setStaffUsers(allData); // All VPN/RDP users are the most accurate staff list
     }
     setLoading(false);

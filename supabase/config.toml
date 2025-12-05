@@ -47,3 +47,6 @@ verify_jwt = true  # SECURITY: Require authentication for eDiscovery searches
 
 [functions.verify-deployment]
 verify_jwt = true  # SECURITY: Require authentication to view deployment status
+
+[functions.mark-migrations-applied]
+verify_jwt = true  # SECURITY: Require authentication for migration management

@@ -4,12 +4,14 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Database, CheckCircle2, AlertCircle, Loader2, RefreshCw, Eye, FileCode, Clock, Copy } from "lucide-react";
+import { Database, CheckCircle2, AlertCircle, Loader2, RefreshCw, Eye, FileCode, Clock, Copy, CheckCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 // Import all SQL migration files at build time using Vite's glob import with raw content
 const migrationModules = import.meta.glob<string>(
@@ -17,13 +19,41 @@ const migrationModules = import.meta.glob<string>(
   { query: '?raw', import: 'default', eager: true }
 );
 
-// Create a map of filename to SQL content
+/**
+ * Normalize migration version by removing .sql extension if present
+ * This ensures consistent storage in the schema_migrations table
+ */
+const normalizeMigrationVersion = (version: string): string => {
+  return version.replace(/\.sql$/, '');
+};
+
+/**
+ * Extract filename from a path string safely
+ */
+const extractFilename = (path: string): string | null => {
+  const parts = path.split('/');
+  const filename = parts[parts.length - 1];
+  // Validate that it looks like a migration file
+  if (filename && filename.endsWith('.sql')) {
+    return filename;
+  }
+  return null;
+};
+
+// Create a map of filename to SQL content and dynamically get the list of all migrations
 const migrationSqlContent: Record<string, string> = {};
+const ALL_MIGRATIONS: string[] = [];
+
 for (const [path, content] of Object.entries(migrationModules)) {
-  // Extract filename from path (e.g., "../../supabase/migrations/20251100000000_create_schema_migrations_table.sql" -> "20251100000000_create_schema_migrations_table.sql")
-  const filename = path.split('/').pop() || '';
-  migrationSqlContent[filename] = content;
+  const filename = extractFilename(path);
+  if (filename) {
+    migrationSqlContent[filename] = content;
+    ALL_MIGRATIONS.push(filename);
+  }
 }
+
+// Sort migrations by filename (which includes timestamp) to ensure chronological order
+ALL_MIGRATIONS.sort();
 
 interface MigrationStatus {
   filename: string;
@@ -32,80 +62,15 @@ interface MigrationStatus {
   order: number;
 }
 
-const ALL_MIGRATIONS = [
-  "20251100000000_create_schema_migrations_table.sql",
-  "20251108052000_bee9ee20-5a81-402a-bdd9-30cce8e8ecb7.sql",
-  "20251109045855_6a7fc76b-c088-4052-a67d-5471bc1cf984.sql",
-  "20251110192108_fab519ce-aecd-4771-8ff3-cb79de2cbe7d.sql",
-  "20251111085548_c85ce8a8-0f94-4670-b767-004b83f996e9.sql",
-  "20251111100012_f27546a6-3183-40a6-a659-83c56f6d07ec.sql",
-  "20251111100704_b5302bee-33a3-4f14-84b4-8379994bdfca.sql",
-  "20251111101518_6f9cb181-efcb-451b-8330-83e60e79ae67.sql",
-  "20251111101727_5d0600ca-2ad2-42ba-b7fb-a8167a3f7ed6.sql",
-  "20251111103503_2849fa7c-b530-45e3-9863-f6c6f4e2b98c.sql",
-  "20251111111220_5d9f7f4b-d8b4-4f91-837b-9e306e9a8e14.sql",
-  "20251111135922_f7475cb1-896e-428c-9441-fa5f9a9d3b44.sql",
-  "20251111140343_ee4c7cca-e087-4f12-98f3-4340e6db9c2e.sql",
-  "20251111143226_aff189ac-0a04-4e14-aa2b-3163baec918f.sql",
-  "20251111143859_3bc3791c-fd30-46f5-a40e-5cc6864df211.sql",
-  "20251112054548_cbcbc569-cc63-4810-8938-1a8d760222b0.sql",
-  "20251112060133_28a7a03c-4f93-475a-9ba1-34e238edbfc9.sql",
-  "20251112063832_f5103d15-9046-47b5-acf0-6835adf79161.sql",
-  "20251112064207_553f2a8d-2fd8-45f6-8f5b-3c7bf3f97c00.sql",
-  "20251112065350_76d95c8d-1109-46fa-8b90-e18e53a62df7.sql",
-  "20251112065604_0346015b-e2b3-4bfe-a6b5-764f8ae93e59.sql",
-  "20251112124800_add_ceo_role.sql",
-  "20251112135110_restore_admin_role_for_craig.sql",
-  "20251112151903_auto_assign_admin_role.sql",
-  "20251112160000_allow_ceo_view_all_profiles.sql",
-  "20251112161521_restore_admin_and_ceo_roles.sql",
-  "20251112170113_create_new_admin_account.sql",
-  "20251112172925_add_admin_zerobitone_to_auto_admin.sql",
-  "20251112184500_fix_ceo_permissions.sql",
-  "20251112185000_ensure_admin_roles.sql",
-  "20251112190000_verify_permissions.sql",
-  "20251112200000_ensure_craig_has_admin_role.sql",
-  "20251112204108_remove_role_based_rls_policies.sql",
-  "20251113044109_48d68a5f-09a0-4966-a8a0-d731a7f46081.sql",
-  "20251113045637_23d17770-5ebe-4fab-88bf-62c6fd1e5174.sql",
-  "20251113052200_create_import_and_network_tables.sql",
-  "20251113111200_create_diagrams_storage_bucket.sql",
-  "20251113141553_fd4f94c4-56b6-4b7e-84ae-6ef1a6fe28dd.sql",
-  "20251113142600_create_documents_table_and_bucket.sql",
-  "20251113144620_94ba20be-061a-4db7-ab47-d97e1a65f50e.sql",
-  "20251113144637_6121518f-7da2-4788-84aa-e49a9edd5f75.sql",
-  "20251113144706_84dc8187-e186-41a5-8010-daeb2d30f43d.sql",
-  "20251113151700_fix_documents_storage_policies.sql",
-  "20251113153200_fix_documents_table_rls_policies.sql",
-  "20251113232600_comprehensive_rls_fix.sql",
-  "20251114045447_aad8c850-8bf9-4f87-b922-e70dab761b14.sql",
-  "20251115133000_verify_and_fix_lovable_rls.sql",
-  "20251116070158_63eef662-012a-4e49-8b96-4593cca7ae1b.sql",
-  "20251116081115_fix_network_diagrams_branch_id_nullable.sql",
-  "20251116112700_enhance_user_profiles_and_document_hub.sql",
-  "20251116114500_add_ticket_tracking_fields.sql",
-  "20251116134300_fix_admin_full_access.sql",
-  "20251116134400_create_user_groups_and_file_sharing.sql",
-  "20251116134500_create_user_import_functions.sql",
-  "20251117000000_create_shared_files_system.sql",
-  "20251117102836_e9e402df-9138-41a1-874c-39dc729c3cbd.sql",
-  "20251117131300_fix_shared_folders_dependencies.sql",
-  "20251118031628_a1b4b539-b26d-419f-93d1-5a8e855ce824.sql",
-  "20251119034817_f3a7a9e8-59e4-44e1-855e-a349b498bdb2.sql",
-  "20251119050102_87ec93cb-5d13-4ff1-bc63-02721e798d75.sql",
-  "20251119052800_fix_security_definer_search_path.sql",
-  "20251119055823_backfill_missing_profiles.sql",
-  "20251119080900_create_crm_system.sql",
-  "20251120034137_82d09dde-5c06-48eb-a16f-a8f05a77a665.sql",
-  "verify_admin_roles.sql",
-];
-
 const Migrations = () => {
   const [migrations, setMigrations] = useState<MigrationStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMigration, setSelectedMigration] = useState<string | null>(null);
   const [sqlContent, setSqlContent] = useState<string>("");
   const [loadingSql, setLoadingSql] = useState(false);
+  const [markingAsApplied, setMarkingAsApplied] = useState<string | null>(null);
+  const [selectedMigrations, setSelectedMigrations] = useState<Set<string>>(new Set());
+  const [bulkMarking, setBulkMarking] = useState(false);
   const { toast } = useToast();
 
   const fetchMigrationStatus = async () => {
@@ -213,9 +178,105 @@ const Migrations = () => {
     }
   };
 
+  const markMigrationAsApplied = async (migrationVersion: string) => {
+    setMarkingAsApplied(migrationVersion);
+    try {
+      const { data, error } = await supabase.functions.invoke('mark-migrations-applied', {
+        body: { migrations: [normalizeMigrationVersion(migrationVersion)] }
+      });
+
+      if (error) throw error;
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to mark migration as applied');
+      }
+
+      toast({
+        title: "Success",
+        description: `Migration ${migrationVersion} marked as applied`,
+      });
+
+      // Refresh the migration status
+      await fetchMigrationStatus();
+    } catch (error: any) {
+      console.error("Error marking migration as applied:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to mark migration as applied",
+        variant: "destructive",
+      });
+    } finally {
+      setMarkingAsApplied(null);
+    }
+  };
+
+  const markSelectedAsApplied = async () => {
+    if (selectedMigrations.size === 0) {
+      toast({
+        title: "No migrations selected",
+        description: "Please select migrations to mark as applied",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setBulkMarking(true);
+    try {
+      const migrationsToMark = Array.from(selectedMigrations).map(normalizeMigrationVersion);
+      
+      const { data, error } = await supabase.functions.invoke('mark-migrations-applied', {
+        body: { migrations: migrationsToMark }
+      });
+
+      if (error) throw error;
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to mark migrations as applied');
+      }
+
+      toast({
+        title: "Success",
+        description: `${migrationsToMark.length} migration(s) marked as applied`,
+      });
+
+      // Clear selection and refresh
+      setSelectedMigrations(new Set());
+      await fetchMigrationStatus();
+    } catch (error: any) {
+      console.error("Error marking migrations as applied:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to mark migrations as applied",
+        variant: "destructive",
+      });
+    } finally {
+      setBulkMarking(false);
+    }
+  };
+
+  const toggleMigrationSelection = (filename: string) => {
+    const newSelection = new Set(selectedMigrations);
+    if (newSelection.has(filename)) {
+      newSelection.delete(filename);
+    } else {
+      newSelection.add(filename);
+    }
+    setSelectedMigrations(newSelection);
+  };
+
+  const selectAllPending = () => {
+    const pendingMigrations = migrations.filter(m => !m.applied).map(m => m.filename);
+    setSelectedMigrations(new Set(pendingMigrations));
+  };
+
+  const clearSelection = () => {
+    setSelectedMigrations(new Set());
+  };
+
   const appliedCount = migrations.filter((m) => m.applied).length;
   const totalCount = migrations.length;
-  const progress = (appliedCount / totalCount) * 100;
+  const progress = totalCount > 0 ? (appliedCount / totalCount) * 100 : 0;
+  const pendingMigrations = migrations.filter(m => !m.applied);
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Not applied";
@@ -295,18 +356,54 @@ const Migrations = () => {
         </Card>
 
         {/* Manual Migration Instructions */}
-        {totalCount > appliedCount && (
+        {pendingMigrations.length > 0 && (
           <Alert>
             <Database className="h-4 w-4" />
             <AlertDescription>
-              <div className="space-y-2">
-                <p className="font-medium">Manual Migration Required</p>
+              <div className="space-y-3">
+                <p className="font-medium">Pending Migrations Detected</p>
                 <p className="text-sm text-muted-foreground">
-                  To apply pending migrations, click "View SQL" on any pending migration, copy the SQL, and run it in your Backend SQL editor. Then mark it as applied.
+                  You have {pendingMigrations.length} pending migration(s). If you've already manually run these migrations, 
+                  you can mark them as applied using the buttons below. Otherwise, run the SQL in your Backend SQL editor first.
                 </p>
-                <Button onClick={openSupabaseSqlEditor} variant="outline" size="sm" className="mt-2">
-                  Open Backend SQL Editor
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={openSupabaseSqlEditor} variant="outline" size="sm">
+                    Open Backend SQL Editor
+                  </Button>
+                  <Button 
+                    onClick={selectAllPending} 
+                    variant="outline" 
+                    size="sm"
+                    disabled={pendingMigrations.length === 0}
+                  >
+                    Select All Pending ({pendingMigrations.length})
+                  </Button>
+                  {selectedMigrations.size > 0 && (
+                    <>
+                      <Button 
+                        onClick={markSelectedAsApplied} 
+                        variant="default" 
+                        size="sm"
+                        disabled={bulkMarking}
+                      >
+                        {bulkMarking ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Marking...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCheck className="h-4 w-4 mr-2" />
+                            Mark {selectedMigrations.size} as Applied
+                          </>
+                        )}
+                      </Button>
+                      <Button onClick={clearSelection} variant="ghost" size="sm">
+                        Clear Selection
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             </AlertDescription>
           </Alert>
@@ -329,12 +426,24 @@ const Migrations = () => {
               <div className="space-y-2">
                 {migrations.map((migration) => {
                   const { timestamp, description } = formatFilename(migration.filename);
+                  const isSelected = selectedMigrations.has(migration.filename);
+                  const isMarking = markingAsApplied === migration.filename;
                   return (
                     <div
                       key={migration.filename}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                      className={cn(
+                        "flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors",
+                        isSelected && "ring-2 ring-primary bg-primary/5"
+                      )}
                     >
                       <div className="flex items-center gap-4 flex-1">
+                        {!migration.applied && (
+                          <Checkbox 
+                            checked={isSelected}
+                            onCheckedChange={() => toggleMigrationSelection(migration.filename)}
+                            className="flex-shrink-0"
+                          />
+                        )}
                         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-sm font-medium">
                           {migration.order}
                         </div>
@@ -365,10 +474,28 @@ const Migrations = () => {
                             Applied
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            Pending
-                          </Badge>
+                          <>
+                            <Badge variant="secondary" className="gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              Pending
+                            </Badge>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => markMigrationAsApplied(migration.filename)}
+                              disabled={isMarking || bulkMarking}
+                              title="Mark this migration as already applied"
+                            >
+                              {isMarking ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <CheckCheck className="h-4 w-4 mr-1" />
+                                  Mark Applied
+                                </>
+                              )}
+                            </Button>
+                          </>
                         )}
                         <Button
                           variant="ghost"
@@ -405,13 +532,16 @@ const Migrations = () => {
               {selectedMigration}
             </DialogTitle>
             <DialogDescription className="space-y-2">
-              <p>SQL content for this migration. Follow these steps:</p>
-              <ol className="text-sm list-decimal list-inside space-y-1">
-                <li>Copy the SQL below</li>
-                <li>Open Backend SQL editor</li>
-                <li>Paste and run the SQL</li>
-                <li>Mark as applied with: <code className="text-xs">INSERT INTO schema_migrations (version) VALUES ('{selectedMigration}');</code></li>
-              </ol>
+              <p>SQL content for this migration.</p>
+              {migrations.find(m => m.filename === selectedMigration)?.applied ? (
+                <p className="text-green-600 font-medium">✓ This migration has already been applied.</p>
+              ) : (
+                <ol className="text-sm list-decimal list-inside space-y-1">
+                  <li>Copy the SQL below</li>
+                  <li>Open Supabase SQL editor and run the SQL</li>
+                  <li>Click "Mark as Applied" to record that this migration has been run</li>
+                </ol>
+              )}
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="h-[500px] w-full rounded-md border p-4">
@@ -438,22 +568,31 @@ const Migrations = () => {
             >
               Copy SQL
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                const markAsAppliedSql = `INSERT INTO schema_migrations (version) VALUES ('${selectedMigration}') ON CONFLICT (version) DO NOTHING;`;
-                navigator.clipboard.writeText(markAsAppliedSql);
-                toast({
-                  title: "Copied!",
-                  description: "Mark-as-applied SQL copied to clipboard",
-                });
-              }}
-            >
-              Copy "Mark as Applied" SQL
-            </Button>
-            <Button onClick={openSupabaseSqlEditor} variant="default">
+            <Button onClick={openSupabaseSqlEditor} variant="outline">
               Open Backend SQL Editor
             </Button>
+            {selectedMigration && !migrations.find(m => m.filename === selectedMigration)?.applied && (
+              <Button 
+                onClick={async () => {
+                  await markMigrationAsApplied(selectedMigration);
+                  setSelectedMigration(null);
+                }}
+                variant="default"
+                disabled={markingAsApplied === selectedMigration}
+              >
+                {markingAsApplied === selectedMigration ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Marking...
+                  </>
+                ) : (
+                  <>
+                    <CheckCheck className="h-4 w-4 mr-2" />
+                    Mark as Applied
+                  </>
+                )}
+              </Button>
+            )}
             <Button onClick={() => setSelectedMigration(null)} variant="secondary">Close</Button>
           </DialogFooter>
         </DialogContent>
