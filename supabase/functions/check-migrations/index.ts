@@ -121,6 +121,7 @@ Deno.serve(async (req) => {
       "20251128065528_ffe2c720-4724-40cf-9485-b3b9b99406a7",
       "20251201084705_b6db468f-889d-4cc5-8003-1dd21b582e43",
       "20251203134210_fix_user_roles_rls_recursion",
+      "20251204151925_add_m365_columns_to_hardware_inventory",
     ];
 
     const migrations = allMigrationFiles.map((version) => ({
