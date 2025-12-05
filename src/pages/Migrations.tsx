@@ -11,6 +11,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 
+// Import all SQL migration files at build time using Vite's glob import with raw content
+const migrationModules = import.meta.glob<string>(
+  '../../supabase/migrations/*.sql',
+  { query: '?raw', import: 'default', eager: true }
+);
+
+// Create a map of filename to SQL content
+const migrationSqlContent: Record<string, string> = {};
+for (const [path, content] of Object.entries(migrationModules)) {
+  // Extract filename from path (e.g., "../../supabase/migrations/20251100000000_create_schema_migrations_table.sql" -> "20251100000000_create_schema_migrations_table.sql")
+  const filename = path.split('/').pop() || '';
+  migrationSqlContent[filename] = content;
+}
+
 interface MigrationStatus {
   filename: string;
   applied: boolean;
@@ -133,9 +147,11 @@ const Migrations = () => {
   const fetchSqlContent = async (filename: string) => {
     setLoadingSql(true);
     try {
-      const response = await fetch(`/supabase/migrations/${filename}`);
-      if (!response.ok) throw new Error("Failed to fetch SQL file");
-      const content = await response.text();
+      // Use pre-loaded SQL content from build-time imports
+      const content = migrationSqlContent[filename];
+      if (!content) {
+        throw new Error(`Migration file not found: ${filename}`);
+      }
       setSqlContent(content);
     } catch (error) {
       toast({
