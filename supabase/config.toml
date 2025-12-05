@@ -44,3 +44,6 @@ verify_jwt = true  # SECURITY: Require authentication for Microsoft 365 sync ope
 
 [functions.m365-ediscovery-search]
 verify_jwt = true  # SECURITY: Require authentication for eDiscovery searches
+
+[functions.verify-deployment]
+verify_jwt = true  # SECURITY: Require authentication to view deployment status
