@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.80.0";
 import { Resend } from "https://esm.sh/resend@2.1.0";
 
@@ -10,7 +9,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -139,9 +138,10 @@ serve(async (req) => {
           .eq("id", ticket.id);
 
         remindersSent.push(ticket.id);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`Error sending reminder for ticket ${ticket.id}:`, error);
-        errors.push(`Ticket ${ticket.id}: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        errors.push(`Ticket ${ticket.id}: ${errorMessage}`);
       }
     }
 
@@ -159,10 +159,11 @@ serve(async (req) => {
         },
       }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in send-ticket-reminders function:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
