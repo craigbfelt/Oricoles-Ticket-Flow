@@ -179,7 +179,6 @@ Deno.serve(async (req) => {
     // Check edge functions deployment status
     // We verify edge functions by making a lightweight OPTIONS request to each
     const edgeFunctionStatuses: EdgeFunctionStatus[] = [];
-    const projectUrl = supabaseUrl.replace('.supabase.co', '');
     const functionsUrl = `${supabaseUrl}/functions/v1`;
 
     for (const funcName of EXPECTED_EDGE_FUNCTIONS) {
