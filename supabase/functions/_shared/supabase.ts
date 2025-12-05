@@ -9,6 +9,60 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
 
 /**
+ * Result of credential configuration check
+ */
+export interface CredentialCheckResult {
+  configured: boolean;
+  missing: string[];
+}
+
+/**
+ * Check if Supabase service role credentials are configured
+ * Returns an object with the status and any missing credentials
+ * 
+ * Use this function for early validation before calling createServiceRoleClient()
+ * to provide user-friendly error messages when configuration is missing.
+ */
+export function checkSupabaseCredentials(): CredentialCheckResult {
+  const missing: string[] = [];
+  
+  if (!Deno.env.get('SUPABASE_URL')) missing.push('SUPABASE_URL');
+  if (!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) missing.push('SUPABASE_SERVICE_ROLE_KEY');
+  
+  return {
+    configured: missing.length === 0,
+    missing,
+  };
+}
+
+/**
+ * Generate a user-friendly error message for missing Supabase credentials
+ * 
+ * @param missing - Array of missing environment variable names
+ * @param functionName - Name of the edge function (optional, for specific guidance)
+ * @returns Formatted error message with setup instructions
+ */
+export function getSupabaseCredentialsErrorMessage(missing: string[], functionName?: string): string {
+  const baseMessage = `Supabase integration is not configured. Missing environment variables: ${missing.join(', ')}.`;
+  
+  // Build instructions based on which credentials are missing
+  const instructionParts: string[] = [];
+  if (missing.includes('SUPABASE_SERVICE_ROLE_KEY')) {
+    instructionParts.push('The SUPABASE_SERVICE_ROLE_KEY is required for this function to work. You can find it in your Supabase Dashboard → Settings → API → Service Role Key.');
+  }
+  if (missing.includes('SUPABASE_URL')) {
+    instructionParts.push('The SUPABASE_URL should be your Supabase project URL (e.g., https://your-project.supabase.co). You can find it in your Supabase Dashboard → Settings → API.');
+  }
+  
+  const instructions = instructionParts.join(' ');
+  const addToSecretsMsg = functionName 
+    ? `Add the missing variable(s) to your Edge Function secrets (Dashboard → Edge Functions → ${functionName} → Settings → Secrets).`
+    : `Add the missing variable(s) to your Edge Function secrets in the Supabase Dashboard.`;
+  
+  return `${baseMessage} ${instructions} ${addToSecretsMsg}`;
+}
+
+/**
  * Creates a Supabase client with the SERVICE ROLE key
  * 
  * ⚠️ WARNING: This client BYPASSES all Row Level Security (RLS) policies!

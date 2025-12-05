@@ -1,4 +1,4 @@
-import { createServiceRoleClient } from '../_shared/supabase.ts';
+import { createServiceRoleClient, checkSupabaseCredentials, getSupabaseCredentialsErrorMessage } from '../_shared/supabase.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -311,6 +311,20 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Early check for Supabase credentials configuration
+    const supabaseCredCheck = checkSupabaseCredentials();
+    if (!supabaseCredCheck.configured) {
+      console.error('Supabase credentials not configured. Missing:', supabaseCredCheck.missing.join(', '));
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: getSupabaseCredentialsErrorMessage(supabaseCredCheck.missing, 'sync-microsoft-365'),
+          missingCredentials: supabaseCredCheck.missing,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Get the authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
