@@ -767,8 +767,26 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Parse request body
-    const { action, options }: SyncRequest = await req.json();
+    // Parse request body safely
+    let requestBody: SyncRequest;
+    try {
+      const bodyText = await req.text();
+      if (!bodyText || bodyText.trim() === '') {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Request body is required. Please provide an action.' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      requestBody = JSON.parse(bodyText);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid JSON in request body. Please provide a valid JSON object with an action field.' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { action, options } = requestBody;
 
     if (!action) {
       return new Response(

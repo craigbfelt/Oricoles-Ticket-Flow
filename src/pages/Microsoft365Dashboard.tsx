@@ -140,7 +140,17 @@ const Microsoft365Dashboard = () => {
         throw new Error(error.message);
       }
 
-      if (data.diagnostics) {
+      // Handle error responses from the edge function
+      if (!data?.success && data?.error) {
+        setConnectionStatus({
+          connected: false,
+          error: data.error,
+        });
+        toast.error(data.error);
+        return;
+      }
+
+      if (data?.diagnostics) {
         setDiagnosticResult(data.diagnostics);
         if (data.diagnostics.success) {
           toast.success('Diagnostics completed successfully');
@@ -150,6 +160,10 @@ const Microsoft365Dashboard = () => {
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Diagnostics failed';
+      setConnectionStatus({
+        connected: false,
+        error: errorMessage,
+      });
       toast.error(errorMessage);
     } finally {
       setIsDiagnosing(false);
