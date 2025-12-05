@@ -54,7 +54,14 @@ function getSupabaseCredentialsErrorMessage(missing: string[], functionName?: st
 
 /**
  * Creates a Supabase client with the SERVICE ROLE key
- * Bypasses all Row Level Security (RLS) policies
+ * 
+ * ⚠️ WARNING: This client BYPASSES all Row Level Security (RLS) policies!
+ * 
+ * Security considerations:
+ * - NEVER expose this client to client-side code
+ * - NEVER share the service role key publicly
+ * - Only use in trusted server environments (Edge Functions)
+ * - Always validate and sanitize user input before using this client
  */
 function createServiceRoleClient() {
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
