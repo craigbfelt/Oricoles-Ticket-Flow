@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchCredentials } from "@/lib/credentialUtils";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
 import { KeyRound, Upload, Plus, Trash2, ArrowLeftRight, Filter } from "lucide-react";
@@ -80,7 +81,7 @@ const Vpn = () => {
 
   useEffect(() => {
     checkAccess();
-    fetchCredentials();
+    fetchVpnCredentials();
   }, [navigate]);
 
   const checkAccess = async () => {
@@ -91,32 +92,19 @@ const Vpn = () => {
     }
   };
 
-  const fetchCredentials = async () => {
+  const fetchVpnCredentials = async () => {
     setLoading(true);
     
-    // Try using the secure decryption function first (for encrypted credentials)
-    const { data: decryptedData, error: rpcError } = await supabase
-      .rpc('get_decrypted_credentials', { p_service_type: 'VPN' });
+    // Use the utility function that handles RPC vs direct query gracefully
+    const { data, error } = await fetchCredentials('VPN');
     
-    if (!rpcError && decryptedData) {
-      setCredentials((decryptedData || []) as VpnCredential[]);
-      setLoading(false);
-      return;
-    }
-    
-    // Fallback to direct table query (for backward compatibility)
-    const { data, error } = await supabase
-      .from("vpn_rdp_credentials")
-      .select("*")
-      .eq("service_type", "VPN")
-      .order("username");
-
     if (error) {
       toast({
         title: "Error",
         description: "Failed to fetch VPN credentials",
         variant: "destructive",
       });
+      setCredentials([]);
     } else {
       setCredentials((data || []) as VpnCredential[]);
     }
@@ -183,7 +171,7 @@ const Vpn = () => {
           description: "Credential updated successfully",
         });
         setSheetOpen(false);
-        fetchCredentials();
+        fetchVpnCredentials();
       }
     } else {
       const { error } = await supabase
@@ -202,7 +190,7 @@ const Vpn = () => {
           description: "Credential added successfully",
         });
         setSheetOpen(false);
-        fetchCredentials();
+        fetchVpnCredentials();
       }
     }
   };
@@ -227,7 +215,7 @@ const Vpn = () => {
         description: "Credential deleted successfully",
       });
       setSheetOpen(false);
-      fetchCredentials();
+      fetchVpnCredentials();
     }
   };
 
@@ -251,7 +239,7 @@ const Vpn = () => {
       });
       setSelectedRows([]);
       setBulkConvertDialogOpen(false);
-      fetchCredentials();
+      fetchVpnCredentials();
     }
   };
 
@@ -275,7 +263,7 @@ const Vpn = () => {
       });
       setSelectedRows([]);
       setBulkDeleteDialogOpen(false);
-      fetchCredentials();
+      fetchVpnCredentials();
     }
   };
 
@@ -402,7 +390,7 @@ vpnuser3,Pass789word,user3@example.com,Guest VPN user`;
       setCsvFile(null);
       setCsvPreview([]);
       setShowPreview(false);
-      fetchCredentials();
+      fetchVpnCredentials();
     }
   };
 

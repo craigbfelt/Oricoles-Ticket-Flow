@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchCredentials } from "@/lib/credentialUtils";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
 import { Users as UsersIcon, Search, Upload, Download, Save, Key } from "lucide-react";
@@ -125,35 +126,22 @@ const Users = () => {
   const fetchVpnRdpUsers = async () => {
     setLoading(true);
     
-    // Try using the secure decryption function first (for encrypted credentials)
-    const { data: decryptedData, error: rpcError } = await supabase
-      .rpc('get_decrypted_credentials');
+    // Use the utility function that handles RPC vs direct query gracefully
+    const { data, error } = await fetchCredentials();
     
-    if (!rpcError && decryptedData) {
-      const allData = decryptedData || [];
-      setRdpUsers(allData.filter((u: any) => u.service_type === 'RDP'));
-      setVpnUsers(allData.filter((u: any) => u.service_type === 'VPN'));
-      setStaffUsers(allData);
-      setLoading(false);
-      return;
-    }
-    
-    // Fallback to direct table query (for backward compatibility)
-    const { data, error } = await supabase
-      .from("vpn_rdp_credentials")
-      .select("*")
-      .order("username");
-
     if (error) {
       toast({
         title: "Error",
         description: "Failed to fetch VPN/RDP users",
         variant: "destructive",
       });
+      setRdpUsers([]);
+      setVpnUsers([]);
+      setStaffUsers([]);
     } else {
       const allData = data || [];
-      setRdpUsers(allData.filter(u => u.service_type === 'RDP'));
-      setVpnUsers(allData.filter(u => u.service_type === 'VPN'));
+      setRdpUsers(allData.filter((u) => u.service_type === 'RDP'));
+      setVpnUsers(allData.filter((u) => u.service_type === 'VPN'));
       setStaffUsers(allData); // All VPN/RDP users are the most accurate staff list
     }
     setLoading(false);

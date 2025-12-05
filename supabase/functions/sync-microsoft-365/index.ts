@@ -50,6 +50,23 @@ interface SyncRequest {
 }
 
 /**
+ * Check if Microsoft 365 credentials are configured
+ * Returns an object with the status and any missing credentials
+ */
+function checkMicrosoftCredentials(): { configured: boolean; missing: string[] } {
+  const missing: string[] = [];
+  
+  if (!Deno.env.get('AZURE_TENANT_ID')) missing.push('AZURE_TENANT_ID');
+  if (!Deno.env.get('AZURE_CLIENT_ID')) missing.push('AZURE_CLIENT_ID');
+  if (!Deno.env.get('AZURE_CLIENT_SECRET')) missing.push('AZURE_CLIENT_SECRET');
+  
+  return {
+    configured: missing.length === 0,
+    missing,
+  };
+}
+
+/**
  * Get an access token from Azure AD using client credentials flow
  */
 async function getAccessToken(): Promise<string> {
@@ -58,7 +75,9 @@ async function getAccessToken(): Promise<string> {
   const clientSecret = Deno.env.get('AZURE_CLIENT_SECRET');
 
   if (!tenantId || !clientId || !clientSecret) {
-    throw new Error('Azure credentials not configured. Please set AZURE_TENANT_ID, AZURE_CLIENT_ID, and AZURE_CLIENT_SECRET.');
+    const credCheck = checkMicrosoftCredentials();
+    console.error('Microsoft 365 credentials not configured. Missing:', credCheck.missing.join(', '));
+    throw new Error(`Microsoft 365 credentials not configured. Missing environment variables: ${credCheck.missing.join(', ')}. Please set these in Supabase Edge Functions settings.`);
   }
 
   const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
@@ -345,6 +364,20 @@ Deno.serve(async (req) => {
     if (!action) {
       return new Response(
         JSON.stringify({ success: false, error: 'Action is required. Valid actions: sync_devices, sync_users, sync_licenses, full_sync, test_connection' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Early check for Microsoft credentials configuration
+    const credCheck = checkMicrosoftCredentials();
+    if (!credCheck.configured) {
+      console.error('Microsoft 365 credentials not configured. Missing:', credCheck.missing.join(', '));
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Microsoft 365 integration is not configured. Missing environment variables: ${credCheck.missing.join(', ')}. Please configure these in Supabase Edge Functions settings (Dashboard → Edge Functions → sync-microsoft-365 → Settings → Secrets).`,
+          missingCredentials: credCheck.missing,
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
