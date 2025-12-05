@@ -44,7 +44,7 @@ You must add the following secrets to your Supabase Edge Functions:
 ### Option A: Via Supabase Dashboard (Recommended)
 
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
-2. Select your project (`blhidceerkrumgxjhidq`)
+2. Select your project
 3. Navigate to **Edge Functions** in the left sidebar
 4. Click on the `sync-microsoft-365` function
 5. Go to **Settings** tab
@@ -55,7 +55,7 @@ You must add the following secrets to your Supabase Edge Functions:
 | `AZURE_TENANT_ID` | Your Azure AD tenant ID (e.g., `12345678-1234-1234-1234-123456789012`) |
 | `AZURE_CLIENT_ID` | Your app registration client ID |
 | `AZURE_CLIENT_SECRET` | Your app registration client secret |
-| `SUPABASE_URL` | `https://blhidceerkrumgxjhidq.supabase.co` |
+| `SUPABASE_URL` | Your Supabase project URL (e.g., `https://your-project-id.supabase.co`) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Your Supabase service role key (from Settings → API) |
 
 ### Option B: Via Supabase CLI
@@ -65,7 +65,7 @@ You must add the following secrets to your Supabase Edge Functions:
 supabase secrets set AZURE_TENANT_ID=your-tenant-id
 supabase secrets set AZURE_CLIENT_ID=your-client-id
 supabase secrets set AZURE_CLIENT_SECRET=your-client-secret
-supabase secrets set SUPABASE_URL=https://blhidceerkrumgxjhidq.supabase.co
+supabase secrets set SUPABASE_URL=https://your-project-id.supabase.co
 supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
