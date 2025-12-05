@@ -102,6 +102,7 @@ const EXPECTED_MIGRATIONS = [
   "20251201084705_b6db468f-889d-4cc5-8003-1dd21b582e43",
   "20251203134210_fix_user_roles_rls_recursion",
   "20251204151925_add_m365_columns_to_hardware_inventory",
+  "20251205000000_secure_credential_storage",
 ];
 
 // Expected edge functions list - updated when new functions are added
@@ -111,6 +112,7 @@ const EXPECTED_EDGE_FUNCTIONS = [
   "import-staff-users",
   "m365-ediscovery-search",
   "manage-user-roles",
+  "mark-migrations-applied",
   "notify-ticket-assignment",
   "register-remote-client",
   "resend-provider-email",
@@ -151,6 +153,25 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Check migration status
     const appliedMigrations = new Map<string, string>();

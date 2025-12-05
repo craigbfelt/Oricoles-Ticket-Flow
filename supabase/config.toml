@@ -10,25 +10,25 @@ verify_jwt = true  # SECURITY: Prevent unauthorized client registration
 verify_jwt = true  # SECURITY: Prevent email spam
 
 [functions.resend-provider-email]
-verify_jwt = true  # SECURITY: Prevent email abuse
+verify_jwt = false  # NOTE: JWT verification is handled inside the function to allow CORS preflight requests
 
 [functions.confirm-provider-task]
-verify_jwt = true  # SECURITY: Require authentication for task confirmations
+verify_jwt = false  # NOTE: JWT verification is handled inside the function to allow CORS preflight requests
 
 [functions.storage-admin-operations]
 verify_jwt = true  # SECURITY: Require authentication for admin operations
 
 [functions.check-migrations]
-verify_jwt = true  # SECURITY: Require authentication to view migration status
+verify_jwt = false  # NOTE: JWT verification is handled inside the function to allow CORS preflight requests
 
 [functions.apply-migrations]
-verify_jwt = true  # SECURITY: Require authentication for migration operations
+verify_jwt = false  # NOTE: JWT verification is handled inside the function to allow CORS preflight requests
 
 [functions.manage-user-roles]
-verify_jwt = true  # SECURITY: Require authentication for user role management
+verify_jwt = false  # NOTE: JWT verification is handled inside the function to allow CORS preflight requests
 
 [functions.import-staff-users]
-verify_jwt = true  # SECURITY: Require authentication to prevent unauthorized user imports
+verify_jwt = false  # NOTE: JWT verification is handled inside the function to allow CORS preflight requests
 
 [functions.notify-ticket-assignment]
 verify_jwt = true  # SECURITY: Require authentication to prevent email spam
@@ -37,16 +37,16 @@ verify_jwt = true  # SECURITY: Require authentication to prevent email spam
 verify_jwt = true  # SECURITY: Require authentication to prevent email abuse
 
 [functions.reset-user-password]
-verify_jwt = true  # SECURITY: Require authentication for password reset operations
+verify_jwt = false  # NOTE: JWT verification is handled inside the function to allow CORS preflight requests
 
 [functions.sync-microsoft-365]
-verify_jwt = true  # SECURITY: Require authentication for Microsoft 365 sync operations
+verify_jwt = false  # NOTE: JWT verification is handled inside the function to allow CORS preflight requests
 
 [functions.m365-ediscovery-search]
-verify_jwt = true  # SECURITY: Require authentication for eDiscovery searches
+verify_jwt = false  # NOTE: JWT verification is handled inside the function to allow CORS preflight requests
 
 [functions.verify-deployment]
-verify_jwt = true  # SECURITY: Require authentication to view deployment status
+verify_jwt = false  # NOTE: JWT verification is handled inside the function to allow CORS preflight requests
 
 [functions.mark-migrations-applied]
-verify_jwt = true  # SECURITY: Require authentication for migration management
+verify_jwt = false  # NOTE: JWT verification is handled inside the function to allow CORS preflight requests
