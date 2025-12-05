@@ -44,10 +44,20 @@ export function checkSupabaseCredentials(): CredentialCheckResult {
  */
 export function getSupabaseCredentialsErrorMessage(missing: string[], functionName?: string): string {
   const baseMessage = `Supabase integration is not configured. Missing environment variables: ${missing.join(', ')}.`;
-  const instructions = `The SUPABASE_SERVICE_ROLE_KEY is required for this function to work. You can find it in your Supabase Dashboard → Settings → API → Service Role Key.`;
+  
+  // Build instructions based on which credentials are missing
+  const instructionParts: string[] = [];
+  if (missing.includes('SUPABASE_SERVICE_ROLE_KEY')) {
+    instructionParts.push('The SUPABASE_SERVICE_ROLE_KEY is required for this function to work. You can find it in your Supabase Dashboard → Settings → API → Service Role Key.');
+  }
+  if (missing.includes('SUPABASE_URL')) {
+    instructionParts.push('The SUPABASE_URL should be your Supabase project URL (e.g., https://your-project.supabase.co). You can find it in your Supabase Dashboard → Settings → API.');
+  }
+  
+  const instructions = instructionParts.join(' ');
   const addToSecretsMsg = functionName 
-    ? `Add it to your Edge Function secrets (Dashboard → Edge Functions → ${functionName} → Settings → Secrets).`
-    : `Add it to your Edge Function secrets in the Supabase Dashboard.`;
+    ? `Add the missing variable(s) to your Edge Function secrets (Dashboard → Edge Functions → ${functionName} → Settings → Secrets).`
+    : `Add the missing variable(s) to your Edge Function secrets in the Supabase Dashboard.`;
   
   return `${baseMessage} ${instructions} ${addToSecretsMsg}`;
 }
