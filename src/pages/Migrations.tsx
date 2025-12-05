@@ -4,7 +4,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Database, CheckCircle2, AlertCircle, Loader2, RefreshCw, Eye, FileCode, Clock } from "lucide-react";
+import { Database, CheckCircle2, AlertCircle, Loader2, RefreshCw, Eye, FileCode, Clock, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -174,6 +174,23 @@ const Migrations = () => {
   const handleViewSql = (filename: string) => {
     setSelectedMigration(filename);
     fetchSqlContent(filename);
+  };
+
+  const handleCopySql = (filename: string) => {
+    const content = migrationSqlContent[filename];
+    if (content) {
+      navigator.clipboard.writeText(content);
+      toast({
+        title: "Copied!",
+        description: `SQL for ${filename} copied to clipboard`,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "SQL content not found",
+        variant: "destructive",
+      });
+    }
   };
 
   const getSupabaseProjectId = () => {
@@ -353,6 +370,14 @@ const Migrations = () => {
                             Pending
                           </Badge>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopySql(migration.filename)}
+                          title="Copy SQL to clipboard"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
