@@ -42,13 +42,28 @@ interface ConnectionStatus {
   error?: string;
 }
 
+interface DiagnosticStep {
+  step: string;
+  status: 'success' | 'error' | 'warning' | 'skipped';
+  message: string;
+  details?: string;
+}
+
+interface DiagnosticResult {
+  success: boolean;
+  steps: DiagnosticStep[];
+  summary: string;
+}
+
 const Microsoft365Dashboard = () => {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [isDiagnosing, setIsDiagnosing] = useState(false);
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus | null>(null);
+  const [diagnosticResult, setDiagnosticResult] = useState<DiagnosticResult | null>(null);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
 
   useEffect(() => {
@@ -108,6 +123,36 @@ const Microsoft365Dashboard = () => {
       toast.error(errorMessage);
     } finally {
       setIsTesting(false);
+    }
+  };
+
+  const runDiagnostics = async () => {
+    setIsDiagnosing(true);
+    setDiagnosticResult(null);
+    setConnectionStatus(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-microsoft-365', {
+        body: { action: 'diagnose_connection' },
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data.diagnostics) {
+        setDiagnosticResult(data.diagnostics);
+        if (data.diagnostics.success) {
+          toast.success('Diagnostics completed successfully');
+        } else {
+          toast.error('Diagnostics found issues - see details below');
+        }
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Diagnostics failed';
+      toast.error(errorMessage);
+    } finally {
+      setIsDiagnosing(false);
     }
   };
 
@@ -182,8 +227,20 @@ const Microsoft365Dashboard = () => {
             <div className="flex gap-2">
               <Button
                 variant="outline"
+                onClick={runDiagnostics}
+                disabled={isDiagnosing || isTesting || isSyncing}
+              >
+                {isDiagnosing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Settings className="mr-2 h-4 w-4" />
+                )}
+                Run Diagnostics
+              </Button>
+              <Button
+                variant="outline"
                 onClick={testConnection}
-                disabled={isTesting || isSyncing}
+                disabled={isTesting || isSyncing || isDiagnosing}
               >
                 {isTesting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -194,7 +251,7 @@ const Microsoft365Dashboard = () => {
               </Button>
               <Button
                 onClick={fullSync}
-                disabled={isSyncing || isTesting}
+                disabled={isSyncing || isTesting || isDiagnosing}
               >
                 {isSyncing ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -206,6 +263,55 @@ const Microsoft365Dashboard = () => {
             </div>
           )}
         </div>
+
+        {/* Diagnostic Results Panel */}
+        {diagnosticResult && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                {diagnosticResult.success ? (
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                ) : (
+                  <XCircle className="h-5 w-5 text-red-500" />
+                )}
+                Connection Diagnostics
+              </CardTitle>
+              <CardDescription>{diagnosticResult.summary}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {diagnosticResult.steps.map((step, index) => (
+                  <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                    <div className="mt-0.5">
+                      {step.status === 'success' && <CheckCircle className="h-5 w-5 text-green-500" />}
+                      {step.status === 'error' && <XCircle className="h-5 w-5 text-red-500" />}
+                      {step.status === 'warning' && <AlertCircle className="h-5 w-5 text-yellow-500" />}
+                      {step.status === 'skipped' && <AlertCircle className="h-5 w-5 text-gray-400" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{step.step}</span>
+                        <Badge variant={
+                          step.status === 'success' ? 'default' : 
+                          step.status === 'error' ? 'destructive' : 
+                          step.status === 'warning' ? 'secondary' : 'outline'
+                        }>
+                          {step.status}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">{step.message}</p>
+                      {step.details && (
+                        <p className="text-xs text-muted-foreground mt-1 font-mono bg-muted p-2 rounded">
+                          {step.details}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {connectionStatus && (
           <Alert variant={connectionStatus.connected ? "default" : "destructive"}>
@@ -225,8 +331,8 @@ const Microsoft365Dashboard = () => {
                     <p>{connectionStatus.error}</p>
                     {connectionStatus.error?.includes('Missing environment variables') && (
                       <p className="text-sm">
-                        <strong>Setup required:</strong> Configure the Azure AD credentials in Supabase Dashboard → Edge Functions → sync-microsoft-365 → Settings → Secrets. 
-                        See MICROSOFT_365_SETUP.md for detailed instructions.
+                        <strong>Setup required:</strong> Configure the Microsoft 365 credentials (MICROSOFT_CLIENT_ID, MICROSOFT_TENANT_ID, MICROSOFT_CLIENT_SECRET) in Supabase Dashboard → Edge Functions → sync-microsoft-365 → Settings → Secrets. 
+                        Click "Run Diagnostics" for detailed troubleshooting. See MICROSOFT_365_SETUP.md for setup instructions.
                       </p>
                     )}
                   </div>
@@ -235,13 +341,14 @@ const Microsoft365Dashboard = () => {
           </Alert>
         )}
 
-        {!connectionStatus && !isAdmin && (
+        {!connectionStatus && !diagnosticResult && !isAdmin && (
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Configuration Required</AlertTitle>
             <AlertDescription>
-              To use Microsoft 365 integration, an administrator needs to configure the Azure AD credentials
-              in Supabase Edge Functions environment variables. See the .env.example file for details.
+              To use Microsoft 365 integration, an administrator needs to configure the Microsoft 365 credentials
+              (MICROSOFT_CLIENT_ID, MICROSOFT_TENANT_ID, MICROSOFT_CLIENT_SECRET) in Supabase Edge Functions environment variables. 
+              See the .env.example file for details.
             </AlertDescription>
           </Alert>
         )}

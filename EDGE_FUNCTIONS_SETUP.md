@@ -129,9 +129,9 @@ These are automatically available to all edge functions:
 ### Function-Specific Variables
 
 For Microsoft 365 integration (`sync-microsoft-365`, `m365-ediscovery-search`):
-- `AZURE_TENANT_ID` - Your Azure AD tenant ID
-- `AZURE_CLIENT_ID` - Your Azure AD app client ID
-- `AZURE_CLIENT_SECRET` - Your Azure AD app client secret
+- `MICROSOFT_TENANT_ID` - Your Azure AD tenant ID
+- `MICROSOFT_CLIENT_ID` - Your Azure AD app client ID
+- `MICROSOFT_CLIENT_SECRET` - Your Azure AD app client secret
 
 For email functions (`send-staff-onboarding-email`, `resend-provider-email`):
 - `SMTP_HOST` - SMTP server hostname

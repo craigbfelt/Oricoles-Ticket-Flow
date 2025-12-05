@@ -34,8 +34,8 @@ The Microsoft 365 integration provides:
 ### 2. Note Application Details
 
 After registration, note these values from the **Overview** page:
-- **Application (client) ID** → `AZURE_CLIENT_ID`
-- **Directory (tenant) ID** → `AZURE_TENANT_ID`
+- **Application (client) ID** → `MICROSOFT_CLIENT_ID`
+- **Directory (tenant) ID** → `MICROSOFT_TENANT_ID`
 
 ### 3. Create Client Secret
 
@@ -44,7 +44,7 @@ After registration, note these values from the **Overview** page:
 3. Add a description and set expiration
 4. Click **Add**
 5. **IMPORTANT**: Copy the secret value immediately (you can't see it again)
-   - This is your `AZURE_CLIENT_SECRET`
+   - This is your `MICROSOFT_CLIENT_SECRET`
 
 ### 4. Configure API Permissions
 
@@ -77,9 +77,9 @@ Set these environment variables in **Supabase Edge Functions**:
 4. Add the following environment variables:
 
 ```bash
-AZURE_TENANT_ID=your-tenant-id-here
-AZURE_CLIENT_ID=your-client-id-here
-AZURE_CLIENT_SECRET=your-client-secret-here
+MICROSOFT_TENANT_ID=your-tenant-id-here
+MICROSOFT_CLIENT_ID=your-client-id-here
+MICROSOFT_CLIENT_SECRET=your-client-secret-here
 ```
 
 Optional:
@@ -206,7 +206,7 @@ const response = await fetch(
 
 **Solution**:
 1. Go to Supabase Dashboard → Project Settings → Edge Functions
-2. Add AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET
+2. Add MICROSOFT_TENANT_ID, MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET
 3. Wait a few minutes for changes to propagate
 
 ### "Failed to authenticate with Microsoft"
