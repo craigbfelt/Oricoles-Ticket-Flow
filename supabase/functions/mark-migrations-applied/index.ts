@@ -89,25 +89,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // First, ensure the schema_migrations table exists
-    // This is idempotent - if it exists, the CREATE TABLE IF NOT EXISTS will do nothing
-    const createTableResult = await supabase.rpc('exec_sql', {
-      sql: `
-        CREATE TABLE IF NOT EXISTS public.schema_migrations (
-          version text PRIMARY KEY,
-          applied_at timestamptz DEFAULT now() NOT NULL
-        );
-      `
-    });
-    
-    // If RPC doesn't exist, try direct insert (table should already exist from migrations)
-    if (createTableResult.error) {
-      console.log('exec_sql RPC not available, assuming table exists');
-    }
+    // Normalize migration versions (remove .sql extension if present for consistency)
+    const normalizedMigrations = migrations.map(version => version.replace(/\.sql$/, ''));
 
     // Insert migrations as applied
-    const migrationRecords = migrations.map(version => ({
-      version: version.replace(/\.sql$/, ''), // Remove .sql extension if present
+    const migrationRecords = normalizedMigrations.map(version => ({
+      version,
       applied_at: new Date().toISOString()
     }));
 
@@ -140,8 +127,8 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Successfully marked ${migrations.length} migration(s) as applied`,
-        markedMigrations: migrations,
+        message: `Successfully marked ${normalizedMigrations.length} migration(s) as applied`,
+        markedMigrations: normalizedMigrations,
         totalApplied: appliedMigrations?.length || 0,
         appliedMigrations: appliedMigrations || []
       }),

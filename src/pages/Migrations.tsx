@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 // Import all SQL migration files at build time using Vite's glob import with raw content
 const migrationModules = import.meta.glob<string>(
@@ -18,15 +19,37 @@ const migrationModules = import.meta.glob<string>(
   { query: '?raw', import: 'default', eager: true }
 );
 
+/**
+ * Normalize migration version by removing .sql extension if present
+ * This ensures consistent storage in the schema_migrations table
+ */
+const normalizeMigrationVersion = (version: string): string => {
+  return version.replace(/\.sql$/, '');
+};
+
+/**
+ * Extract filename from a path string safely
+ */
+const extractFilename = (path: string): string | null => {
+  const parts = path.split('/');
+  const filename = parts[parts.length - 1];
+  // Validate that it looks like a migration file
+  if (filename && filename.endsWith('.sql')) {
+    return filename;
+  }
+  return null;
+};
+
 // Create a map of filename to SQL content and dynamically get the list of all migrations
 const migrationSqlContent: Record<string, string> = {};
 const ALL_MIGRATIONS: string[] = [];
 
 for (const [path, content] of Object.entries(migrationModules)) {
-  // Extract filename from path (e.g., "../../supabase/migrations/20251100000000_create_schema_migrations_table.sql" -> "20251100000000_create_schema_migrations_table.sql")
-  const filename = path.split('/').pop() || '';
-  migrationSqlContent[filename] = content;
-  ALL_MIGRATIONS.push(filename);
+  const filename = extractFilename(path);
+  if (filename) {
+    migrationSqlContent[filename] = content;
+    ALL_MIGRATIONS.push(filename);
+  }
 }
 
 // Sort migrations by filename (which includes timestamp) to ensure chronological order
@@ -159,7 +182,7 @@ const Migrations = () => {
     setMarkingAsApplied(migrationVersion);
     try {
       const { data, error } = await supabase.functions.invoke('mark-migrations-applied', {
-        body: { migrations: [migrationVersion.replace('.sql', '')] }
+        body: { migrations: [normalizeMigrationVersion(migrationVersion)] }
       });
 
       if (error) throw error;
@@ -199,7 +222,7 @@ const Migrations = () => {
 
     setBulkMarking(true);
     try {
-      const migrationsToMark = Array.from(selectedMigrations).map(m => m.replace('.sql', ''));
+      const migrationsToMark = Array.from(selectedMigrations).map(normalizeMigrationVersion);
       
       const { data, error } = await supabase.functions.invoke('mark-migrations-applied', {
         body: { migrations: migrationsToMark }
@@ -408,7 +431,10 @@ const Migrations = () => {
                   return (
                     <div
                       key={migration.filename}
-                      className={`flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors ${isSelected ? 'ring-2 ring-primary bg-primary/5' : ''}`}
+                      className={cn(
+                        "flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors",
+                        isSelected && "ring-2 ring-primary bg-primary/5"
+                      )}
                     >
                       <div className="flex items-center gap-4 flex-1">
                         {!migration.applied && (
