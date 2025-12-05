@@ -1,4 +1,4 @@
-import { createServiceRoleClient, checkSupabaseCredentials } from '../_shared/supabase.ts';
+import { createServiceRoleClient, checkSupabaseCredentials, getSupabaseCredentialsErrorMessage } from '../_shared/supabase.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -396,7 +396,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: `Supabase integration is not configured. Missing environment variables: ${supabaseCredCheck.missing.join(', ')}. The SUPABASE_SERVICE_ROLE_KEY is required for this function to work. You can find it in your Supabase Dashboard → Settings → API → Service Role Key. Add it to your Edge Function secrets (Dashboard → Edge Functions → m365-ediscovery-search → Settings → Secrets).`,
+          error: getSupabaseCredentialsErrorMessage(supabaseCredCheck.missing, 'm365-ediscovery-search'),
           missingCredentials: supabaseCredCheck.missing,
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
