@@ -220,7 +220,17 @@ const Microsoft365Dashboard = () => {
             <AlertDescription>
               {connectionStatus.connected
                 ? `Successfully connected to ${connectionStatus.organization?.displayName || 'Microsoft 365'}`
-                : connectionStatus.error}
+                : (
+                  <div className="space-y-2">
+                    <p>{connectionStatus.error}</p>
+                    {connectionStatus.error?.includes('Missing environment variables') && (
+                      <p className="text-sm">
+                        <strong>Setup required:</strong> Configure the Azure AD credentials in Supabase Dashboard → Edge Functions → sync-microsoft-365 → Settings → Secrets. 
+                        See MICROSOFT_365_SETUP.md for detailed instructions.
+                      </p>
+                    )}
+                  </div>
+                )}
             </AlertDescription>
           </Alert>
         )}
