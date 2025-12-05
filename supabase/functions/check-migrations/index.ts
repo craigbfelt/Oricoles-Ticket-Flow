@@ -29,6 +29,25 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing or invalid authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.substring(7);
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Check our custom schema_migrations table for applied migrations
     // This is where we track which migrations have been applied
     let appliedVersions = new Set<string>();
@@ -122,6 +141,7 @@ Deno.serve(async (req) => {
       "20251201084705_b6db468f-889d-4cc5-8003-1dd21b582e43",
       "20251203134210_fix_user_roles_rls_recursion",
       "20251204151925_add_m365_columns_to_hardware_inventory",
+      "20251205000000_secure_credential_storage",
     ];
 
     const migrations = allMigrationFiles.map((version) => ({
