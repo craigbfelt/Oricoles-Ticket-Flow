@@ -1,26 +1,10 @@
-import { createServiceRoleClient } from '../_shared/supabase.ts';
+import { createServiceRoleClient, checkSupabaseCredentials } from '../_shared/supabase.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 };
-
-/**
- * Check if Supabase credentials are configured
- * Returns an object with the status and any missing credentials
- */
-function checkSupabaseCredentials(): { configured: boolean; missing: string[] } {
-  const missing: string[] = [];
-  
-  if (!Deno.env.get('SUPABASE_URL')) missing.push('SUPABASE_URL');
-  if (!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) missing.push('SUPABASE_SERVICE_ROLE_KEY');
-  
-  return {
-    configured: missing.length === 0,
-    missing,
-  };
-}
 
 interface SearchRequest {
   query: string;

@@ -9,6 +9,25 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
 
 /**
+ * Check if Supabase service role credentials are configured
+ * Returns an object with the status and any missing credentials
+ * 
+ * Use this function for early validation before calling createServiceRoleClient()
+ * to provide user-friendly error messages when configuration is missing.
+ */
+export function checkSupabaseCredentials(): { configured: boolean; missing: string[] } {
+  const missing: string[] = [];
+  
+  if (!Deno.env.get('SUPABASE_URL')) missing.push('SUPABASE_URL');
+  if (!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) missing.push('SUPABASE_SERVICE_ROLE_KEY');
+  
+  return {
+    configured: missing.length === 0,
+    missing,
+  };
+}
+
+/**
  * Creates a Supabase client with the SERVICE ROLE key
  * 
  * ⚠️ WARNING: This client BYPASSES all Row Level Security (RLS) policies!

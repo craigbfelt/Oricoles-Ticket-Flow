@@ -6,7 +6,22 @@ This directory contains shared utility functions for Supabase Edge Functions.
 
 ### `supabase.ts`
 
-Provides three types of Supabase clients for different use cases:
+Provides three types of Supabase clients for different use cases, plus a credential check utility:
+
+#### Credential Check
+
+```typescript
+import { checkSupabaseCredentials } from '../_shared/supabase.ts';
+
+// Check if required environment variables are configured
+const credCheck = checkSupabaseCredentials();
+if (!credCheck.configured) {
+  // Handle missing configuration
+  console.error('Missing:', credCheck.missing.join(', '));
+}
+```
+
+Use this to validate configuration before creating clients, enabling user-friendly error messages.
 
 #### 1. Service Role Client
 
