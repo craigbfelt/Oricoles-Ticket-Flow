@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -124,12 +123,14 @@ const handler = async (req: Request): Promise<Response> => {
       
       throw sendError;
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in resend-provider-email function:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to resend email';
+    const errorDetails = error instanceof Error ? error.toString() : 'Unknown error';
     return new Response(
       JSON.stringify({ 
-        error: error.message || "Failed to resend email",
-        details: error.toString()
+        error: errorMessage,
+        details: errorDetails
       }),
       {
         status: 500,
@@ -142,4 +143,4 @@ const handler = async (req: Request): Promise<Response> => {
   }
 };
 
-serve(handler);
+Deno.serve(handler);
