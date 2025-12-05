@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchCredentialsWithEmail } from "@/lib/credentialUtils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { UserPlus, Download } from "lucide-react";
@@ -45,28 +46,8 @@ export function ImportSystemUsersDialog() {
     console.log("ImportSystemUsersDialog: Fetching staff users from vpn_rdp_credentials");
     
     try {
-      // Try using the secure decryption function first (for encrypted credentials)
-      const { data: decryptedData, error: rpcError } = await supabase
-        .rpc('get_decrypted_credentials');
-      
-      let data;
-      let error;
-      
-      if (!rpcError && decryptedData) {
-        // Filter decrypted data to only users with email
-        data = decryptedData.filter((u: any) => u.email != null);
-        data.sort((a: any, b: any) => (a.username || '').localeCompare(b.username || ''));
-      } else {
-        // Fallback to direct table query (for backward compatibility)
-        const result = await supabase
-          .from("vpn_rdp_credentials")
-          .select("id, username, email, service_type, notes")
-          .not("email", "is", null) // Only users with email can become system users
-          .order("username");
-        
-        data = result.data;
-        error = result.error;
-      }
+      // Use the utility function that handles RPC vs direct query gracefully
+      const { data, error } = await fetchCredentialsWithEmail();
 
       if (error) {
         console.error("ImportSystemUsersDialog: Error fetching staff users:", error);
@@ -77,7 +58,12 @@ export function ImportSystemUsersDialog() {
         return;
       }
 
-      console.log("ImportSystemUsersDialog: Found staff users with emails:", data?.length || 0);
+      // Sort by username
+      const sortedData = (data || []).sort((a, b) => 
+        (a.username || '').localeCompare(b.username || '')
+      );
+
+      console.log("ImportSystemUsersDialog: Found staff users with emails:", sortedData.length);
 
       // Filter out users who already have system accounts
       console.log("ImportSystemUsersDialog: Checking for existing user profiles");
@@ -93,12 +79,12 @@ export function ImportSystemUsersDialog() {
       }
 
       const existingEmails = new Set(existingUsers?.map(u => u.email?.toLowerCase()) || []);
-      const availableUsers = (data || []).filter(
+      const availableUsers = sortedData.filter(
         user => user.email && !existingEmails.has(user.email.toLowerCase())
       );
       
       console.log("ImportSystemUsersDialog: Available users for import:", availableUsers.length);
-      console.log("ImportSystemUsersDialog: Filtered out existing users:", (data?.length || 0) - availableUsers.length);
+      console.log("ImportSystemUsersDialog: Filtered out existing users:", sortedData.length - availableUsers.length);
       
       setStaffUsers(availableUsers);
     } catch (error) {

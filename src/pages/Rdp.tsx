@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchCredentials } from "@/lib/credentialUtils";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
 import { Monitor, Upload, Plus, Trash2, ArrowLeftRight, Filter } from "lucide-react";
@@ -80,7 +81,7 @@ const Rdp = () => {
 
   useEffect(() => {
     checkAccess();
-    fetchCredentials();
+    fetchRdpCredentials();
   }, [navigate]);
 
   const checkAccess = async () => {
@@ -91,32 +92,19 @@ const Rdp = () => {
     }
   };
 
-  const fetchCredentials = async () => {
+  const fetchRdpCredentials = async () => {
     setLoading(true);
     
-    // Try using the secure decryption function first (for encrypted credentials)
-    const { data: decryptedData, error: rpcError } = await supabase
-      .rpc('get_decrypted_credentials', { p_service_type: 'RDP' });
+    // Use the utility function that handles RPC vs direct query gracefully
+    const { data, error } = await fetchCredentials('RDP');
     
-    if (!rpcError && decryptedData) {
-      setCredentials((decryptedData || []) as RdpCredential[]);
-      setLoading(false);
-      return;
-    }
-    
-    // Fallback to direct table query (for backward compatibility)
-    const { data, error } = await supabase
-      .from("vpn_rdp_credentials")
-      .select("*")
-      .eq("service_type", "RDP")
-      .order("username");
-
     if (error) {
       toast({
         title: "Error",
         description: "Failed to fetch RDP credentials",
         variant: "destructive",
       });
+      setCredentials([]);
     } else {
       setCredentials((data || []) as RdpCredential[]);
     }
@@ -183,7 +171,7 @@ const Rdp = () => {
           description: "Credential updated successfully",
         });
         setSheetOpen(false);
-        fetchCredentials();
+        fetchRdpCredentials();
       }
     } else {
       const { error } = await supabase
@@ -202,7 +190,7 @@ const Rdp = () => {
           description: "Credential added successfully",
         });
         setSheetOpen(false);
-        fetchCredentials();
+        fetchRdpCredentials();
       }
     }
   };
@@ -227,7 +215,7 @@ const Rdp = () => {
         description: "Credential deleted successfully",
       });
       setSheetOpen(false);
-      fetchCredentials();
+      fetchRdpCredentials();
     }
   };
 
@@ -251,7 +239,7 @@ const Rdp = () => {
       });
       setSelectedRows([]);
       setBulkConvertDialogOpen(false);
-      fetchCredentials();
+      fetchRdpCredentials();
     }
   };
 
@@ -275,7 +263,7 @@ const Rdp = () => {
       });
       setSelectedRows([]);
       setBulkDeleteDialogOpen(false);
-      fetchCredentials();
+      fetchRdpCredentials();
     }
   };
 
@@ -402,7 +390,7 @@ rdpuser3,Pass789word,user3@example.com,Guest RDP user`;
       setCsvFile(null);
       setCsvPreview([]);
       setShowPreview(false);
-      fetchCredentials();
+      fetchRdpCredentials();
     }
   };
 
