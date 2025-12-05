@@ -52,9 +52,9 @@ You must add the following secrets to your Supabase Edge Functions:
 
 | Secret Name | Value |
 |-------------|-------|
-| `AZURE_TENANT_ID` | Your Azure AD tenant ID (e.g., `12345678-1234-1234-1234-123456789012`) |
-| `AZURE_CLIENT_ID` | Your app registration client ID |
-| `AZURE_CLIENT_SECRET` | Your app registration client secret |
+| `MICROSOFT_TENANT_ID` | Your Azure AD tenant ID (e.g., `12345678-1234-1234-1234-123456789012`) |
+| `MICROSOFT_CLIENT_ID` | Your app registration client ID |
+| `MICROSOFT_CLIENT_SECRET` | Your app registration client secret |
 | `SUPABASE_URL` | Your Supabase project URL (e.g., `https://your-project-id.supabase.co`) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Your Supabase service role key (from Settings → API) |
 
@@ -62,9 +62,9 @@ You must add the following secrets to your Supabase Edge Functions:
 
 ```bash
 # Set secrets using the Supabase CLI
-supabase secrets set AZURE_TENANT_ID=your-tenant-id
-supabase secrets set AZURE_CLIENT_ID=your-client-id
-supabase secrets set AZURE_CLIENT_SECRET=your-client-secret
+supabase secrets set MICROSOFT_TENANT_ID=your-tenant-id
+supabase secrets set MICROSOFT_CLIENT_ID=your-client-id
+supabase secrets set MICROSOFT_CLIENT_SECRET=your-client-secret
 supabase secrets set SUPABASE_URL=https://your-project-id.supabase.co
 supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
@@ -119,7 +119,7 @@ WHERE synced_from_m365 = TRUE;
 
 ## Troubleshooting
 
-### Error: "Missing environment variables: AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET"
+### Error: "Missing environment variables: MICROSOFT_TENANT_ID, MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET"
 
 **Cause**: The Azure credentials are not configured in Supabase Edge Function secrets.
 
@@ -150,9 +150,9 @@ To find your Service Role Key:
 **Cause**: Invalid client credentials or the secret has expired.
 
 **Solution**:
-1. Verify the `AZURE_CLIENT_ID` and `AZURE_CLIENT_SECRET` are correct
+1. Verify the `MICROSOFT_CLIENT_ID` and `MICROSOFT_CLIENT_SECRET` are correct
 2. If the secret expired, create a new one in Azure Portal
-3. Update the `AZURE_CLIENT_SECRET` in Supabase
+3. Update the `MICROSOFT_CLIENT_SECRET` in Supabase
 
 ### Error: "Access denied. Only admins can sync Microsoft 365 data"
 
@@ -181,9 +181,9 @@ verify_jwt = false  # JWT verification is handled inside the function
 
 | Secret | Description | Where to Find |
 |--------|-------------|---------------|
-| `AZURE_TENANT_ID` | Azure AD Directory ID | Azure Portal → Azure AD → Overview |
-| `AZURE_CLIENT_ID` | App Registration Client ID | Azure Portal → App registrations → Your App → Overview |
-| `AZURE_CLIENT_SECRET` | App Secret Value | Azure Portal → App registrations → Your App → Certificates & secrets |
+| `MICROSOFT_TENANT_ID` | Azure AD Directory ID | Azure Portal → Azure AD → Overview |
+| `MICROSOFT_CLIENT_ID` | App Registration Client ID | Azure Portal → App registrations → Your App → Overview |
+| `MICROSOFT_CLIENT_SECRET` | App Secret Value | Azure Portal → App registrations → Your App → Certificates & secrets |
 | `SUPABASE_URL` | Supabase Project URL | Supabase Dashboard → Settings → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service Role Key | Supabase Dashboard → Settings → API |
 

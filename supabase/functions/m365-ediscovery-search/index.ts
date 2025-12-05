@@ -92,12 +92,12 @@ function createServiceRoleClient() {
  * Get an access token from Azure AD using client credentials flow
  */
 async function getAccessToken(): Promise<string> {
-  const tenantId = Deno.env.get('AZURE_TENANT_ID');
-  const clientId = Deno.env.get('AZURE_CLIENT_ID');
-  const clientSecret = Deno.env.get('AZURE_CLIENT_SECRET');
+  const tenantId = Deno.env.get('MICROSOFT_TENANT_ID');
+  const clientId = Deno.env.get('MICROSOFT_CLIENT_ID');
+  const clientSecret = Deno.env.get('MICROSOFT_CLIENT_SECRET');
 
   if (!tenantId || !clientId || !clientSecret) {
-    throw new Error('Azure credentials not configured. Please set AZURE_TENANT_ID, AZURE_CLIENT_ID, and AZURE_CLIENT_SECRET.');
+    throw new Error('Microsoft credentials not configured. Please set MICROSOFT_TENANT_ID, MICROSOFT_CLIENT_ID, and MICROSOFT_CLIENT_SECRET.');
   }
 
   const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;

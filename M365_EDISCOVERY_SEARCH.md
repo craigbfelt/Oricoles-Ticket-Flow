@@ -40,9 +40,9 @@ Grant the following **Application** permissions (not Delegated):
 Set the following environment variables in your Lovable/Supabase deployment:
 
 ```bash
-AZURE_TENANT_ID=<your-tenant-id>
-AZURE_CLIENT_ID=<your-client-id>
-AZURE_CLIENT_SECRET=<your-client-secret>
+MICROSOFT_TENANT_ID=<your-tenant-id>
+MICROSOFT_CLIENT_ID=<your-client-id>
+MICROSOFT_CLIENT_SECRET=<your-client-secret>
 EDISCOVERY_CASE_DISPLAY_NAME="Oricol eDiscovery Case"  # Optional, defaults to this value
 ```
 

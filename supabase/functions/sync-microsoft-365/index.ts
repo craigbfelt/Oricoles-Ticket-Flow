@@ -129,9 +129,9 @@ interface SyncRequest {
 function checkMicrosoftCredentials(): { configured: boolean; missing: string[] } {
   const missing: string[] = [];
   
-  if (!Deno.env.get('AZURE_TENANT_ID')) missing.push('AZURE_TENANT_ID');
-  if (!Deno.env.get('AZURE_CLIENT_ID')) missing.push('AZURE_CLIENT_ID');
-  if (!Deno.env.get('AZURE_CLIENT_SECRET')) missing.push('AZURE_CLIENT_SECRET');
+  if (!Deno.env.get('MICROSOFT_TENANT_ID')) missing.push('MICROSOFT_TENANT_ID');
+  if (!Deno.env.get('MICROSOFT_CLIENT_ID')) missing.push('MICROSOFT_CLIENT_ID');
+  if (!Deno.env.get('MICROSOFT_CLIENT_SECRET')) missing.push('MICROSOFT_CLIENT_SECRET');
   
   return {
     configured: missing.length === 0,
@@ -144,9 +144,9 @@ function checkMicrosoftCredentials(): { configured: boolean; missing: string[] }
  * Note: Assumes credentials have already been validated by checkMicrosoftCredentials()
  */
 async function getAccessToken(): Promise<string> {
-  const tenantId = Deno.env.get('AZURE_TENANT_ID')!;
-  const clientId = Deno.env.get('AZURE_CLIENT_ID')!;
-  const clientSecret = Deno.env.get('AZURE_CLIENT_SECRET')!;
+  const tenantId = Deno.env.get('MICROSOFT_TENANT_ID')!;
+  const clientId = Deno.env.get('MICROSOFT_CLIENT_ID')!;
+  const clientSecret = Deno.env.get('MICROSOFT_CLIENT_SECRET')!;
 
   const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
   
