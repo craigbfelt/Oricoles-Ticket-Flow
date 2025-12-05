@@ -116,10 +116,23 @@ interface MicrosoftLicense {
 }
 
 interface SyncRequest {
-  action: 'sync_devices' | 'sync_users' | 'sync_licenses' | 'full_sync' | 'test_connection';
+  action: 'sync_devices' | 'sync_users' | 'sync_licenses' | 'full_sync' | 'test_connection' | 'diagnose_connection';
   options?: {
     branch?: string;
   };
+}
+
+interface DiagnosticStep {
+  step: string;
+  status: 'success' | 'error' | 'warning' | 'skipped';
+  message: string;
+  details?: string;
+}
+
+interface DiagnosticResult {
+  success: boolean;
+  steps: DiagnosticStep[];
+  summary: string;
 }
 
 /**
@@ -142,8 +155,9 @@ function checkMicrosoftCredentials(): { configured: boolean; missing: string[] }
 /**
  * Get an access token from Azure AD using client credentials flow
  * Note: Assumes credentials have already been validated by checkMicrosoftCredentials()
+ * Returns detailed error information for troubleshooting
  */
-async function getAccessToken(): Promise<string> {
+async function getAccessTokenWithDetails(): Promise<{ success: boolean; token?: string; error?: string; errorCode?: string; details?: string }> {
   const tenantId = Deno.env.get('MICROSOFT_TENANT_ID')!;
   const clientId = Deno.env.get('MICROSOFT_CLIENT_ID')!;
   const clientSecret = Deno.env.get('MICROSOFT_CLIENT_SECRET')!;
@@ -157,22 +171,335 @@ async function getAccessToken(): Promise<string> {
     grant_type: 'client_credentials',
   });
 
-  const response = await fetch(tokenUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: params.toString(),
-  });
+  try {
+    const response = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Token error:', errorText);
-    throw new Error(`Failed to authenticate with Microsoft: ${response.status}`);
+    const responseText = await response.text();
+    
+    if (!response.ok) {
+      console.error('Token error:', responseText);
+      
+      // Try to parse the error response for more details
+      try {
+        const errorData = JSON.parse(responseText);
+        const errorCode = errorData.error || 'unknown_error';
+        const errorDescription = errorData.error_description || 'No description available';
+        
+        // Provide user-friendly error messages based on common error codes
+        let userMessage = '';
+        if (errorCode === 'invalid_client') {
+          userMessage = 'Invalid client credentials. The client ID or client secret is incorrect.';
+        } else if (errorCode === 'unauthorized_client') {
+          userMessage = 'The application is not authorized. Check API permissions and admin consent.';
+        } else if (errorCode === 'invalid_tenant') {
+          userMessage = 'Invalid tenant ID. Verify the MICROSOFT_TENANT_ID value.';
+        } else if (errorCode === 'invalid_request') {
+          userMessage = 'Invalid request. Check that all credential values are correctly formatted.';
+        } else {
+          userMessage = `Authentication failed: ${errorDescription}`;
+        }
+        
+        return {
+          success: false,
+          error: userMessage,
+          errorCode: errorCode,
+          details: errorDescription,
+        };
+      } catch {
+        return {
+          success: false,
+          error: `Failed to authenticate with Microsoft: HTTP ${response.status}`,
+          details: responseText,
+        };
+      }
+    }
+
+    const data = JSON.parse(responseText);
+    return {
+      success: true,
+      token: data.access_token,
+    };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Network error during authentication';
+    return {
+      success: false,
+      error: errorMessage,
+      details: 'Failed to connect to Microsoft login endpoint. Check network connectivity.',
+    };
   }
+}
 
-  const data = await response.json();
-  return data.access_token;
+/**
+ * Get an access token from Azure AD using client credentials flow
+ * Note: Assumes credentials have already been validated by checkMicrosoftCredentials()
+ */
+async function getAccessToken(): Promise<string> {
+  const result = await getAccessTokenWithDetails();
+  if (!result.success || !result.token) {
+    throw new Error(result.error || 'Failed to authenticate with Microsoft');
+  }
+  return result.token;
+}
+
+/**
+ * Run comprehensive diagnostics on Microsoft 365 connection
+ */
+async function runConnectionDiagnostics(): Promise<DiagnosticResult> {
+  const steps: DiagnosticStep[] = [];
+  let overallSuccess = true;
+  
+  // Step 1: Check environment variables
+  const credCheck = checkMicrosoftCredentials();
+  if (credCheck.configured) {
+    steps.push({
+      step: 'Environment Variables',
+      status: 'success',
+      message: 'All required credentials are configured',
+      details: 'MICROSOFT_TENANT_ID, MICROSOFT_CLIENT_ID, and MICROSOFT_CLIENT_SECRET are all present',
+    });
+  } else {
+    steps.push({
+      step: 'Environment Variables',
+      status: 'error',
+      message: `Missing credentials: ${credCheck.missing.join(', ')}`,
+      details: 'Configure these in Supabase Dashboard → Edge Functions → sync-microsoft-365 → Settings → Secrets',
+    });
+    overallSuccess = false;
+    return {
+      success: false,
+      steps,
+      summary: 'Cannot proceed without credentials. Please configure the missing environment variables.',
+    };
+  }
+  
+  // Step 2: Validate credential format
+  const tenantId = Deno.env.get('MICROSOFT_TENANT_ID')!;
+  const clientId = Deno.env.get('MICROSOFT_CLIENT_ID')!;
+  const clientSecret = Deno.env.get('MICROSOFT_CLIENT_SECRET')!;
+  
+  // Check if tenant ID looks like a valid GUID or domain
+  const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const domainPattern = /^[a-z0-9-]+\.onmicrosoft\.com$/i;
+  
+  if (guidPattern.test(tenantId) || domainPattern.test(tenantId)) {
+    steps.push({
+      step: 'Tenant ID Format',
+      status: 'success',
+      message: 'Tenant ID format is valid',
+      details: `Tenant ID: ${tenantId.substring(0, 8)}...`,
+    });
+  } else {
+    steps.push({
+      step: 'Tenant ID Format',
+      status: 'warning',
+      message: 'Tenant ID format may be incorrect',
+      details: 'Expected a GUID (e.g., 12345678-1234-1234-1234-123456789012) or domain (e.g., contoso.onmicrosoft.com)',
+    });
+  }
+  
+  // Check if client ID looks like a valid GUID
+  if (guidPattern.test(clientId)) {
+    steps.push({
+      step: 'Client ID Format',
+      status: 'success',
+      message: 'Client ID format is valid',
+      details: `Client ID: ${clientId.substring(0, 8)}...`,
+    });
+  } else {
+    steps.push({
+      step: 'Client ID Format',
+      status: 'warning',
+      message: 'Client ID format may be incorrect',
+      details: 'Expected a GUID format (e.g., 12345678-1234-1234-1234-123456789012)',
+    });
+  }
+  
+  // Check client secret is not empty and reasonable length
+  if (clientSecret.length >= 10) {
+    steps.push({
+      step: 'Client Secret Format',
+      status: 'success',
+      message: 'Client secret appears to be set',
+      details: `Secret length: ${clientSecret.length} characters`,
+    });
+  } else {
+    steps.push({
+      step: 'Client Secret Format',
+      status: 'warning',
+      message: 'Client secret seems too short',
+      details: 'Azure AD client secrets are typically longer. Verify you copied the entire secret value.',
+    });
+  }
+  
+  // Step 3: Test token acquisition
+  const tokenResult = await getAccessTokenWithDetails();
+  if (tokenResult.success) {
+    steps.push({
+      step: 'Token Acquisition',
+      status: 'success',
+      message: 'Successfully obtained access token from Microsoft',
+      details: 'OAuth2 client credentials flow completed successfully',
+    });
+  } else {
+    steps.push({
+      step: 'Token Acquisition',
+      status: 'error',
+      message: tokenResult.error || 'Failed to obtain access token',
+      details: tokenResult.details || 'Check the error code and message for troubleshooting',
+    });
+    overallSuccess = false;
+    return {
+      success: false,
+      steps,
+      summary: `Authentication failed: ${tokenResult.error}. This is typically caused by incorrect credentials or missing admin consent.`,
+    };
+  }
+  
+  const accessToken = tokenResult.token!;
+  
+  // Step 4: Test Organization API (basic permission test)
+  try {
+    const orgResponse = await fetch('https://graph.microsoft.com/v1.0/organization', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (orgResponse.ok) {
+      const orgData = await orgResponse.json();
+      const org = orgData.value?.[0];
+      steps.push({
+        step: 'Organization Access',
+        status: 'success',
+        message: `Connected to: ${org?.displayName || 'Unknown Organization'}`,
+        details: org?.id ? `Organization ID: ${org.id}` : 'Organization data retrieved successfully',
+      });
+    } else {
+      const errorText = await orgResponse.text();
+      steps.push({
+        step: 'Organization Access',
+        status: 'error',
+        message: `Failed to access organization info: HTTP ${orgResponse.status}`,
+        details: 'This may indicate missing Organization.Read.All permission',
+      });
+      overallSuccess = false;
+    }
+  } catch (err) {
+    steps.push({
+      step: 'Organization Access',
+      status: 'error',
+      message: 'Network error accessing organization endpoint',
+      details: err instanceof Error ? err.message : 'Unknown error',
+    });
+    overallSuccess = false;
+  }
+  
+  // Step 5: Test Users API (User.Read.All permission)
+  try {
+    const usersResponse = await fetch('https://graph.microsoft.com/v1.0/users?$top=1', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (usersResponse.ok) {
+      steps.push({
+        step: 'Users API Permission',
+        status: 'success',
+        message: 'User.Read.All permission is working',
+        details: 'Can read user data from Azure AD',
+      });
+    } else if (usersResponse.status === 403) {
+      steps.push({
+        step: 'Users API Permission',
+        status: 'warning',
+        message: 'User.Read.All permission not granted',
+        details: 'Add User.Read.All application permission and grant admin consent',
+      });
+    } else {
+      steps.push({
+        step: 'Users API Permission',
+        status: 'warning',
+        message: `Users API returned HTTP ${usersResponse.status}`,
+        details: 'May need to grant User.Read.All permission',
+      });
+    }
+  } catch (err) {
+    steps.push({
+      step: 'Users API Permission',
+      status: 'warning',
+      message: 'Could not test Users API',
+      details: err instanceof Error ? err.message : 'Unknown error',
+    });
+  }
+  
+  // Step 6: Test Devices API (DeviceManagementManagedDevices.Read.All permission)
+  try {
+    const devicesResponse = await fetch('https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$top=1', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (devicesResponse.ok) {
+      steps.push({
+        step: 'Intune Devices Permission',
+        status: 'success',
+        message: 'DeviceManagementManagedDevices.Read.All permission is working',
+        details: 'Can read device data from Intune',
+      });
+    } else if (devicesResponse.status === 403) {
+      steps.push({
+        step: 'Intune Devices Permission',
+        status: 'warning',
+        message: 'DeviceManagementManagedDevices.Read.All permission not granted',
+        details: 'Add this application permission and grant admin consent to enable device sync',
+      });
+    } else {
+      steps.push({
+        step: 'Intune Devices Permission',
+        status: 'warning',
+        message: `Devices API returned HTTP ${devicesResponse.status}`,
+        details: 'May need to grant DeviceManagementManagedDevices.Read.All permission',
+      });
+    }
+  } catch (err) {
+    steps.push({
+      step: 'Intune Devices Permission',
+      status: 'warning',
+      message: 'Could not test Devices API',
+      details: err instanceof Error ? err.message : 'Unknown error',
+    });
+  }
+  
+  // Generate summary
+  const errorCount = steps.filter(s => s.status === 'error').length;
+  const warningCount = steps.filter(s => s.status === 'warning').length;
+  const successCount = steps.filter(s => s.status === 'success').length;
+  
+  let summary = '';
+  if (overallSuccess && warningCount === 0) {
+    summary = 'All diagnostics passed! Microsoft 365 integration is fully configured.';
+  } else if (overallSuccess) {
+    summary = `Connection successful with ${warningCount} warning(s). Some features may have limited functionality.`;
+  } else {
+    summary = `Diagnostics failed with ${errorCount} error(s). Please address the issues above.`;
+  }
+  
+  return {
+    success: overallSuccess,
+    steps,
+    summary,
+  };
 }
 
 /**
@@ -445,7 +772,19 @@ Deno.serve(async (req) => {
 
     if (!action) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Action is required. Valid actions: sync_devices, sync_users, sync_licenses, full_sync, test_connection' }),
+        JSON.stringify({ success: false, error: 'Action is required. Valid actions: sync_devices, sync_users, sync_licenses, full_sync, test_connection, diagnose_connection' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle diagnose_connection action early (doesn't require token first)
+    if (action === 'diagnose_connection') {
+      const diagnostics = await runConnectionDiagnostics();
+      return new Response(
+        JSON.stringify({ 
+          success: diagnostics.success,
+          diagnostics,
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
