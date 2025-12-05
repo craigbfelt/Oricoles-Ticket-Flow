@@ -93,6 +93,18 @@ const Vpn = () => {
 
   const fetchCredentials = async () => {
     setLoading(true);
+    
+    // Try using the secure decryption function first (for encrypted credentials)
+    const { data: decryptedData, error: rpcError } = await supabase
+      .rpc('get_decrypted_credentials', { p_service_type: 'VPN' });
+    
+    if (!rpcError && decryptedData) {
+      setCredentials((decryptedData || []) as VpnCredential[]);
+      setLoading(false);
+      return;
+    }
+    
+    // Fallback to direct table query (for backward compatibility)
     const { data, error } = await supabase
       .from("vpn_rdp_credentials")
       .select("*")
