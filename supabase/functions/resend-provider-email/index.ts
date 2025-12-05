@@ -109,14 +109,15 @@ const handler = async (req: Request): Promise<Response> => {
           },
         }
       );
-    } catch (sendError: any) {
+    } catch (sendError: unknown) {
       console.error("Failed to resend email:", sendError);
       
       // Update log with new error
+      const errorMessage = sendError instanceof Error ? sendError.message : String(sendError);
       await supabase
         .from("provider_emails")
         .update({
-          error_message: sendError.message || sendError.toString(),
+          error_message: errorMessage,
           resend_count: (emailLog.resend_count || 0) + 1
         })
         .eq("id", emailLogId);
