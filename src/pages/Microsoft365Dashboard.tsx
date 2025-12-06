@@ -540,7 +540,7 @@ const Microsoft365Dashboard = () => {
         )}
 
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="flex flex-wrap gap-1">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="devices">Intune Devices</TabsTrigger>
@@ -1064,12 +1064,17 @@ const Microsoft365Dashboard = () => {
                         <h3 className="font-semibold mb-3">Control Scores</h3>
                         <div className="space-y-2 max-h-96 overflow-y-auto">
                           {secureScore.controlScores.map((control, index) => (
-                            <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                              <div className="flex-1">
+                            <div key={index} className="flex items-center justify-between p-3 border rounded-lg group">
+                              <div className="flex-1 min-w-0">
                                 <p className="font-medium text-sm">{control.controlName}</p>
-                                <p className="text-xs text-muted-foreground line-clamp-1">{control.description}</p>
+                                <p 
+                                  className="text-xs text-muted-foreground line-clamp-1 group-hover:line-clamp-none transition-all cursor-help"
+                                  title={control.description}
+                                >
+                                  {control.description}
+                                </p>
                               </div>
-                              <Badge variant={control.score > 0 ? "default" : "secondary"}>
+                              <Badge variant={control.score > 0 ? "default" : "secondary"} className="ml-2 shrink-0">
                                 {control.score.toFixed(1)} pts
                               </Badge>
                             </div>

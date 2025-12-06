@@ -626,6 +626,9 @@ async function fetchLicenses(accessToken: string): Promise<MicrosoftLicense[]> {
   return data.value || [];
 }
 
+// Maximum number of control scores to return (for UI performance)
+const MAX_CONTROL_SCORES = 20;
+
 /**
  * Fetch Microsoft Secure Score
  */
@@ -664,7 +667,7 @@ async function fetchSecureScore(accessToken: string): Promise<{
       currentScore: latestScore.currentScore || 0,
       maxScore: latestScore.maxScore || 0,
       averageComparativeScore: latestScore.averageComparativeScores?.find((s: { basis: string }) => s.basis === 'AllTenants')?.averageScore || 0,
-      controlScores: (latestScore.controlScores || []).slice(0, 20).map((cs: { controlName: string; score: number; description: string }) => ({
+      controlScores: (latestScore.controlScores || []).slice(0, MAX_CONTROL_SCORES).map((cs: { controlName: string; score: number; description: string }) => ({
         controlName: cs.controlName,
         score: cs.score,
         description: cs.description || '',
@@ -790,7 +793,9 @@ async function fetchEntraGroups(accessToken: string): Promise<Array<{
       description: group.description || '',
       groupTypes: group.groupTypes || [],
       membershipRule: group.membershipRule,
-      memberCount: 0, // Would need separate API call per group to get member count
+      // TODO: Member count requires separate API call per group (GET /groups/{id}/members/$count)
+      // Not implemented to avoid N+1 API calls which could hit rate limits
+      memberCount: 0,
     }));
   } catch (err) {
     console.error('Error fetching Entra Groups:', err);
