@@ -256,6 +256,10 @@ const Microsoft365Dashboard = () => {
       Promise.all([
         fetchDirectoryUsers(),
         fetchM365Devices(),
+        fetchSecureScoreData(),
+        fetchCompliancePoliciesData(),
+        fetchConditionalAccessPoliciesData(),
+        fetchEntraGroupsData(),
       ]).finally(() => setIsLoadingData(false));
     }
   }, [isAdmin]);
@@ -848,7 +852,11 @@ const Microsoft365Dashboard = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                {entraGroups.length > 0 ? (
+                {isLoadingData ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : entraGroups.length > 0 ? (
                   <DataTable
                     data={entraGroups}
                     columns={[
@@ -880,7 +888,7 @@ const Microsoft365Dashboard = () => {
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <Users2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Click "Refresh Groups" to load Entra ID groups.</p>
+                    <p>No groups found. Click "Refresh Groups" to reload.</p>
                     <p className="text-xs mt-2">Requires Group.Read.All permission</p>
                   </div>
                 )}
@@ -917,7 +925,11 @@ const Microsoft365Dashboard = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {compliancePolicies.length > 0 ? (
+                  {isLoadingData ? (
+                    <div className="flex items-center justify-center py-6">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  ) : compliancePolicies.length > 0 ? (
                     <div className="space-y-2">
                       {compliancePolicies.map((policy) => (
                         <div key={policy.id} className="flex items-center justify-between p-3 border rounded-lg">
@@ -932,7 +944,7 @@ const Microsoft365Dashboard = () => {
                   ) : (
                     <div className="text-center py-6 text-muted-foreground">
                       <FileCheck className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Click Refresh to load policies</p>
+                      <p className="text-sm">No compliance policies found</p>
                       <p className="text-xs mt-1">Requires DeviceManagementConfiguration.Read.All</p>
                     </div>
                   )}
@@ -966,7 +978,11 @@ const Microsoft365Dashboard = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {conditionalAccessPolicies.length > 0 ? (
+                  {isLoadingData ? (
+                    <div className="flex items-center justify-center py-6">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  ) : conditionalAccessPolicies.length > 0 ? (
                     <div className="space-y-2">
                       {conditionalAccessPolicies.map((policy) => (
                         <div key={policy.id} className="flex items-center justify-between p-3 border rounded-lg">
@@ -985,7 +1001,7 @@ const Microsoft365Dashboard = () => {
                   ) : (
                     <div className="text-center py-6 text-muted-foreground">
                       <Lock className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Click Refresh to load policies</p>
+                      <p className="text-sm">No conditional access policies found</p>
                       <p className="text-xs mt-1">Requires Policy.Read.All</p>
                     </div>
                   )}
@@ -1021,7 +1037,11 @@ const Microsoft365Dashboard = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                {secureScore ? (
+                {isLoadingData ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : secureScore ? (
                   <div className="space-y-6">
                     <div className="grid gap-4 md:grid-cols-3">
                       <Card>
@@ -1086,7 +1106,7 @@ const Microsoft365Dashboard = () => {
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <Shield className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Click "Refresh Score" to load your Microsoft Secure Score.</p>
+                    <p>No secure score data available.</p>
                     <p className="text-xs mt-2">Requires SecurityEvents.Read.All permission</p>
                   </div>
                 )}
