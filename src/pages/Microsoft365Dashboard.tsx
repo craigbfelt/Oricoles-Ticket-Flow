@@ -34,18 +34,32 @@ import {
 } from "@/components/ui/alert";
 
 /**
+ * Check if an error indicates an edge function deployment issue
+ * This happens when the function can't be reached due to CORS or network issues
+ */
+function isEdgeFunctionDeploymentError(error: unknown): boolean {
+  if (!error) return false;
+  const err = error as { name?: string; message?: string };
+  const errorName = err?.name || '';
+  const errorMessage = err?.message || '';
+  
+  // FunctionsFetchError is the specific error type thrown by Supabase client
+  // when it can't reach the edge function (CORS, not deployed, etc.)
+  return errorName === 'FunctionsFetchError' || 
+         errorMessage.includes('Failed to send a request to the Edge Function');
+}
+
+/**
  * Helper to get a user-friendly error message from an edge function error
  */
 function getEdgeFunctionErrorMessage(error: unknown): string {
   if (!error) return 'An unknown error occurred';
   
   const err = error as { name?: string; message?: string };
-  const errorName = err?.name || '';
   const errorMessage = err?.message || '';
   
-  // Check for FunctionsFetchError (CORS or network issue - function not deployed)
-  if (errorName === 'FunctionsFetchError' || errorName.includes('Fetch') || 
-      errorMessage.includes('Failed to send a request')) {
+  // Check for deployment/network issues
+  if (isEdgeFunctionDeploymentError(error)) {
     return 'Unable to reach the Microsoft 365 sync function. The Edge Function may not be deployed yet. ' +
            'Please run the "Deploy All Edge Functions" workflow from GitHub Actions, or check the Supabase Dashboard.';
   }
