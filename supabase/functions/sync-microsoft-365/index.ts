@@ -113,6 +113,12 @@ interface MicrosoftLicense {
   skuId: string;
   skuPartNumber: string;
   servicePlans?: Array<{ servicePlanName: string }>;
+  prepaidUnits?: {
+    enabled?: number;
+    suspended?: number;
+    warning?: number;
+  };
+  consumedUnits?: number;
 }
 
 interface SyncRequest {
@@ -826,15 +832,25 @@ function mapDeviceType(os: string | undefined): string {
 }
 
 /**
+ * Result type for sync operations that includes error messages
+ */
+interface SyncResult {
+  synced: number;
+  errors: number;
+  errorMessages: string[];
+}
+
+/**
  * Sync devices from Microsoft Intune to hardware_inventory table
  */
 async function syncDevicesToDatabase(
   supabase: ReturnType<typeof createServiceRoleClient>,
   devices: MicrosoftDevice[],
   branch?: string
-): Promise<{ synced: number; errors: number }> {
+): Promise<SyncResult> {
   let synced = 0;
   let errors = 0;
+  const errorMessages: string[] = [];
 
   for (const device of devices) {
     try {
@@ -868,17 +884,20 @@ async function syncDevicesToDatabase(
 
       if (error) {
         console.error(`Error syncing device ${device.deviceName}:`, error);
+        errorMessages.push(`Device ${device.deviceName}: ${error.message}`);
         errors++;
       } else {
         synced++;
       }
     } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error';
       console.error(`Error processing device ${device.deviceName}:`, err);
+      errorMessages.push(`Device ${device.deviceName}: ${errorMsg}`);
       errors++;
     }
   }
 
-  return { synced, errors };
+  return { synced, errors, errorMessages };
 }
 
 /**
@@ -887,9 +906,10 @@ async function syncDevicesToDatabase(
 async function syncUsersToDatabase(
   supabase: ReturnType<typeof createServiceRoleClient>,
   users: MicrosoftUser[]
-): Promise<{ synced: number; errors: number }> {
+): Promise<SyncResult> {
   let synced = 0;
   let errors = 0;
+  const errorMessages: string[] = [];
 
   for (const user of users) {
     try {
@@ -928,17 +948,75 @@ async function syncUsersToDatabase(
 
       if (error) {
         console.error(`Error syncing user ${user.displayName}:`, error);
+        errorMessages.push(`User ${user.displayName}: ${error.message}`);
         errors++;
       } else {
         synced++;
       }
     } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error';
       console.error(`Error processing user ${user.displayName}:`, err);
+      errorMessages.push(`User ${user.displayName}: ${errorMsg}`);
       errors++;
     }
   }
 
-  return { synced, errors };
+  return { synced, errors, errorMessages };
+}
+
+/**
+ * Sync licenses from Microsoft 365 to licenses table
+ */
+async function syncLicensesToDatabase(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  licenses: MicrosoftLicense[]
+): Promise<SyncResult> {
+  let synced = 0;
+  let errors = 0;
+  const errorMessages: string[] = [];
+
+  for (const license of licenses) {
+    try {
+      // Extract total and used seats from Microsoft Graph response
+      const totalSeats = license.prepaidUnits?.enabled ?? 0;
+      const usedSeats = license.consumedUnits ?? 0;
+      
+      const licenseData = {
+        license_name: license.skuPartNumber,
+        license_type: 'Microsoft 365',
+        vendor: 'Microsoft',
+        m365_sku_id: license.skuId,
+        m365_sku_part_number: license.skuPartNumber,
+        synced_from_m365: true,
+        total_seats: totalSeats,
+        used_seats: usedSeats,
+        status: 'active',
+      };
+
+      // Upsert based on m365_sku_id
+      const { error } = await supabase
+        .from('licenses')
+        .upsert(licenseData, { 
+          onConflict: 'm365_sku_id',
+          ignoreDuplicates: false 
+        });
+
+      if (error) {
+        console.error(`Error syncing license ${license.skuPartNumber}:`, error);
+        errorMessages.push(`License ${license.skuPartNumber}: ${error.message}`);
+        errors++;
+      } else {
+        synced++;
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+      console.error(`Error processing license ${license.skuPartNumber}:`, err);
+      errorMessages.push(`License ${license.skuPartNumber}: ${errorMsg}`);
+      errors++;
+    }
+  }
+
+  return { synced, errors, errorMessages };
 }
 
 Deno.serve(async (req) => {
@@ -1153,22 +1231,30 @@ Deno.serve(async (req) => {
 
     // Handle sync actions
     const results: {
-      devices?: { synced: number; errors: number; total: number };
-      users?: { synced: number; errors: number; total: number };
-      licenses?: { total: number };
+      devices?: number;
+      users?: number;
+      licenses?: number;
+      errors?: string[];
     } = {};
+    const allErrors: string[] = [];
 
     if (action === 'sync_devices' || action === 'full_sync') {
       try {
         const devices = await fetchDevices(accessToken);
         const syncResult = await syncDevicesToDatabase(supabase, devices, options?.branch);
-        results.devices = { ...syncResult, total: devices.length };
+        results.devices = syncResult.synced;
+        if (syncResult.errorMessages.length > 0) {
+          allErrors.push(...syncResult.errorMessages);
+        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to sync devices';
-        return new Response(
-          JSON.stringify({ success: false, error: errorMessage }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        allErrors.push(`Device sync failed: ${errorMessage}`);
+        if (action === 'sync_devices') {
+          return new Response(
+            JSON.stringify({ success: false, error: errorMessage }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       }
     }
 
@@ -1176,10 +1262,14 @@ Deno.serve(async (req) => {
       try {
         const users = await fetchUsers(accessToken);
         const syncResult = await syncUsersToDatabase(supabase, users);
-        results.users = { ...syncResult, total: users.length };
+        results.users = syncResult.synced;
+        if (syncResult.errorMessages.length > 0) {
+          allErrors.push(...syncResult.errorMessages);
+        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to sync users';
         console.error('User sync error:', errorMessage);
+        allErrors.push(`User sync failed: ${errorMessage}`);
         // Don't fail the entire sync for user errors in full_sync
         if (action === 'sync_users') {
           return new Response(
@@ -1193,11 +1283,15 @@ Deno.serve(async (req) => {
     if (action === 'sync_licenses' || action === 'full_sync') {
       try {
         const licenses = await fetchLicenses(accessToken);
-        results.licenses = { total: licenses.length };
-        // Note: License sync to a separate table can be implemented here if needed
+        const syncResult = await syncLicensesToDatabase(supabase, licenses);
+        results.licenses = syncResult.synced;
+        if (syncResult.errorMessages.length > 0) {
+          allErrors.push(...syncResult.errorMessages);
+        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to sync licenses';
         console.error('License sync error:', errorMessage);
+        allErrors.push(`License sync failed: ${errorMessage}`);
         // Don't fail the entire sync for license errors in full_sync
         if (action === 'sync_licenses') {
           return new Response(
@@ -1206,6 +1300,11 @@ Deno.serve(async (req) => {
           );
         }
       }
+    }
+
+    // Include errors in results if any occurred
+    if (allErrors.length > 0) {
+      results.errors = allErrors;
     }
 
     return new Response(
