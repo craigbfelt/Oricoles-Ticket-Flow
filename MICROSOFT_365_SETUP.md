@@ -117,6 +117,20 @@ WHERE synced_from_m365 = TRUE;
 3. Click **Test Connection**
 4. If successful, you should see your organization name
 
+## Step 6: View Your Data
+
+Once connected, the Microsoft 365 Dashboard will automatically load data from your tenant:
+
+- **Overview**: Summary of devices, users, licenses, and last sync time
+- **Users**: Azure AD users synced to the directory
+- **Intune Devices**: Managed devices from Microsoft Endpoint Manager
+- **Entra ID**: Security and M365 groups from Entra ID (Azure AD)
+- **Policies**: Compliance policies and Conditional Access policies
+- **Secure Score**: Your organization's Microsoft Secure Score and control scores
+- **eDiscovery**: Content search functionality for compliance scenarios
+
+Data loads automatically when you navigate to the dashboard. You can also click the "Refresh" buttons on each tab to reload specific data.
+
 ## Troubleshooting
 
 ### Error: "Missing environment variables: MICROSOFT_TENANT_ID, MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET"
