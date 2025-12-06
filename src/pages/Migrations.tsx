@@ -13,6 +13,31 @@ import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
+/**
+ * Check if an error is a FunctionsFetchError (CORS or network issue)
+ * indicating the edge function is not deployed or unreachable
+ */
+function isEdgeFunctionDeploymentError(error: unknown): boolean {
+  if (!error) return false;
+  const err = error as { name?: string; message?: string };
+  const errorName = err?.name || '';
+  const errorMessage = err?.message || '';
+  
+  // FunctionsFetchError is thrown when the edge function can't be reached
+  // This typically means the function is not deployed
+  return errorName === 'FunctionsFetchError' || 
+         errorMessage.includes('Failed to send a request to the Edge Function');
+}
+
+/**
+ * Get a user-friendly message for edge function deployment errors
+ */
+function getEdgeFunctionDeploymentErrorMessage(): string {
+  return 'Unable to reach the Edge Function. The function may not be deployed yet. ' +
+    'Please run the "Deploy All Edge Functions" workflow from GitHub Actions, or manually ' +
+    'record the migration in the schema_migrations table using the Backend SQL Editor.';
+}
+
 // Import all SQL migration files at build time using Vite's glob import with raw content
 const migrationModules = import.meta.glob<string>(
   '../../supabase/migrations/*.sql',
@@ -185,10 +210,15 @@ const Migrations = () => {
         body: { migrations: [normalizeMigrationVersion(migrationVersion)] }
       });
 
-      if (error) throw error;
+      if (error) {
+        if (isEdgeFunctionDeploymentError(error)) {
+          throw new Error(getEdgeFunctionDeploymentErrorMessage());
+        }
+        throw error;
+      }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to mark migration as applied');
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to mark migration as applied');
       }
 
       toast({
@@ -198,11 +228,12 @@ const Migrations = () => {
 
       // Refresh the migration status
       await fetchMigrationStatus();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to mark migration as applied';
       console.error("Error marking migration as applied:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to mark migration as applied",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -228,10 +259,15 @@ const Migrations = () => {
         body: { migrations: migrationsToMark }
       });
 
-      if (error) throw error;
+      if (error) {
+        if (isEdgeFunctionDeploymentError(error)) {
+          throw new Error(getEdgeFunctionDeploymentErrorMessage());
+        }
+        throw error;
+      }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to mark migrations as applied');
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to mark migrations as applied');
       }
 
       toast({
@@ -242,11 +278,12 @@ const Migrations = () => {
       // Clear selection and refresh
       setSelectedMigrations(new Set());
       await fetchMigrationStatus();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to mark migrations as applied';
       console.error("Error marking migrations as applied:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to mark migrations as applied",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
