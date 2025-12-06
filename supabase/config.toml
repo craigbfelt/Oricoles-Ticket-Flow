@@ -47,3 +47,6 @@ verify_jwt = false  # NOTE: JWT verification is handled inside the function to a
 
 [functions.mark-migrations-applied]
 verify_jwt = false  # NOTE: JWT verification is handled inside the function to allow CORS preflight requests
+
+[functions.sync-microsoft-365-debug]
+verify_jwt = false  # NOTE: Debug function - no JWT required for diagnostic token checks
