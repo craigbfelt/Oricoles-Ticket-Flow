@@ -116,7 +116,7 @@ interface MicrosoftLicense {
 }
 
 interface SyncRequest {
-  action: 'sync_devices' | 'sync_users' | 'sync_licenses' | 'full_sync' | 'test_connection' | 'diagnose_connection';
+  action: 'sync_devices' | 'sync_users' | 'sync_licenses' | 'full_sync' | 'test_connection' | 'diagnose_connection' | 'get_secure_score' | 'get_compliance_policies' | 'get_conditional_access_policies' | 'get_entra_groups';
   options?: {
     branch?: string;
   };
@@ -627,6 +627,178 @@ async function fetchLicenses(accessToken: string): Promise<MicrosoftLicense[]> {
 }
 
 /**
+ * Fetch Microsoft Secure Score
+ */
+async function fetchSecureScore(accessToken: string): Promise<{
+  currentScore: number;
+  maxScore: number;
+  averageComparativeScore: number;
+  controlScores: Array<{
+    controlName: string;
+    score: number;
+    description: string;
+  }>;
+} | null> {
+  try {
+    const response = await fetch('https://graph.microsoft.com/v1.0/security/secureScores?$top=1', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 403) {
+        console.error('Access denied for Secure Score. Ensure the app has SecurityEvents.Read.All permission.');
+        return null;
+      }
+      return null;
+    }
+
+    const data = await response.json();
+    const latestScore = data.value?.[0];
+    
+    if (!latestScore) return null;
+
+    return {
+      currentScore: latestScore.currentScore || 0,
+      maxScore: latestScore.maxScore || 0,
+      averageComparativeScore: latestScore.averageComparativeScores?.find((s: { basis: string }) => s.basis === 'AllTenants')?.averageScore || 0,
+      controlScores: (latestScore.controlScores || []).slice(0, 20).map((cs: { controlName: string; score: number; description: string }) => ({
+        controlName: cs.controlName,
+        score: cs.score,
+        description: cs.description || '',
+      })),
+    };
+  } catch (err) {
+    console.error('Error fetching Secure Score:', err);
+    return null;
+  }
+}
+
+/**
+ * Fetch Intune Compliance Policies
+ */
+async function fetchCompliancePolicies(accessToken: string): Promise<Array<{
+  id: string;
+  displayName: string;
+  description: string;
+  lastModifiedDateTime: string;
+  assignments: number;
+}>> {
+  try {
+    const response = await fetch('https://graph.microsoft.com/v1.0/deviceManagement/deviceCompliancePolicies?$expand=assignments', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 403) {
+        console.error('Access denied for Compliance Policies. Ensure the app has DeviceManagementConfiguration.Read.All permission.');
+        return [];
+      }
+      return [];
+    }
+
+    const data = await response.json();
+    return (data.value || []).map((policy: { id: string; displayName: string; description: string; lastModifiedDateTime: string; assignments?: unknown[] }) => ({
+      id: policy.id,
+      displayName: policy.displayName || 'Unnamed Policy',
+      description: policy.description || '',
+      lastModifiedDateTime: policy.lastModifiedDateTime,
+      assignments: policy.assignments?.length || 0,
+    }));
+  } catch (err) {
+    console.error('Error fetching Compliance Policies:', err);
+    return [];
+  }
+}
+
+/**
+ * Fetch Conditional Access Policies from Entra ID
+ */
+async function fetchConditionalAccessPolicies(accessToken: string): Promise<Array<{
+  id: string;
+  displayName: string;
+  state: string;
+  createdDateTime: string;
+  modifiedDateTime: string;
+}>> {
+  try {
+    const response = await fetch('https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 403) {
+        console.error('Access denied for Conditional Access Policies. Ensure the app has Policy.Read.All permission.');
+        return [];
+      }
+      return [];
+    }
+
+    const data = await response.json();
+    return (data.value || []).map((policy: { id: string; displayName: string; state: string; createdDateTime: string; modifiedDateTime: string }) => ({
+      id: policy.id,
+      displayName: policy.displayName || 'Unnamed Policy',
+      state: policy.state || 'unknown',
+      createdDateTime: policy.createdDateTime,
+      modifiedDateTime: policy.modifiedDateTime,
+    }));
+  } catch (err) {
+    console.error('Error fetching Conditional Access Policies:', err);
+    return [];
+  }
+}
+
+/**
+ * Fetch Entra ID Groups
+ */
+async function fetchEntraGroups(accessToken: string): Promise<Array<{
+  id: string;
+  displayName: string;
+  description: string;
+  groupTypes: string[];
+  membershipRule: string | null;
+  memberCount: number;
+}>> {
+  try {
+    const response = await fetch('https://graph.microsoft.com/v1.0/groups?$select=id,displayName,description,groupTypes,membershipRule&$top=100', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 403) {
+        console.error('Access denied for Groups. Ensure the app has Group.Read.All permission.');
+        return [];
+      }
+      return [];
+    }
+
+    const data = await response.json();
+    return (data.value || []).map((group: { id: string; displayName: string; description: string; groupTypes: string[]; membershipRule: string | null }) => ({
+      id: group.id,
+      displayName: group.displayName || 'Unnamed Group',
+      description: group.description || '',
+      groupTypes: group.groupTypes || [],
+      membershipRule: group.membershipRule,
+      memberCount: 0, // Would need separate API call per group to get member count
+    }));
+  } catch (err) {
+    console.error('Error fetching Entra Groups:', err);
+    return [];
+  }
+}
+
+/**
  * Convert bytes to GB, rounded to nearest integer
  */
 function bytesToGB(bytes: number | undefined): number | null {
@@ -716,6 +888,18 @@ async function syncUsersToDatabase(
 
   for (const user of users) {
     try {
+      // Check if user already exists to preserve deleted_manually flag
+      const { data: existingUser } = await supabase
+        .from('directory_users')
+        .select('id, deleted_manually')
+        .eq('aad_id', user.id)
+        .maybeSingle();
+
+      // Skip users that were manually deleted by admin
+      if (existingUser?.deleted_manually) {
+        continue;
+      }
+
       const userData = {
         aad_id: user.id,
         display_name: user.displayName || null,
@@ -724,8 +908,9 @@ async function syncUsersToDatabase(
         job_title: user.jobTitle || null,
         department: user.department || null,
         account_enabled: user.accountEnabled ?? null,
-        deleted_manually: false,
         updated_at: new Date().toISOString(),
+        // Only set deleted_manually to false for new users
+        ...(existingUser ? {} : { deleted_manually: false }),
       };
 
       // Upsert based on aad_id (Azure AD user ID)
@@ -837,7 +1022,7 @@ Deno.serve(async (req) => {
 
     if (!action) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Action is required. Valid actions: sync_devices, sync_users, sync_licenses, full_sync, test_connection, diagnose_connection' }),
+        JSON.stringify({ success: false, error: 'Action is required. Valid actions: sync_devices, sync_users, sync_licenses, full_sync, test_connection, diagnose_connection, get_secure_score, get_compliance_policies, get_conditional_access_policies, get_entra_groups' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -908,6 +1093,54 @@ Deno.serve(async (req) => {
             displayName: org?.displayName,
             id: org?.id,
           }
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle get_secure_score action
+    if (action === 'get_secure_score') {
+      const secureScore = await fetchSecureScore(accessToken);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          data: secureScore,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle get_compliance_policies action
+    if (action === 'get_compliance_policies') {
+      const policies = await fetchCompliancePolicies(accessToken);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          data: policies,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle get_conditional_access_policies action
+    if (action === 'get_conditional_access_policies') {
+      const policies = await fetchConditionalAccessPolicies(accessToken);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          data: policies,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle get_entra_groups action
+    if (action === 'get_entra_groups') {
+      const groups = await fetchEntraGroups(accessToken);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          data: groups,
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
