@@ -113,6 +113,12 @@ interface MicrosoftLicense {
   skuId: string;
   skuPartNumber: string;
   servicePlans?: Array<{ servicePlanName: string }>;
+  prepaidUnits?: {
+    enabled?: number;
+    suspended?: number;
+    warning?: number;
+  };
+  consumedUnits?: number;
 }
 
 interface SyncRequest {
@@ -971,6 +977,10 @@ async function syncLicensesToDatabase(
 
   for (const license of licenses) {
     try {
+      // Extract total and used seats from Microsoft Graph response
+      const totalSeats = license.prepaidUnits?.enabled ?? 0;
+      const usedSeats = license.consumedUnits ?? 0;
+      
       const licenseData = {
         license_name: license.skuPartNumber,
         license_type: 'Microsoft 365',
@@ -978,8 +988,8 @@ async function syncLicensesToDatabase(
         m365_sku_id: license.skuId,
         m365_sku_part_number: license.skuPartNumber,
         synced_from_m365: true,
-        total_seats: 0, // Will be updated if we have consumption data
-        used_seats: 0,
+        total_seats: totalSeats,
+        used_seats: usedSeats,
         status: 'active',
       };
 
@@ -1259,7 +1269,7 @@ Deno.serve(async (req) => {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to sync users';
         console.error('User sync error:', errorMessage);
-        allErrors.push(`Failed to fetch users from Microsoft Graph`);
+        allErrors.push(`User sync failed: ${errorMessage}`);
         // Don't fail the entire sync for user errors in full_sync
         if (action === 'sync_users') {
           return new Response(
