@@ -29,7 +29,7 @@ import {
 
 interface SyncResult {
   devices?: { synced: number; errors: number; total: number };
-  users?: { total: number };
+  users?: { synced: number; errors: number; total: number };
   licenses?: { total: number };
 }
 
@@ -401,7 +401,7 @@ const Microsoft365Dashboard = () => {
                     {syncResult?.users?.total || '-'}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {syncResult?.users ? 'From Azure AD' : 'Not synced'}
+                    {syncResult?.users ? `${syncResult.users.synced} synced to directory` : 'Not synced'}
                   </p>
                 </CardContent>
               </Card>
@@ -466,7 +466,8 @@ const Microsoft365Dashboard = () => {
                         if (error || !data?.success) {
                           toast.error(data?.error || 'User sync failed');
                         } else {
-                          toast.success(`Found ${data.results?.users?.total || 0} users`);
+                          const users = data.results?.users;
+                          toast.success(`Synced ${users?.synced || 0} of ${users?.total || 0} users to directory`);
                         }
                       });
                     }}

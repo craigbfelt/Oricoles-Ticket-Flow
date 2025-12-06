@@ -704,6 +704,53 @@ async function syncDevicesToDatabase(
   return { synced, errors };
 }
 
+/**
+ * Sync users from Azure AD to directory_users table
+ */
+async function syncUsersToDatabase(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  users: MicrosoftUser[]
+): Promise<{ synced: number; errors: number }> {
+  let synced = 0;
+  let errors = 0;
+
+  for (const user of users) {
+    try {
+      const userData = {
+        aad_id: user.id,
+        display_name: user.displayName || null,
+        email: user.mail || null,
+        user_principal_name: user.userPrincipalName || null,
+        job_title: user.jobTitle || null,
+        department: user.department || null,
+        account_enabled: user.accountEnabled ?? null,
+        deleted_manually: false,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Upsert based on aad_id (Azure AD user ID)
+      const { error } = await supabase
+        .from('directory_users')
+        .upsert(userData, { 
+          onConflict: 'aad_id',
+          ignoreDuplicates: false 
+        });
+
+      if (error) {
+        console.error(`Error syncing user ${user.displayName}:`, error);
+        errors++;
+      } else {
+        synced++;
+      }
+    } catch (err) {
+      console.error(`Error processing user ${user.displayName}:`, err);
+      errors++;
+    }
+  }
+
+  return { synced, errors };
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -869,7 +916,7 @@ Deno.serve(async (req) => {
     // Handle sync actions
     const results: {
       devices?: { synced: number; errors: number; total: number };
-      users?: { total: number };
+      users?: { synced: number; errors: number; total: number };
       licenses?: { total: number };
     } = {};
 
@@ -890,8 +937,8 @@ Deno.serve(async (req) => {
     if (action === 'sync_users' || action === 'full_sync') {
       try {
         const users = await fetchUsers(accessToken);
-        results.users = { total: users.length };
-        // Note: User sync to a separate table can be implemented here if needed
+        const syncResult = await syncUsersToDatabase(supabase, users);
+        results.users = { ...syncResult, total: users.length };
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to sync users';
         console.error('User sync error:', errorMessage);
