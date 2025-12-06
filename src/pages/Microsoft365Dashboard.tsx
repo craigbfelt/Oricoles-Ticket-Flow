@@ -33,6 +33,26 @@ import {
   AlertTitle,
 } from "@/components/ui/alert";
 
+/**
+ * Helper to get a user-friendly error message from an edge function error
+ */
+function getEdgeFunctionErrorMessage(error: unknown): string {
+  if (!error) return 'An unknown error occurred';
+  
+  const err = error as { name?: string; message?: string };
+  const errorName = err?.name || '';
+  const errorMessage = err?.message || '';
+  
+  // Check for FunctionsFetchError (CORS or network issue - function not deployed)
+  if (errorName === 'FunctionsFetchError' || errorName.includes('Fetch') || 
+      errorMessage.includes('Failed to send a request')) {
+    return 'Unable to reach the Microsoft 365 sync function. The Edge Function may not be deployed yet. ' +
+           'Please run the "Deploy All Edge Functions" workflow from GitHub Actions, or check the Supabase Dashboard.';
+  }
+  
+  return errorMessage || 'An error occurred while calling the Edge Function';
+}
+
 interface SyncResult {
   devices?: { synced: number; errors: number; total: number };
   users?: { synced: number; errors: number; total: number };
@@ -274,15 +294,15 @@ const Microsoft365Dashboard = () => {
       });
 
       if (error) {
-        throw new Error(error.message);
+        throw error;
       }
 
-      if (!data.success) {
+      if (!data?.success) {
         setConnectionStatus({
           connected: false,
-          error: data.error || 'Connection test failed',
+          error: data?.error || 'Connection test failed',
         });
-        toast.error(data.error || 'Connection test failed');
+        toast.error(data?.error || 'Connection test failed');
       } else {
         setConnectionStatus({
           connected: true,
@@ -291,7 +311,7 @@ const Microsoft365Dashboard = () => {
         toast.success(`Connected to ${data.organization?.displayName || 'Microsoft 365'}`);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Connection test failed';
+      const errorMessage = getEdgeFunctionErrorMessage(err);
       setConnectionStatus({
         connected: false,
         error: errorMessage,
@@ -313,7 +333,7 @@ const Microsoft365Dashboard = () => {
       });
 
       if (error) {
-        throw new Error(error.message);
+        throw error;
       }
 
       // Handle error responses from the edge function
@@ -335,7 +355,7 @@ const Microsoft365Dashboard = () => {
         }
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Diagnostics failed';
+      const errorMessage = getEdgeFunctionErrorMessage(err);
       setConnectionStatus({
         connected: false,
         error: errorMessage,
@@ -356,11 +376,11 @@ const Microsoft365Dashboard = () => {
       });
 
       if (error) {
-        throw new Error(error.message);
+        throw error;
       }
 
-      if (!data.success) {
-        toast.error(data.error || 'Sync failed');
+      if (!data?.success) {
+        toast.error(data?.error || 'Sync failed');
       } else {
         setSyncResult(data.results);
         setLastSyncTime(new Date().toISOString());
@@ -370,7 +390,7 @@ const Microsoft365Dashboard = () => {
         }
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Sync failed';
+      const errorMessage = getEdgeFunctionErrorMessage(err);
       toast.error(errorMessage);
     } finally {
       setIsSyncing(false);
@@ -387,18 +407,18 @@ const Microsoft365Dashboard = () => {
       });
 
       if (error) {
-        throw new Error(error.message);
+        throw error;
       }
 
-      if (!data.success) {
-        toast.error(data.error || 'Sync failed');
+      if (!data?.success) {
+        toast.error(data?.error || 'Sync failed');
       } else {
         setSyncResult(data.results);
         setLastSyncTime(new Date().toISOString());
         toast.success('Full sync completed');
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Sync failed';
+      const errorMessage = getEdgeFunctionErrorMessage(err);
       toast.error(errorMessage);
     } finally {
       setIsSyncing(false);

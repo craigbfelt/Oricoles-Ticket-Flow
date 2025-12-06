@@ -201,6 +201,36 @@ verify_jwt = false  # JWT verification is handled inside the function
 | `SUPABASE_URL` | Supabase Project URL | Supabase Dashboard → Settings → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service Role Key | Supabase Dashboard → Settings → API |
 
+### Error: "Unable to reach the Microsoft 365 sync function" or "FunctionsFetchError"
+
+**Cause**: The Edge Function has not been deployed to Supabase.
+
+**Solution**: Deploy the edge functions using one of these methods:
+
+#### Method 1: GitHub Actions (Recommended)
+1. Go to the GitHub repository → Actions tab
+2. Find the "Deploy All Edge Functions" workflow
+3. Click "Run workflow" and type "deploy" to confirm
+4. Wait for the workflow to complete
+
+#### Method 2: Supabase CLI
+```bash
+# Ensure you're logged in
+supabase login
+
+# Link to your project
+supabase link --project-ref YOUR_PROJECT_REF
+
+# Deploy the function
+supabase functions deploy sync-microsoft-365
+```
+
+#### Method 3: Supabase Dashboard
+1. Go to Supabase Dashboard → Edge Functions
+2. If the function doesn't exist, create it manually
+3. Copy the code from `supabase/functions/sync-microsoft-365/index.ts`
+4. Set the required secrets
+
 ## Support
 
 If you continue to experience issues:
@@ -209,3 +239,4 @@ If you continue to experience issues:
 2. Verify all secrets are set correctly
 3. Ensure the database migration has been applied
 4. Confirm the Azure app has admin consent for all permissions
+5. Run the "Run Diagnostics" feature from the Microsoft 365 Dashboard for detailed troubleshooting

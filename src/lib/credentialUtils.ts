@@ -4,22 +4,71 @@
  * This module handles the transition between unencrypted and encrypted credentials.
  * When the get_decrypted_credentials RPC function doesn't exist (404), we fall back
  * to direct table queries silently without polluting the console with errors.
+ * 
+ * The RPC availability is cached in localStorage to avoid repeated 404 errors
+ * which would clutter the browser's network tab.
  */
 
 import { supabase } from "@/integrations/supabase/client";
 
-// Cache for whether the RPC function exists
+// Storage key for caching RPC availability
+const RPC_CACHE_KEY = 'oricol_rpc_decrypted_credentials_available';
+const RPC_CACHE_EXPIRY_KEY = 'oricol_rpc_decrypted_credentials_expiry';
+// Cache expiry: 1 hour (in milliseconds) - recheck periodically in case migrations were applied
+const RPC_CACHE_DURATION = 60 * 60 * 1000;
+
+// In-memory cache for whether the RPC function exists (to avoid localStorage reads on every call)
 let rpcFunctionExists: boolean | null = null;
 let rpcCheckInProgress: Promise<boolean> | null = null;
 
 /**
+ * Get cached RPC availability from localStorage
+ * Returns null if not cached or expired
+ */
+function getCachedRpcAvailability(): boolean | null {
+  try {
+    const cached = localStorage.getItem(RPC_CACHE_KEY);
+    const expiry = localStorage.getItem(RPC_CACHE_EXPIRY_KEY);
+    
+    if (cached !== null && expiry !== null) {
+      const expiryTime = parseInt(expiry, 10);
+      if (Date.now() < expiryTime) {
+        return cached === 'true';
+      }
+    }
+  } catch {
+    // localStorage not available (SSR, private browsing, etc.)
+  }
+  return null;
+}
+
+/**
+ * Cache RPC availability in localStorage
+ */
+function setCachedRpcAvailability(available: boolean): void {
+  try {
+    localStorage.setItem(RPC_CACHE_KEY, String(available));
+    localStorage.setItem(RPC_CACHE_EXPIRY_KEY, String(Date.now() + RPC_CACHE_DURATION));
+  } catch {
+    // localStorage not available
+  }
+}
+
+/**
  * Check if the get_decrypted_credentials RPC function exists in the database.
- * Results are cached to avoid repeated 404 errors.
+ * Results are cached in memory and localStorage to avoid repeated 404 errors.
  */
 async function checkRpcFunctionExists(): Promise<boolean> {
-  // Return cached result if available
+  // Return in-memory cached result if available
   if (rpcFunctionExists !== null) {
     return rpcFunctionExists;
+  }
+  
+  // Check localStorage cache
+  const cachedResult = getCachedRpcAvailability();
+  if (cachedResult !== null) {
+    rpcFunctionExists = cachedResult;
+    return cachedResult;
   }
   
   // If a check is already in progress, wait for it
@@ -36,6 +85,7 @@ async function checkRpcFunctionExists(): Promise<boolean> {
       // If there's no error, the function exists
       if (!error) {
         rpcFunctionExists = true;
+        setCachedRpcAvailability(true);
         return true;
       }
       
@@ -49,6 +99,7 @@ async function checkRpcFunctionExists(): Promise<boolean> {
       
       if (isNotFoundError) {
         rpcFunctionExists = false;
+        setCachedRpcAvailability(false);
         return false;
       }
       
@@ -57,14 +108,17 @@ async function checkRpcFunctionExists(): Promise<boolean> {
       if (errorCode === '42501') {
         // Function exists but access denied - cache as not available for this user
         rpcFunctionExists = false;
+        setCachedRpcAvailability(false);
         return false;
       }
       
       // For other errors, assume function doesn't exist to avoid noise
       rpcFunctionExists = false;
+      setCachedRpcAvailability(false);
       return false;
     } catch {
       rpcFunctionExists = false;
+      setCachedRpcAvailability(false);
       return false;
     } finally {
       rpcCheckInProgress = null;
@@ -200,8 +254,15 @@ export async function fetchCredentialsWithEmail(): Promise<{
 /**
  * Reset the RPC function check cache.
  * Useful for testing or when the database schema might have changed.
+ * Clears both in-memory and localStorage caches.
  */
 export function resetRpcCache(): void {
   rpcFunctionExists = null;
   rpcCheckInProgress = null;
+  try {
+    localStorage.removeItem(RPC_CACHE_KEY);
+    localStorage.removeItem(RPC_CACHE_EXPIRY_KEY);
+  } catch {
+    // localStorage not available
+  }
 }

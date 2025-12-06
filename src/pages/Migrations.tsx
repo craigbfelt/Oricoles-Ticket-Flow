@@ -185,10 +185,21 @@ const Migrations = () => {
         body: { migrations: [normalizeMigrationVersion(migrationVersion)] }
       });
 
-      if (error) throw error;
+      if (error) {
+        // Check if the error is a FunctionsFetchError (CORS or network issue)
+        const errorName = (error as any)?.name || '';
+        if (errorName === 'FunctionsFetchError' || errorName.includes('Fetch')) {
+          throw new Error(
+            'Unable to reach the Edge Function. The function may not be deployed yet. ' +
+            'Please run the "Deploy All Edge Functions" workflow from GitHub Actions, or manually ' +
+            'record the migration in the schema_migrations table using the Backend SQL Editor.'
+          );
+        }
+        throw error;
+      }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to mark migration as applied');
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to mark migration as applied');
       }
 
       toast({
@@ -228,10 +239,21 @@ const Migrations = () => {
         body: { migrations: migrationsToMark }
       });
 
-      if (error) throw error;
+      if (error) {
+        // Check if the error is a FunctionsFetchError (CORS or network issue)
+        const errorName = (error as any)?.name || '';
+        if (errorName === 'FunctionsFetchError' || errorName.includes('Fetch')) {
+          throw new Error(
+            'Unable to reach the Edge Function. The function may not be deployed yet. ' +
+            'Please run the "Deploy All Edge Functions" workflow from GitHub Actions, or manually ' +
+            'record the migration in the schema_migrations table using the Backend SQL Editor.'
+          );
+        }
+        throw error;
+      }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to mark migrations as applied');
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to mark migrations as applied');
       }
 
       toast({
