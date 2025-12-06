@@ -122,6 +122,7 @@ const EXPECTED_EDGE_FUNCTIONS = [
   "send-ticket-reminders",
   "storage-admin-operations",
   "sync-microsoft-365",
+  "sync-microsoft-365-debug",
   "verify-deployment",
 ];
 
