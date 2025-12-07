@@ -274,6 +274,8 @@ const Migrations = () => {
 
       if (error) {
         if (isEdgeFunctionDeploymentError(error)) {
+          // Note: migrationsToMark values are already sanitized via normalizeMigrationVersion()
+          // which calls sanitizeMigrationVersion() to prevent SQL injection
           const sqlCommands = migrationsToMark.map(v => 
             `INSERT INTO public.schema_migrations (version, applied_at) VALUES ('${v}', NOW()) ON CONFLICT (version) DO NOTHING;`
           ).join('\n');
