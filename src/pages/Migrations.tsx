@@ -32,10 +32,14 @@ function isEdgeFunctionDeploymentError(error: unknown): boolean {
 /**
  * Get a user-friendly message for edge function deployment errors
  */
-function getEdgeFunctionDeploymentErrorMessage(): string {
+function getEdgeFunctionDeploymentErrorMessage(migrationVersion?: string): string {
+  const sqlCommand = migrationVersion 
+    ? `\n\nSQL Command:\nINSERT INTO public.schema_migrations (version, applied_at) VALUES ('${sanitizeMigrationVersion(migrationVersion.replace(/\.sql$/, ''))}', NOW()) ON CONFLICT (version) DO NOTHING;`
+    : '';
+  
   return 'Unable to reach the Edge Function. The function may not be deployed yet. ' +
-    'Please run the "Deploy All Edge Functions" workflow from GitHub Actions, or manually ' +
-    'record the migration in the schema_migrations table using the Backend SQL Editor.';
+    'You can manually record the migration in the schema_migrations table using the Backend SQL Editor. ' +
+    'Click "Open Backend SQL Editor" below and run the SQL command.' + sqlCommand;
 }
 
 // Import all SQL migration files at build time using Vite's glob import with raw content
@@ -45,11 +49,20 @@ const migrationModules = import.meta.glob<string>(
 );
 
 /**
+ * Sanitize migration version for safe use in SQL commands
+ * Only allows alphanumeric characters, underscores, hyphens, and dots
+ */
+const sanitizeMigrationVersion = (version: string): string => {
+  // Remove any characters that aren't alphanumeric, underscore, hyphen, or dot
+  return version.replace(/[^a-zA-Z0-9_.-]/g, '');
+};
+
+/**
  * Normalize migration version by removing .sql extension if present
  * This ensures consistent storage in the schema_migrations table
  */
 const normalizeMigrationVersion = (version: string): string => {
-  return version.replace(/\.sql$/, '');
+  return sanitizeMigrationVersion(version.replace(/\.sql$/, ''));
 };
 
 /**
@@ -212,7 +225,7 @@ const Migrations = () => {
 
       if (error) {
         if (isEdgeFunctionDeploymentError(error)) {
-          throw new Error(getEdgeFunctionDeploymentErrorMessage());
+          throw new Error(getEdgeFunctionDeploymentErrorMessage(migrationVersion));
         }
         throw error;
       }
@@ -261,7 +274,12 @@ const Migrations = () => {
 
       if (error) {
         if (isEdgeFunctionDeploymentError(error)) {
-          throw new Error(getEdgeFunctionDeploymentErrorMessage());
+          // Note: migrationsToMark values are already sanitized via normalizeMigrationVersion()
+          // which calls sanitizeMigrationVersion() to prevent SQL injection
+          const sqlCommands = migrationsToMark.map(v => 
+            `INSERT INTO public.schema_migrations (version, applied_at) VALUES ('${v}', NOW()) ON CONFLICT (version) DO NOTHING;`
+          ).join('\n');
+          throw new Error(getEdgeFunctionDeploymentErrorMessage() + '\n\nSQL Commands:\n' + sqlCommands);
         }
         throw error;
       }
