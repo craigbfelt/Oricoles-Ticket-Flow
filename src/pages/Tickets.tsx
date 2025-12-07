@@ -80,19 +80,7 @@ const Tickets = () => {
   // Refetch tickets when role states change
   useEffect(() => {
     if (currentProfileId) {
-      const loadTickets = async () => {
-        // Admin and support staff see all tickets, regular users see only their own
-        let query = supabase.from("tickets").select("*");
-        
-        if (!isAdmin && !isSupportStaff && currentProfileId) {
-          // Regular users only see their own tickets
-          query = query.eq("created_by", currentProfileId);
-        }
-        
-        const { data } = await query.order("created_at", { ascending: false });
-        setTickets(data || []);
-      };
-      loadTickets();
+      fetchTickets();
     }
   }, [isAdmin, isSupportStaff, currentProfileId]);
 

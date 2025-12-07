@@ -78,24 +78,24 @@ const Devices = () => {
       return;
     }
 
-    // Check if user is admin
+    // Check if user has admin, ceo, or support_staff role
     const { data: rolesData } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", session.user.id)
-      .eq("role", "admin")
-      .single();
+      .in("role", ["admin", "ceo", "support_staff"]);
 
-    if (!rolesData) {
+    if (!rolesData || rolesData.length === 0) {
       toast({
         title: "Access Denied",
-        description: "You need admin privileges to view this page",
+        description: "You need admin or support privileges to view this page",
         variant: "destructive",
       });
       navigate("/dashboard");
       return;
     }
 
+    // Set isAdmin true for any of these roles to enable editing
     setIsAdmin(true);
     fetchDevices();
   };
