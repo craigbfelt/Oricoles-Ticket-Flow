@@ -144,6 +144,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const allNavigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, requiredRoles: [] }, // Everyone
     { name: "Tickets", href: "/tickets", icon: Ticket, requiredRoles: ['admin'] }, // Admin only
+    { name: "Devices / PCs", href: "/devices", icon: Monitor, requiredRoles: ['admin', 'ceo', 'support_staff'] },
+    { name: "IT Suppliers", href: "/it-suppliers", icon: Building2, requiredRoles: [] }, // Everyone can view
     { name: "Oricol CRM", href: "/crm", icon: TrendingUp, requiredRoles: ['admin'] }, // Admin only
     { name: "Bluewave CRM", href: "/bluewave-crm", icon: Waves, requiredRoles: ['admin'] }, // Admin only
     { name: "Sage", href: "/sage", icon: Leaf, requiredRoles: ['admin'] }, // Admin only
@@ -214,13 +216,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   // Get logo URLs and sizes from theme settings or use defaults
   const primaryLogoUrl = themeSettings.logoUrl || oricolLogo;
-  const primaryLogoSize = themeSettings.logoSize || 40;
+  const primaryLogoSize = themeSettings.logoSize || 60;
   const secondaryLogoUrl = themeSettings.secondaryLogoUrl || zerobitOneLogo;
   const secondaryLogoSize = themeSettings.secondaryLogoSize || 40;
-  const logoPosition = themeSettings.logoPosition || 'left';
+  const logoPosition = themeSettings.logoPosition || 'center';
   const logoLayout = themeSettings.logoLayout || 'horizontal';
   const showPrimaryLogo = themeSettings.showPrimaryLogo !== false && primaryLogoUrl;
-  const showSecondaryLogo = themeSettings.showSecondaryLogo !== false && secondaryLogoUrl;
+  const showSecondaryLogo = themeSettings.showSecondaryLogo === true && secondaryLogoUrl;
 
   // Helper function to get flex alignment based on position
   const getLogoContainerClasses = () => {

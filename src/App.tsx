@@ -40,6 +40,8 @@ import BluewaveCRM from "./pages/BluewaveCRM";
 import Sage from "./pages/Sage";
 import Migrations from "./pages/Migrations";
 import MigrationTrackerPage from "./pages/MigrationTrackerPage";
+import ITSuppliers from "./pages/ITSuppliers";
+import Devices from "./pages/Devices";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +93,8 @@ const App = () => {
           <Route path="/sage" element={<Sage />} />
           <Route path="/migrations" element={<Migrations />} />
           <Route path="/migration-tracker" element={<MigrationTrackerPage />} />
+          <Route path="/it-suppliers" element={<ITSuppliers />} />
+          <Route path="/devices" element={<Devices />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

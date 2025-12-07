@@ -51,14 +51,14 @@ All colors MUST be HSL.
     --priority-high: 38 92% 50%;
     --priority-urgent: 0 72% 51%;
 
-    --sidebar-background: 215 28% 17%;
-    --sidebar-foreground: 210 20% 98%;
-    --sidebar-primary: 212 85% 48%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 355 75% 50%;
+    --sidebar-primary: 355 75% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 32% 24%;
-    --sidebar-accent-foreground: 210 20% 98%;
-    --sidebar-border: 217 32% 24%;
-    --sidebar-ring: 212 85% 48%;
+    --sidebar-accent: 355 75% 95%;
+    --sidebar-accent-foreground: 355 75% 50%;
+    --sidebar-border: 355 75% 90%;
+    --sidebar-ring: 355 75% 50%;
     
     /* Theme customization variables */
     --theme-primary: 212 85% 48%;
@@ -98,14 +98,14 @@ All colors MUST be HSL.
     --input: 217 32% 24%;
     --ring: 212 85% 48%;
 
-    --sidebar-background: 215 28% 14%;
-    --sidebar-foreground: 210 20% 98%;
-    --sidebar-primary: 212 85% 48%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 355 75% 50%;
+    --sidebar-primary: 355 75% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 32% 20%;
-    --sidebar-accent-foreground: 210 20% 98%;
-    --sidebar-border: 217 32% 20%;
-    --sidebar-ring: 212 85% 48%;
+    --sidebar-accent: 355 75% 95%;
+    --sidebar-accent-foreground: 355 75% 50%;
+    --sidebar-border: 355 75% 90%;
+    --sidebar-ring: 355 75% 50%;
   }
 }
 
