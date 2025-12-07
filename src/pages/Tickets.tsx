@@ -77,10 +77,17 @@ const Tickets = () => {
     });
   }, [navigate]);
 
+  // Refetch tickets when role states change
+  useEffect(() => {
+    if (currentProfileId) {
+      fetchTickets();
+    }
+  }, [isAdmin, isSupportStaff, currentProfileId]);
+
   const fetchUserProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, email, full_name, user_id")
+      .select("id, email, full_name, user_id, branch_id, branches:branch_id(name)")
       .eq("user_id", userId)
       .single();
 
@@ -113,7 +120,7 @@ const Tickets = () => {
         // Retry fetching the profile
         const { data: newData } = await supabase
           .from("profiles")
-          .select("id, email, full_name, user_id")
+          .select("id, email, full_name, user_id, branch_id, branches:branch_id(name)")
           .eq("user_id", userId)
           .single();
         
@@ -151,13 +158,17 @@ const Tickets = () => {
     setCurrentUserEmail(data.email || "");
     setCurrentUserName(data.full_name || "");
 
-    // Auto-fill user email in ticket form
+    // Auto-fill user email and branch in ticket form for regular users
     setUserEmail(data.email || "");
+    
+    // Prepopulate branch if available
+    if (data.branches && data.branches.name) {
+      setBranch(data.branches.name);
+    }
 
     await checkAdminRole(userId);
     await checkSupportRole(userId);
-    // Fetch tickets for all authenticated users (RLS will filter appropriately)
-    fetchTickets();
+    // Tickets will be fetched by useEffect when roles are set
   };
 
   const checkAdminRole = async (userId: string) => {
@@ -197,7 +208,15 @@ const Tickets = () => {
   };
 
   const fetchTickets = async () => {
-    const { data } = await supabase.from("tickets").select("*").order("created_at", { ascending: false });
+    // Admin and support staff see all tickets, regular users see only their own
+    let query = supabase.from("tickets").select("*");
+    
+    if (!isAdmin && !isSupportStaff && currentProfileId) {
+      // Regular users only see their own tickets
+      query = query.eq("created_by", currentProfileId);
+    }
+    
+    const { data } = await query.order("created_at", { ascending: false });
 
     setTickets(data || []);
   };
