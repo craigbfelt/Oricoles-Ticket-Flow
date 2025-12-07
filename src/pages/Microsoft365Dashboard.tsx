@@ -791,7 +791,17 @@ const Microsoft365Dashboard = () => {
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No users synced yet. Click "Sync Users" to pull data from Azure AD.</p>
+                    <p className="font-medium mb-2">No users synced yet</p>
+                    <p className="text-sm mb-4">Click "Sync Users" to pull data from Azure AD</p>
+                    <div className="text-xs bg-muted p-4 rounded-lg max-w-2xl mx-auto text-left space-y-2">
+                      <p className="font-medium">Setup Checklist:</p>
+                      <ol className="list-decimal list-inside space-y-1 ml-2">
+                        <li>Ensure Microsoft 365 credentials are configured in Supabase Edge Functions (Settings → Secrets)</li>
+                        <li>Deploy the sync-microsoft-365 Edge Function via GitHub Actions</li>
+                        <li>Click "Test Connection" above to verify the setup</li>
+                        <li>Run "Sync Users" to import user data from Azure AD</li>
+                      </ol>
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -852,7 +862,18 @@ const Microsoft365Dashboard = () => {
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <Monitor className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No devices synced yet. Click "Sync Devices" to pull data from Intune.</p>
+                    <p className="font-medium mb-2">No devices synced yet</p>
+                    <p className="text-sm mb-4">Click "Sync Devices" to pull data from Intune</p>
+                    <div className="text-xs bg-muted p-4 rounded-lg max-w-2xl mx-auto text-left space-y-2">
+                      <p className="font-medium">Setup Checklist:</p>
+                      <ol className="list-decimal list-inside space-y-1 ml-2">
+                        <li>Ensure Microsoft 365 credentials are configured in Supabase Edge Functions</li>
+                        <li>Verify the sync-microsoft-365 Edge Function is deployed</li>
+                        <li>Ensure your Azure AD app has "DeviceManagementManagedDevices.Read.All" permission</li>
+                        <li>Run "Test Connection" to verify your setup</li>
+                        <li>Click "Sync Devices" to import device data from Intune</li>
+                      </ol>
+                    </div>
                   </div>
                 )}
               </CardContent>

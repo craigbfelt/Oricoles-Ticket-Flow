@@ -577,6 +577,8 @@ const CRM = () => {
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
+                    id="search-companies"
+                    name="search-companies"
                     placeholder="Search companies..."
                     className="pl-8"
                     value={searchTerm}
@@ -666,6 +668,8 @@ const CRM = () => {
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
+                    id="search-contacts"
+                    name="search-contacts"
                     placeholder="Search contacts..."
                     className="pl-8"
                     value={searchTerm}
@@ -748,6 +752,8 @@ const CRM = () => {
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
+                    id="search-deals"
+                    name="search-deals"
                     placeholder="Search deals..."
                     className="pl-8"
                     value={searchTerm}
@@ -826,6 +832,8 @@ const CRM = () => {
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
+                    id="search-activities"
+                    name="search-activities"
                     placeholder="Search activities..."
                     className="pl-8"
                     value={searchTerm}
