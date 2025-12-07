@@ -34,7 +34,7 @@ function isEdgeFunctionDeploymentError(error: unknown): boolean {
  */
 function getEdgeFunctionDeploymentErrorMessage(migrationVersion?: string): string {
   const sqlCommand = migrationVersion 
-    ? `\n\nSQL Command:\nINSERT INTO public.schema_migrations (version, applied_at) VALUES ('${migrationVersion.replace(/\.sql$/, '')}', NOW()) ON CONFLICT (version) DO NOTHING;`
+    ? `\n\nSQL Command:\nINSERT INTO public.schema_migrations (version, applied_at) VALUES ('${sanitizeMigrationVersion(migrationVersion.replace(/\.sql$/, ''))}', NOW()) ON CONFLICT (version) DO NOTHING;`
     : '';
   
   return 'Unable to reach the Edge Function. The function may not be deployed yet. ' +
@@ -49,11 +49,20 @@ const migrationModules = import.meta.glob<string>(
 );
 
 /**
+ * Sanitize migration version for safe use in SQL commands
+ * Only allows alphanumeric characters, underscores, hyphens, and dots
+ */
+const sanitizeMigrationVersion = (version: string): string => {
+  // Remove any characters that aren't alphanumeric, underscore, hyphen, or dot
+  return version.replace(/[^a-zA-Z0-9_.-]/g, '');
+};
+
+/**
  * Normalize migration version by removing .sql extension if present
  * This ensures consistent storage in the schema_migrations table
  */
 const normalizeMigrationVersion = (version: string): string => {
-  return version.replace(/\.sql$/, '');
+  return sanitizeMigrationVersion(version.replace(/\.sql$/, ''));
 };
 
 /**
