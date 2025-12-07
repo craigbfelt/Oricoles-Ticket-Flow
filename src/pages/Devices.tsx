@@ -79,16 +79,27 @@ const Devices = () => {
     }
 
     // Check if user has admin, ceo, or support_staff role
-    const { data: rolesData } = await supabase
+    const { data: rolesData, error: rolesError } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", session.user.id)
       .in("role", ["admin", "ceo", "support_staff"]);
 
+    if (rolesError) {
+      console.error("Error checking user roles:", rolesError);
+      toast({
+        title: "Access Check Failed",
+        description: "Unable to verify your access permissions. Please contact your administrator if you should have access to this page.",
+        variant: "destructive",
+      });
+      navigate("/dashboard");
+      return;
+    }
+
     if (!rolesData || rolesData.length === 0) {
       toast({
         title: "Access Denied",
-        description: "You need admin or support privileges to view this page",
+        description: "You need admin, CEO, or support staff privileges to view this page. Please contact your administrator to request access.",
         variant: "destructive",
       });
       navigate("/dashboard");

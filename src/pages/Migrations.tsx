@@ -32,10 +32,14 @@ function isEdgeFunctionDeploymentError(error: unknown): boolean {
 /**
  * Get a user-friendly message for edge function deployment errors
  */
-function getEdgeFunctionDeploymentErrorMessage(): string {
+function getEdgeFunctionDeploymentErrorMessage(migrationVersion?: string): string {
+  const sqlCommand = migrationVersion 
+    ? `\n\nSQL Command:\nINSERT INTO public.schema_migrations (version, applied_at) VALUES ('${migrationVersion.replace(/\.sql$/, '')}', NOW()) ON CONFLICT (version) DO NOTHING;`
+    : '';
+  
   return 'Unable to reach the Edge Function. The function may not be deployed yet. ' +
-    'Please run the "Deploy All Edge Functions" workflow from GitHub Actions, or manually ' +
-    'record the migration in the schema_migrations table using the Backend SQL Editor.';
+    'You can manually record the migration in the schema_migrations table using the Backend SQL Editor. ' +
+    'Click "Open Backend SQL Editor" below and run the SQL command.' + sqlCommand;
 }
 
 // Import all SQL migration files at build time using Vite's glob import with raw content
@@ -212,7 +216,7 @@ const Migrations = () => {
 
       if (error) {
         if (isEdgeFunctionDeploymentError(error)) {
-          throw new Error(getEdgeFunctionDeploymentErrorMessage());
+          throw new Error(getEdgeFunctionDeploymentErrorMessage(migrationVersion));
         }
         throw error;
       }
@@ -261,7 +265,10 @@ const Migrations = () => {
 
       if (error) {
         if (isEdgeFunctionDeploymentError(error)) {
-          throw new Error(getEdgeFunctionDeploymentErrorMessage());
+          const sqlCommands = migrationsToMark.map(v => 
+            `INSERT INTO public.schema_migrations (version, applied_at) VALUES ('${v}', NOW()) ON CONFLICT (version) DO NOTHING;`
+          ).join('\n');
+          throw new Error(getEdgeFunctionDeploymentErrorMessage() + '\n\nSQL Commands:\n' + sqlCommands);
         }
         throw error;
       }
