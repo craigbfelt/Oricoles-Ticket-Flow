@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Network, Download, Upload, Plus, Save, Image as ImageIcon, Trash2, Wand2 } from "lucide-react";
+import { Network, Download, Upload, Plus, Save, Image as ImageIcon, Trash2, Wand2, Eye, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ImportHistory } from "@/components/ImportHistory";
 import { Tables } from "@/integrations/supabase/types";
@@ -64,6 +64,8 @@ const CompanyNetworkDiagram = () => {
     name: "",
     description: "",
   });
+  const [fullPageImageUrl, setFullPageImageUrl] = useState<string | null>(null);
+  const [fullPageImageName, setFullPageImageName] = useState<string>("");
 
   useEffect(() => {
     checkAccess();
@@ -425,6 +427,11 @@ const CompanyNetworkDiagram = () => {
     createDiagram.mutate(formData);
   };
 
+  const handleViewFullPage = (imageUrl: string, name: string) => {
+    setFullPageImageUrl(imageUrl);
+    setFullPageImageName(name);
+  };
+
   const getNetworkStats = () => {
     const totalBranches = branches?.length || 0;
     const totalDevices = networkDevices?.length || 0;
@@ -642,13 +649,32 @@ const CompanyNetworkDiagram = () => {
                       Updated {new Date(latestDiagram.created_at).toLocaleDateString()}
                     </CardDescription>
                   </div>
-                  <Badge variant="default" className="text-xs">
-                    Most Recent
-                  </Badge>
+                  <div className="flex gap-2 items-center">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleViewFullPage(
+                        supabase.storage.from('diagrams').getPublicUrl(imagePath).data.publicUrl,
+                        diagramAny.name || diagramAny.diagram_name || "Network Diagram"
+                      )}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Full Page
+                    </Button>
+                    <Badge variant="default" className="text-xs">
+                      Most Recent
+                    </Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="rounded-lg border overflow-hidden bg-muted">
+                <div 
+                  className="rounded-lg border overflow-hidden bg-muted cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => handleViewFullPage(
+                    supabase.storage.from('diagrams').getPublicUrl(imagePath).data.publicUrl,
+                    diagramAny.name || diagramAny.diagram_name || "Network Diagram"
+                  )}
+                >
                   <img 
                     src={supabase.storage.from('diagrams').getPublicUrl(imagePath).data.publicUrl}
                     alt={diagramAny.name || diagramAny.diagram_name || "Latest Network Diagram"}
@@ -694,6 +720,7 @@ const CompanyNetworkDiagram = () => {
                             diagram={diagram} 
                             onDelete={() => deleteDiagram.mutate(diagram.id)}
                             onExport={() => handleExportDiagram(diagram)}
+                            onViewFullPage={handleViewFullPage}
                           />
                         ))}
                       </div>
@@ -736,6 +763,53 @@ const CompanyNetworkDiagram = () => {
           onOpenChange={setRedrawerOpen}
           onSuccess={() => queryClient.invalidateQueries({ queryKey: ["network-diagrams-company"] })}
         />
+
+        {/* Full Page Image Viewer */}
+        {fullPageImageUrl && (
+          <div 
+            className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
+            onClick={() => setFullPageImageUrl(null)}
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 text-white hover:bg-white/20"
+              onClick={() => setFullPageImageUrl(null)}
+            >
+              <X className="h-6 w-6" />
+            </Button>
+            <div className="relative max-w-[95vw] max-h-[95vh] flex flex-col items-center">
+              <h2 className="text-white text-xl font-semibold mb-4">{fullPageImageName}</h2>
+              <img
+                src={fullPageImageUrl}
+                alt={fullPageImageName}
+                className="max-w-full max-h-[85vh] object-contain"
+                onClick={(e) => e.stopPropagation()}
+              />
+              <div className="mt-4 flex gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open(fullPageImageUrl, '_blank');
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Open in New Tab
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFullPageImageUrl(null);
+                  }}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
@@ -745,11 +819,13 @@ const CompanyNetworkDiagram = () => {
 const DiagramCard = ({ 
   diagram, 
   onDelete, 
-  onExport 
+  onExport,
+  onViewFullPage
 }: { 
   diagram: NetworkDiagram; 
   onDelete: () => void; 
   onExport: () => void;
+  onViewFullPage?: (imageUrl: string, name: string) => void;
 }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -800,7 +876,11 @@ const DiagramCard = ({
   return (
     <div className="flex items-start gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
       {imageUrl && (
-        <div className="flex-shrink-0 w-48 h-32 border rounded-lg overflow-hidden bg-muted">
+        <div 
+          className="flex-shrink-0 w-48 h-32 border rounded-lg overflow-hidden bg-muted cursor-pointer hover:opacity-90 transition-opacity"
+          onClick={() => onViewFullPage?.(imageUrl, diagramAny.name || diagramAny.diagram_name || "Network Diagram")}
+          title="Click to view full page"
+        >
           <img 
             src={imageUrl} 
             alt={diagramAny.name || diagramAny.diagram_name} 
@@ -868,6 +948,16 @@ const DiagramCard = ({
                 <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                   Edit
                 </Button>
+                {imageUrl && onViewFullPage && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => onViewFullPage(imageUrl, diagramAny.name || diagramAny.diagram_name || "Network Diagram")}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Full
+                  </Button>
+                )}
                 {!(diagramAny.image_path || diagramAny.diagram_url) && (
                   <Button variant="outline" size="sm" onClick={onExport}>
                     <Download className="h-4 w-4 mr-2" />
