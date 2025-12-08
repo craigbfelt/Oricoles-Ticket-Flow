@@ -163,6 +163,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "RDP", href: "/rdp", icon: Monitor, requiredRoles: ['admin', 'support_staff'] },
     { name: "Nymbis RDP Cloud", href: "/nymbis-rdp-cloud", icon: Cloud, requiredRoles: ['admin', 'support_staff'] },
     { name: "Company Network", href: "/company-network", icon: Network, requiredRoles: ['admin', 'support_staff'] },
+    { name: "Network Diagram Overview", href: "/network-diagram-overview", icon: Network, requiredRoles: ['admin', 'support_staff'] },
     { name: "Reports", href: "/reports", icon: FileBarChart, requiredRoles: ['admin', 'support_staff'] },
     { name: "Users", href: "/users", icon: Users, requiredRoles: ['admin'] }, // Admin only, not CEO
     { name: "Settings", href: "/settings", icon: Settings, requiredRoles: [] }, // Everyone
