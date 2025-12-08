@@ -198,6 +198,7 @@ const ColorPicker = ({ value, onChange, label }: ColorPickerProps) => {
 const defaultNavItems = [
   { name: "Dashboard", href: "/dashboard" },
   { name: "Tickets", href: "/tickets" },
+  { name: "IT Suppliers", href: "/it-suppliers" },
   { name: "Oricol CRM", href: "/crm" },
   { name: "Bluewave CRM", href: "/bluewave-crm" },
   { name: "Sage", href: "/sage" },
@@ -212,7 +213,7 @@ const defaultNavItems = [
   { name: "Assets", href: "/assets" },
   { name: "Branches", href: "/branches" },
   { name: "Microsoft 365", href: "/microsoft-365" },
-  { name: "Hardware", href: "/hardware" },
+  { name: "Computers", href: "/hardware" },
   { name: "Software", href: "/software" },
   { name: "Licenses", href: "/licenses" },
   { name: "Provider Emails", href: "/provider-emails" },

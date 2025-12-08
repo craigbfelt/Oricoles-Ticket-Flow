@@ -60,10 +60,12 @@ Features:
       const { error } = await supabase
         .from("network_diagrams")
         .insert({
-          diagram_name: "AI Modernized Network Diagram",
+          name: "AI Modernized Network Diagram",
           description: modernDescription,
-          diagram_url: imagePath || "",
+          image_path: imagePath || null,
           branch_id: null,
+          is_company_wide: true,
+          created_by: user.id
         });
 
       if (error) throw error;
