@@ -98,6 +98,28 @@ npx supabase link --project-ref YOUR_PROJECT_REF
 npx supabase db push
 ```
 
+### 🚀 Edge Functions Deployment
+
+**Deploy Supabase Edge Functions via GitHub Actions**
+
+Edge functions provide serverless backend functionality for your app. Deploy them easily using GitHub Actions:
+
+**Quick Setup**:
+1. Go to **Actions** tab in your GitHub repository
+2. Select **"Deploy All Edge Functions"** workflow
+3. Click **"Run workflow"**
+4. Type `deploy` in the confirmation field
+5. Click **"Run workflow"** to start deployment
+
+**Auto-deployment**: Changed functions automatically deploy when you push to `main` branch.
+
+**Complete Guide**: See **[EDGE_FUNCTIONS_SETUP.md](./EDGE_FUNCTIONS_SETUP.md)** for:
+- Required GitHub secrets configuration
+- Available edge functions list
+- Manual deployment via CLI
+- Environment variables setup
+- Troubleshooting tips
+
 Without CLI:
 1. Go to your Supabase project dashboard
 2. Click **SQL Editor**
@@ -105,6 +127,7 @@ Without CLI:
 
 **All Documentation**:
 - **⭐ [AUTOMATED_MIGRATION_SETUP.md](./AUTOMATED_MIGRATION_SETUP.md)** - **5-minute automated setup**
+- **⭐ [EDGE_FUNCTIONS_SETUP.md](./EDGE_FUNCTIONS_SETUP.md)** - **Deploy edge functions to Supabase**
 - **[AUTOMATED_MIGRATION_GUIDE.md](./AUTOMATED_MIGRATION_GUIDE.md)** - Complete automation guide
 - **[GITHUB_SUPABASE_DEPLOYMENT.md](./GITHUB_SUPABASE_DEPLOYMENT.md)** - Complete deployment guide
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Free hosting options

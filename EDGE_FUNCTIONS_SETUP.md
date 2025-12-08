@@ -57,11 +57,26 @@ The repository contains these edge functions:
 
 ### Method 1: Deploy All Functions (Recommended for Initial Setup)
 
-1. Go to **Actions** tab in your GitHub repository
-2. Select **"Deploy All Edge Functions"** workflow
-3. Click **"Run workflow"**
-4. Type `deploy` in the confirmation field
-5. Click **"Run workflow"**
+**How to access and run the workflow:**
+
+1. **Navigate to GitHub Actions**
+   - Go to your repository on GitHub (e.g., `https://github.com/YOUR_USERNAME/oricol-ticket-flow`)
+   - Click the **"Actions"** tab at the top of the page (between "Pull requests" and "Projects")
+
+2. **Select the deployment workflow**
+   - In the left sidebar under "Workflows", find and click **"Deploy All Edge Functions"**
+   - Or use the search box at the top to search for "Deploy All Edge Functions"
+
+3. **Run the workflow**
+   - Click the **"Run workflow"** dropdown button (on the right side)
+   - You'll see a confirmation field asking you to type `deploy`
+   - Type `deploy` in the confirmation field (this is a safety measure)
+   - Click the green **"Run workflow"** button
+
+4. **Monitor the deployment**
+   - The workflow will appear in the list below
+   - Click on it to see detailed deployment logs
+   - Wait for all edge functions to deploy (usually takes 2-5 minutes)
 
 This will deploy all edge functions to your Supabase project.
 
