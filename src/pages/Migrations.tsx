@@ -127,12 +127,16 @@ const Migrations = () => {
         (appliedMigrations || []).map((m: any) => [m.version, m.applied_at])
       );
 
-      const statusList: MigrationStatus[] = ALL_MIGRATIONS.map((filename, index) => ({
-        filename,
-        applied: appliedSet.has(filename),
-        appliedAt: appliedSet.get(filename),
-        order: index + 1,
-      }));
+      const statusList: MigrationStatus[] = ALL_MIGRATIONS.map((filename, index) => {
+        // Normalize the filename to match how it's stored in the database (without .sql extension)
+        const normalizedFilename = normalizeMigrationVersion(filename);
+        return {
+          filename,
+          applied: appliedSet.has(normalizedFilename),
+          appliedAt: appliedSet.get(normalizedFilename),
+          order: index + 1,
+        };
+      });
 
       setMigrations(statusList);
     } catch (error: any) {

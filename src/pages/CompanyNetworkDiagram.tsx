@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -624,6 +625,46 @@ const CompanyNetworkDiagram = () => {
           </Card>
         </div>
 
+        {/* Latest Network Diagram Overview */}
+        {diagrams && diagrams.length > 0 && (() => {
+          const latestDiagram = diagrams[0];
+          const diagramAny = latestDiagram as any;
+          const imagePath = diagramAny.image_path || diagramAny.diagram_url;
+          
+          return imagePath ? (
+            <Card className="mb-6">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl">Latest Network Diagram</CardTitle>
+                    <CardDescription>
+                      {diagramAny.name || diagramAny.diagram_name || "Company Network Overview"} - 
+                      Updated {new Date(latestDiagram.created_at).toLocaleDateString()}
+                    </CardDescription>
+                  </div>
+                  <Badge variant="default" className="text-xs">
+                    Most Recent
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-lg border overflow-hidden bg-muted">
+                  <img 
+                    src={supabase.storage.from('diagrams').getPublicUrl(imagePath).data.publicUrl}
+                    alt={diagramAny.name || diagramAny.diagram_name || "Latest Network Diagram"}
+                    className="w-full h-auto object-contain max-h-[500px]"
+                  />
+                </div>
+                {latestDiagram.description && (
+                  <p className="text-sm text-muted-foreground mt-4">
+                    {latestDiagram.description}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          ) : null;
+        })()}
+
         {/* Main Content with Copilot Sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
@@ -637,9 +678,9 @@ const CompanyNetworkDiagram = () => {
                 {/* Saved Diagrams */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Saved Network Diagrams</CardTitle>
+                    <CardTitle>All Network Diagrams</CardTitle>
                     <CardDescription>
-                      Network topology diagrams and uploaded images
+                      Network topology diagrams and uploaded images (sorted by most recent first)
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
