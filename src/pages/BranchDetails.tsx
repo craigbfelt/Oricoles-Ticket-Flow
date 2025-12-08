@@ -552,6 +552,9 @@ const BranchDetails = () => {
 
       // Get current user for created_by
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("You must be logged in to import network diagrams");
+      }
 
       // Insert the diagram
       const { error} = await (supabase as any).from("network_diagrams").insert([
@@ -560,7 +563,7 @@ const BranchDetails = () => {
           name: diagramData.name || file.name.replace('.json', ''),
           image_path: '',
           description: diagramData.description || null,
-          created_by: user?.id,
+          created_by: user.id,
           is_company_wide: false
         },
       ]);

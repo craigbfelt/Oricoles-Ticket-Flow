@@ -65,8 +65,20 @@ END $$;
 
 -- Make branch_id nullable (for company-wide diagrams)
 -- This was already done in migration 20251116081115, but we ensure it here as well
-ALTER TABLE public.network_diagrams 
-  ALTER COLUMN branch_id DROP NOT NULL;
+-- Check if the column is nullable before attempting to modify it
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'network_diagrams' 
+    AND column_name = 'branch_id'
+    AND is_nullable = 'NO'
+  ) THEN
+    ALTER TABLE public.network_diagrams 
+      ALTER COLUMN branch_id DROP NOT NULL;
+  END IF;
+END $$;
 
 -- Create indexes for new columns if they don't exist
 CREATE INDEX IF NOT EXISTS idx_network_diagrams_created_by 
