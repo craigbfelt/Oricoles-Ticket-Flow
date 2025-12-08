@@ -27,12 +27,15 @@ export function DiagramRedrawer({ open, onOpenChange, onSuccess }: DiagramRedraw
     setIsProcessing(true);
 
     try {
+      // Check authentication once at the beginning
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("You must be logged in to create network diagrams");
+      }
+
       // Upload image if provided
       let imagePath = null;
       if (imageFile) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("Not authenticated");
-
         const fileExt = imageFile.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
         const filePath = `old-diagrams/${fileName}`;
@@ -47,12 +50,6 @@ export function DiagramRedrawer({ open, onOpenChange, onSuccess }: DiagramRedraw
 
       // Call AI to analyze and create new diagram
       // For now, create a placeholder entry
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error("You must be logged in to create network diagrams");
-      }
-      
       const modernDescription = `Modernized version of: ${oldDiagramDescription || "Uploaded diagram"}
       
 Features:
