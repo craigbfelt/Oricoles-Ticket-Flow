@@ -62,7 +62,7 @@ jobs:
         if: steps.slugs.outputs.slugs != ''
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 1.200.3
 
       - name: Install dependencies
         if: steps.slugs.outputs.slugs != ''

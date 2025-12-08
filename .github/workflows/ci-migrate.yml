@@ -38,7 +38,7 @@ jobs:
       - name: Install supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 1.200.3
       - name: Confirm envs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
