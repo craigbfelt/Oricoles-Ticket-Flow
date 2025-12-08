@@ -342,11 +342,17 @@ const Dashboard = () => {
                       className="max-w-md"
                     />
                   </div>
-                  {usersWithStats.length === 0 && directoryUsers.length === 0 ? (
+                  {directoryUsers.length === 0 ? (
                     <p className="text-muted-foreground">No users synced from Intune yet</p>
                   ) : (
                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                      {(usersWithStats.length > 0 ? usersWithStats : directoryUsers)
+                      {(usersWithStats.length > 0 ? usersWithStats : directoryUsers.map(u => ({
+                        ...u,
+                        staffUser: false,
+                        vpnCount: 0,
+                        rdpCount: 0,
+                        deviceCount: 0
+                      })))
                         .filter((user) => {
                           if (!searchQuery) return true;
                           const query = searchQuery.toLowerCase();
@@ -357,7 +363,8 @@ const Dashboard = () => {
                           );
                         })
                         .map((user) => {
-                          const userWithStats = 'staffUser' in user ? user : null;
+                          // At this point, all users have stats (either real or default values)
+                          const userWithStats = user as UserWithStats;
                           return (
                             <div
                               key={user.id}
@@ -367,7 +374,7 @@ const Dashboard = () => {
                               <div className="flex flex-col items-center mb-3">
                                 <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-2 relative">
                                   <UserIcon className="h-8 w-8 text-primary" />
-                                  {userWithStats?.staffUser && (
+                                  {userWithStats.staffUser && (
                                     <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center" title="Staff User">
                                       <UsersIcon className="h-3 w-3 text-white" />
                                     </div>
@@ -389,7 +396,7 @@ const Dashboard = () => {
                               </div>
 
                               {/* Stats section */}
-                              {userWithStats && (
+                              {(userWithStats.deviceCount > 0 || userWithStats.vpnCount > 0 || userWithStats.rdpCount > 0) && (
                                 <div className="flex flex-wrap gap-1 justify-center mb-2">
                                   {userWithStats.deviceCount > 0 && (
                                     <Badge variant="outline" className="text-xs gap-1">
