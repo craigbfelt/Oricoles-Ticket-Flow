@@ -228,9 +228,11 @@ const BranchDetails = () => {
       const { error } = await (supabase as any).from("network_diagrams").insert([
         {
           branch_id: branchId,
-          diagram_name: data.diagram_name,
-          diagram_url: '',
-          description: data.description || null
+          name: data.diagram_name,
+          image_path: '',
+          description: data.description || null,
+          created_by: user?.id,
+          is_company_wide: false
         }
       ]);
       if (error) throw error;
@@ -254,9 +256,11 @@ const BranchDetails = () => {
       const { data: { user } } = await supabase.auth.getUser();
       const { error } = await (supabase as any).from("network_diagrams").insert([{
         branch_id: branchId,
-        diagram_name: data.diagram_name,
-        diagram_url: (data as any).imagePath || '',
-        description: data.description || null
+        name: data.diagram_name,
+        image_path: (data as any).imagePath || '',
+        description: data.description || null,
+        created_by: user?.id,
+        is_company_wide: false
       }]);
       if (error) throw error;
     },
@@ -546,13 +550,18 @@ const BranchDetails = () => {
       const text = await file.text();
       const diagramData = JSON.parse(text);
 
+      // Get current user for created_by
+      const { data: { user } } = await supabase.auth.getUser();
+
       // Insert the diagram
       const { error} = await (supabase as any).from("network_diagrams").insert([
         {
           branch_id: branchId,
-          diagram_name: diagramData.name || file.name.replace('.json', ''),
-          diagram_url: '',
-          description: diagramData.description || null
+          name: diagramData.name || file.name.replace('.json', ''),
+          image_path: '',
+          description: diagramData.description || null,
+          created_by: user?.id,
+          is_company_wide: false
         },
       ]);
 
