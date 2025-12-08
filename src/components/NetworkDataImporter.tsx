@@ -374,11 +374,13 @@ export const NetworkDataImporter = ({ onDataImported, targetPage }: NetworkDataI
             const response = await fetch(img.dataUrl);
             const blob = await response.blob();
             
-            // Generate unique filename
-            const timestamp = Date.now();
-            const randomStr = Math.random().toString(36).substring(7);
-            const fileExt = img.dataUrl.includes('image/png') ? 'png' : 'jpeg';
-            const fileName = `${timestamp}_${randomStr}_${i}.${fileExt}`;
+            // Extract MIME type from data URL (e.g., "data:image/png;base64,...")
+            const mimeMatch = img.dataUrl.match(/data:image\/(\w+);/);
+            const mimeType = mimeMatch ? mimeMatch[1] : 'png';
+            
+            // Generate unique filename using crypto UUID and index for uniqueness
+            const uuid = crypto.randomUUID();
+            const fileName = `${uuid}_${i}.${mimeType}`;
             
             // Determine storage path based on target page
             const folderPath = targetPage === 'nymbis-cloud' ? 'cloud-networks' : 'company-network';
