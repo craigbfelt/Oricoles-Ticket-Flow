@@ -668,19 +668,20 @@ const CompanyNetworkDiagram = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div 
-                  className="rounded-lg border overflow-hidden bg-muted cursor-pointer hover:opacity-90 transition-opacity"
+                <button
+                  className="rounded-lg border overflow-hidden bg-muted cursor-pointer hover:opacity-90 transition-opacity w-full block focus:ring-2 focus:ring-primary focus:outline-none"
                   onClick={() => handleViewFullPage(
                     supabase.storage.from('diagrams').getPublicUrl(imagePath).data.publicUrl,
                     diagramAny.name || diagramAny.diagram_name || "Network Diagram"
                   )}
+                  aria-label={`View full page image of ${diagramAny.name || diagramAny.diagram_name || "Network Diagram"}`}
                 >
                   <img 
                     src={supabase.storage.from('diagrams').getPublicUrl(imagePath).data.publicUrl}
                     alt={diagramAny.name || diagramAny.diagram_name || "Latest Network Diagram"}
                     className="w-full h-auto object-contain max-h-[500px]"
                   />
-                </div>
+                </button>
                 {latestDiagram.description && (
                   <p className="text-sm text-muted-foreground mt-4">
                     {latestDiagram.description}
@@ -767,24 +768,34 @@ const CompanyNetworkDiagram = () => {
         {/* Full Page Image Viewer */}
         {fullPageImageUrl && (
           <div 
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="image-viewer-title"
             className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
             onClick={() => setFullPageImageUrl(null)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setFullPageImageUrl(null);
+              }
+            }}
           >
             <Button
               variant="ghost"
               size="icon"
               className="absolute top-4 right-4 text-white hover:bg-white/20"
               onClick={() => setFullPageImageUrl(null)}
+              aria-label="Close image viewer"
             >
               <X className="h-6 w-6" />
             </Button>
             <div className="relative max-w-[95vw] max-h-[95vh] flex flex-col items-center">
-              <h2 className="text-white text-xl font-semibold mb-4">{fullPageImageName}</h2>
+              <h2 id="image-viewer-title" className="text-white text-xl font-semibold mb-4">{fullPageImageName}</h2>
               <img
                 src={fullPageImageUrl}
                 alt={fullPageImageName}
                 className="max-w-full max-h-[85vh] object-contain"
                 onClick={(e) => e.stopPropagation()}
+                tabIndex={0}
               />
               <div className="mt-4 flex gap-2">
                 <Button
@@ -876,17 +887,17 @@ const DiagramCard = ({
   return (
     <div className="flex items-start gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
       {imageUrl && (
-        <div 
-          className="flex-shrink-0 w-48 h-32 border rounded-lg overflow-hidden bg-muted cursor-pointer hover:opacity-90 transition-opacity"
+        <button
+          className="flex-shrink-0 w-48 h-32 border rounded-lg overflow-hidden bg-muted cursor-pointer hover:opacity-90 transition-opacity focus:ring-2 focus:ring-primary focus:outline-none"
           onClick={() => onViewFullPage?.(imageUrl, diagramAny.name || diagramAny.diagram_name || "Network Diagram")}
-          title="Click to view full page"
+          aria-label={`View full page image of ${diagramAny.name || diagramAny.diagram_name || "Network Diagram"}`}
         >
           <img 
             src={imageUrl} 
             alt={diagramAny.name || diagramAny.diagram_name} 
             className="w-full h-full object-cover"
           />
-        </div>
+        </button>
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">

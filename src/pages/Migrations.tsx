@@ -475,14 +475,14 @@ const Migrations = () => {
             <TabsTrigger value="unapplied" className="relative">
               Unapplied Migrations
               {pendingMigrations.length > 0 && (
-                <Badge variant="destructive" className="ml-2 h-5 min-w-5 px-1">
+                <Badge variant="destructive" className="ml-2 h-5 min-w-5 px-1" aria-label={`${pendingMigrations.length} pending migrations`}>
                   {pendingMigrations.length}
                 </Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="applied">
               Applied Migrations
-              <Badge variant="secondary" className="ml-2 h-5 min-w-5 px-1">
+              <Badge variant="secondary" className="ml-2 h-5 min-w-5 px-1" aria-label={`${appliedCount} applied migrations`}>
                 {appliedCount}
               </Badge>
             </TabsTrigger>
