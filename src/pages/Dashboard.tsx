@@ -26,7 +26,6 @@ interface DeviceInfo {
 
 interface CredentialInfo {
   username: string;
-  service_type: string;
 }
 
 interface UserWithStats extends DirectoryUser {
@@ -89,8 +88,7 @@ const Dashboard = () => {
         const email = cred.email?.toLowerCase();
         if (email) {
           const credInfo: CredentialInfo = {
-            username: cred.username,
-            service_type: cred.service_type
+            username: cred.username
           };
           if (cred.service_type === 'VPN') {
             const existing = vpnMap.get(email) || [];
@@ -472,7 +470,7 @@ const Dashboard = () => {
                               {userWithStats.devices.length > 0 && (
                                 <div className="text-xs space-y-1 mb-2 text-left w-full">
                                   {userWithStats.devices.slice(0, 2).map((device, idx) => (
-                                    <div key={idx} className="border-t pt-1 border-border/50">
+                                    <div key={device.serial_number || device.device_name || idx} className="border-t pt-1 border-border/50">
                                       {device.device_name && (
                                         <div className="font-medium text-muted-foreground truncate">
                                           {device.device_name}
@@ -505,7 +503,7 @@ const Dashboard = () => {
                                     <Wifi className="h-3 w-3" /> VPN:
                                   </div>
                                   {userWithStats.vpnCredentials.slice(0, 2).map((cred, idx) => (
-                                    <div key={idx} className="text-muted-foreground truncate pl-4">
+                                    <div key={`vpn-${cred.username}-${idx}`} className="text-muted-foreground truncate pl-4">
                                       {cred.username}
                                     </div>
                                   ))}
@@ -524,7 +522,7 @@ const Dashboard = () => {
                                     <Server className="h-3 w-3" /> RDP:
                                   </div>
                                   {userWithStats.rdpCredentials.slice(0, 2).map((cred, idx) => (
-                                    <div key={idx} className="text-muted-foreground truncate pl-4">
+                                    <div key={`rdp-${cred.username}-${idx}`} className="text-muted-foreground truncate pl-4">
                                       {cred.username}
                                     </div>
                                   ))}
