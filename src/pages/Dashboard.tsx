@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -213,6 +213,21 @@ const Dashboard = () => {
     fetchDashboardData();
   }, [navigate, checkAdminRole, fetchDashboardData]);
 
+  // Memoize the users list with stats to prevent unnecessary re-computations
+  const displayUsers = useMemo(() => {
+    if (usersWithStats.length > 0) {
+      return usersWithStats;
+    }
+    // Provide default stats for users while enrichment is loading
+    return directoryUsers.map(u => ({
+      ...u,
+      staffUser: false,
+      vpnCount: 0,
+      rdpCount: 0,
+      deviceCount: 0
+    }));
+  }, [usersWithStats, directoryUsers]);
+
   const getStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
       open: "bg-status-open",
@@ -346,13 +361,7 @@ const Dashboard = () => {
                     <p className="text-muted-foreground">No users synced from Intune yet</p>
                   ) : (
                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                      {(usersWithStats.length > 0 ? usersWithStats : directoryUsers.map(u => ({
-                        ...u,
-                        staffUser: false,
-                        vpnCount: 0,
-                        rdpCount: 0,
-                        deviceCount: 0
-                      })))
+                      {displayUsers
                         .filter((user) => {
                           if (!searchQuery) return true;
                           const query = searchQuery.toLowerCase();
