@@ -130,28 +130,14 @@ const UserDetails = () => {
       setUser(userData);
 
       if (userData) {
-        // Fetch devices associated with this user - using safe filtering approach
-        let devicesData = [];
+        // Fetch devices associated with this user using parameterized queries
+        let devicesData: Device[] = [];
         
-        if (userData.user_principal_name && userData.email) {
-          const { data } = await supabase
-            .from("hardware_inventory")
-            .select("*")
-            .or(`m365_user_principal_name.eq.${userData.user_principal_name},email.eq.${userData.email}`)
-            .order("device_name");
-          devicesData = data || [];
-        } else if (userData.user_principal_name) {
+        if (userData.user_principal_name) {
           const { data } = await supabase
             .from("hardware_inventory")
             .select("*")
             .eq("m365_user_principal_name", userData.user_principal_name)
-            .order("device_name");
-          devicesData = data || [];
-        } else if (userData.email) {
-          const { data } = await supabase
-            .from("hardware_inventory")
-            .select("*")
-            .eq("email", userData.email)
             .order("device_name");
           devicesData = data || [];
         }
@@ -159,32 +145,51 @@ const UserDetails = () => {
         setDevices(devicesData);
 
         // Fetch VPN/RDP credentials for this user
-        const { data: credentialsData } = await supabase
-          .from("vpn_rdp_credentials")
-          .select("id, username, service_type, email, notes")
-          .eq("email", userData.email);
+        if (userData.email) {
+          const { data: credentialsData } = await supabase
+            .from("vpn_rdp_credentials")
+            .select("id, username, service_type, email, notes")
+            .eq("email", userData.email);
 
-        setCredentials(credentialsData || []);
+          setCredentials(credentialsData || []);
+        }
 
         // Fetch tickets created by or assigned to this user
         // First, find if there's a corresponding auth user
-        const { data: authUserData } = await supabase
-          .from("profiles")
-          .select("user_id, branch, full_name")
-          .eq("email", userData.email)
-          .maybeSingle();
+        if (userData.email) {
+          const { data: authUserData } = await supabase
+            .from("profiles")
+            .select("user_id, branch, full_name")
+            .eq("email", userData.email)
+            .maybeSingle();
 
-        if (authUserData) {
-          setProfile({ branch: authUserData.branch, full_name: authUserData.full_name });
+          if (authUserData) {
+            setProfile({ branch: authUserData.branch, full_name: authUserData.full_name });
 
-          const { data: ticketsData } = await supabase
-            .from("tickets")
-            .select("id, title, status, priority, created_at")
-            .or(`created_by.eq.${authUserData.user_id},assigned_to.eq.${authUserData.user_id}`)
-            .order("created_at", { ascending: false })
-            .limit(20);
+            // Fetch tickets using safe parameterized approach
+            const { data: createdTickets } = await supabase
+              .from("tickets")
+              .select("id, title, status, priority, created_at")
+              .eq("created_by", authUserData.user_id)
+              .order("created_at", { ascending: false })
+              .limit(10);
 
-          setTickets(ticketsData || []);
+            const { data: assignedTickets } = await supabase
+              .from("tickets")
+              .select("id, title, status, priority, created_at")
+              .eq("assigned_to", authUserData.user_id)
+              .order("created_at", { ascending: false })
+              .limit(10);
+
+            // Combine and deduplicate tickets
+            const allTickets = [...(createdTickets || []), ...(assignedTickets || [])];
+            const uniqueTickets = Array.from(
+              new Map(allTickets.map(ticket => [ticket.id, ticket])).values()
+            ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+             .slice(0, 20);
+
+            setTickets(uniqueTickets);
+          }
         }
       }
     } catch (error) {
@@ -414,7 +419,7 @@ const UserDetails = () => {
                       <div
                         key={ticket.id}
                         className="p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer"
-                        onClick={() => navigate("/tickets")}
+                        onClick={() => navigate(`/tickets?id=${ticket.id}`)}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
