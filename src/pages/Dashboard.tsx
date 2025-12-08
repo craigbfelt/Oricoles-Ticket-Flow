@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { CopilotPrompt } from "@/components/CopilotPrompt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Ticket, Package, AlertCircle, CheckCircle, Monitor, User as UserIcon } from "lucide-react";
+import { Ticket, Package, AlertCircle, CheckCircle, Monitor, User as UserIcon, Users as UsersIcon, Wifi, Server, Computer } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,14 @@ interface DirectoryUser {
   email: string | null;
   job_title: string | null;
   account_enabled: boolean | null;
+  user_principal_name: string | null;
+}
+
+interface UserWithStats extends DirectoryUser {
+  staffUser: boolean;
+  vpnCount: number;
+  rdpCount: number;
+  deviceCount: number;
 }
 
 const Dashboard = () => {
@@ -25,24 +33,106 @@ const Dashboard = () => {
     totalAssets: 0,
     activeAssets: 0,
   });
-  const [recentTickets, setRecentTickets] = useState<any[]>([]);
+  
+  interface Ticket {
+    id: string;
+    title: string;
+    status: string;
+    created_at: string;
+  }
+  
+  const [recentTickets, setRecentTickets] = useState<Ticket[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [directoryUsers, setDirectoryUsers] = useState<DirectoryUser[]>([]);
+  const [usersWithStats, setUsersWithStats] = useState<UserWithStats[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
-        checkAdminRole(session.user.id);
+  const enrichUsersWithStats = useCallback(async (users: DirectoryUser[]) => {
+    try {
+      // Fetch all staff users (profiles)
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("email");
+
+      const staffEmails = new Set(profiles?.map(p => p.email?.toLowerCase()) || []);
+
+      // Fetch all VPN/RDP credentials
+      const { data: credentials } = await supabase
+        .from("vpn_rdp_credentials")
+        .select("email, service_type");
+
+      // Fetch all hardware inventory with user assignments
+      const { data: devices } = await supabase
+        .from("hardware_inventory")
+        .select("m365_user_principal_name");
+
+      // Create maps for quick lookup
+      const vpnMap = new Map<string, number>();
+      const rdpMap = new Map<string, number>();
+      
+      credentials?.forEach(cred => {
+        const email = cred.email?.toLowerCase();
+        if (email) {
+          if (cred.service_type === 'VPN') {
+            vpnMap.set(email, (vpnMap.get(email) || 0) + 1);
+          } else if (cred.service_type === 'RDP') {
+            rdpMap.set(email, (rdpMap.get(email) || 0) + 1);
+          }
+        }
+      });
+
+      const deviceMap = new Map<string, number>();
+      devices?.forEach(device => {
+        const upn = device.m365_user_principal_name?.toLowerCase();
+        if (upn) {
+          deviceMap.set(upn, (deviceMap.get(upn) || 0) + 1);
+        }
+      });
+
+      // Enrich users with stats
+      const enrichedUsers: UserWithStats[] = users.map(user => {
+        const email = user.email?.toLowerCase() || '';
+        const upn = user.user_principal_name?.toLowerCase() || '';
+        
+        return {
+          ...user,
+          staffUser: staffEmails.has(email),
+          vpnCount: vpnMap.get(email) || 0,
+          rdpCount: rdpMap.get(email) || 0,
+          deviceCount: deviceMap.get(upn) || 0,
+        };
+      });
+
+      setUsersWithStats(enrichedUsers);
+    } catch (error) {
+      console.error("Error enriching users with stats:", error);
+    }
+  }, []);
+
+  const fetchDirectoryUsers = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("directory_users")
+        .select("id, display_name, email, job_title, account_enabled, user_principal_name")
+        .order("display_name")
+        .limit(500); // Add reasonable limit for performance
+
+      if (error) {
+        console.error("Error fetching directory users:", error);
+        return;
       }
-    });
 
-    fetchDashboardData();
-  }, [navigate]);
+      if (data) {
+        setDirectoryUsers(data);
+        // Fetch additional stats for each user
+        await enrichUsersWithStats(data);
+      }
+    } catch (error) {
+      console.error("Error fetching directory users:", error);
+    }
+  }, [enrichUsersWithStats]);
 
-  const checkAdminRole = async (userId: string) => {
+  const checkAdminRole = useCallback(async (userId: string) => {
     try {
       const { data: roles, error } = await supabase
         .from("user_roles")
@@ -65,30 +155,9 @@ const Dashboard = () => {
     } catch (error) {
       console.error("Error checking admin role:", error);
     }
-  };
+  }, [fetchDirectoryUsers]);
 
-  const fetchDirectoryUsers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("directory_users")
-        .select("id, display_name, email, job_title, account_enabled")
-        .order("display_name")
-        .limit(500); // Add reasonable limit for performance
-
-      if (error) {
-        console.error("Error fetching directory users:", error);
-        return;
-      }
-
-      if (data) {
-        setDirectoryUsers(data);
-      }
-    } catch (error) {
-      console.error("Error fetching directory users:", error);
-    }
-  };
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     const { data: tickets } = await supabase
       .from("tickets")
       .select("*")
@@ -130,7 +199,19 @@ const Dashboard = () => {
     });
 
     setRecentTickets(tickets || []);
-  };
+  }, [isAdmin]);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/auth");
+      } else {
+        checkAdminRole(session.user.id);
+      }
+    });
+
+    fetchDashboardData();
+  }, [navigate, checkAdminRole, fetchDashboardData]);
 
   const getStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
@@ -198,12 +279,12 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        <Tabs defaultValue="overview" className="w-full">
+        <Tabs defaultValue={isAdmin ? "users" : "overview"} className="w-full">
           <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
             {isAdmin && (
               <TabsTrigger value="users">Users ({directoryUsers.length})</TabsTrigger>
             )}
+            <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="copilot">GitHub Copilot</TabsTrigger>
           </TabsList>
 
@@ -243,8 +324,8 @@ const Dashboard = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Monitor className="h-5 w-5" />
-                    Intune Users
+                    <UsersIcon className="h-5 w-5" />
+                    Users Directory
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
                     Click on a user to view their complete details including devices, credentials, and history
@@ -261,11 +342,11 @@ const Dashboard = () => {
                       className="max-w-md"
                     />
                   </div>
-                  {directoryUsers.length === 0 ? (
+                  {usersWithStats.length === 0 && directoryUsers.length === 0 ? (
                     <p className="text-muted-foreground">No users synced from Intune yet</p>
                   ) : (
                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                      {directoryUsers
+                      {(usersWithStats.length > 0 ? usersWithStats : directoryUsers)
                         .filter((user) => {
                           if (!searchQuery) return true;
                           const query = searchQuery.toLowerCase();
@@ -275,30 +356,65 @@ const Dashboard = () => {
                             user.job_title?.toLowerCase().includes(query)
                           );
                         })
-                        .map((user) => (
-                          <div
-                            key={user.id}
-                            className="flex flex-col items-center p-4 rounded-lg border border-border hover:bg-muted/50 hover:shadow-md transition-all cursor-pointer"
-                            onClick={() => navigate(`/user-details/${user.id}`)}
-                          >
-                            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                              <UserIcon className="h-8 w-8 text-primary" />
-                            </div>
-                            <div className="text-center w-full">
-                              <h3 className="font-semibold text-sm line-clamp-1">
-                                {user.display_name || "Unknown"}
-                              </h3>
-                              <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
-                                {user.email || "No email"}
-                              </p>
-                              {user.job_title && (
-                                <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
-                                  {user.job_title}
-                                </p>
+                        .map((user) => {
+                          const userWithStats = 'staffUser' in user ? user : null;
+                          return (
+                            <div
+                              key={user.id}
+                              className="flex flex-col p-4 rounded-lg border border-border hover:bg-muted/50 hover:shadow-md transition-all cursor-pointer"
+                              onClick={() => navigate(`/user-details/${user.id}`)}
+                            >
+                              <div className="flex flex-col items-center mb-3">
+                                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-2 relative">
+                                  <UserIcon className="h-8 w-8 text-primary" />
+                                  {userWithStats?.staffUser && (
+                                    <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center" title="Staff User">
+                                      <UsersIcon className="h-3 w-3 text-white" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="text-center w-full">
+                                  <h3 className="font-semibold text-sm line-clamp-1">
+                                    {user.display_name || "Unknown"}
+                                  </h3>
+                                  <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
+                                    {user.email || "No email"}
+                                  </p>
+                                  {user.job_title && (
+                                    <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
+                                      {user.job_title}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Stats section */}
+                              {userWithStats && (
+                                <div className="flex flex-wrap gap-1 justify-center mb-2">
+                                  {userWithStats.deviceCount > 0 && (
+                                    <Badge variant="outline" className="text-xs gap-1">
+                                      <Computer className="h-3 w-3" />
+                                      {userWithStats.deviceCount}
+                                    </Badge>
+                                  )}
+                                  {userWithStats.vpnCount > 0 && (
+                                    <Badge variant="outline" className="text-xs gap-1">
+                                      <Wifi className="h-3 w-3" />
+                                      {userWithStats.vpnCount}
+                                    </Badge>
+                                  )}
+                                  {userWithStats.rdpCount > 0 && (
+                                    <Badge variant="outline" className="text-xs gap-1">
+                                      <Server className="h-3 w-3" />
+                                      {userWithStats.rdpCount}
+                                    </Badge>
+                                  )}
+                                </div>
                               )}
+
                               {user.account_enabled !== null && (
                                 <Badge
-                                  className={`mt-2 text-xs ${
+                                  className={`text-xs w-full justify-center ${
                                     user.account_enabled ? "bg-green-500" : "bg-gray-500"
                                   }`}
                                 >
@@ -306,8 +422,8 @@ const Dashboard = () => {
                                 </Badge>
                               )}
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                     </div>
                   )}
                 </CardContent>
