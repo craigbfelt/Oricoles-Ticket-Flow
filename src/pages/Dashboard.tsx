@@ -70,12 +70,12 @@ const Dashboard = () => {
 
       const staffEmails = new Set(profiles?.map(p => p.email?.toLowerCase()) || []);
 
-      // Fetch all VPN/RDP credentials with detailed information
+      // Fetch VPN/RDP credentials including usernames for display
       const { data: credentials } = await supabase
         .from("vpn_rdp_credentials")
         .select("email, service_type, username");
 
-      // Fetch all hardware inventory with user assignments and device details
+      // Fetch hardware inventory including serial numbers, models, and device names
       const { data: devices } = await supabase
         .from("hardware_inventory")
         .select("m365_user_principal_name, serial_number, model, device_name");
@@ -114,7 +114,7 @@ const Dashboard = () => {
         }
       });
 
-      // Enrich users with stats and detailed information
+      // Enrich users with counts and arrays of device/credential details
       const enrichedUsers: UserWithStats[] = users.map(user => {
         const email = user.email?.toLowerCase() || '';
         const upn = user.user_principal_name?.toLowerCase() || '';
