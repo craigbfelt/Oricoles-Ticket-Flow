@@ -163,9 +163,11 @@ export const ImportItemSelector = ({ items, onImportComplete, onCancel }: Import
             .from('network_diagrams')
             .insert({
               branch_id: (destination as any).branch_id || null,
-              diagram_name: item.content.name || 'Imported Image',
-              diagram_url: storagePath,
-              description: destination.notes || null
+              name: item.content.name || 'Imported Image',
+              image_path: storagePath,
+              description: destination.notes || null,
+              created_by: user.id,
+              is_company_wide: destination.target === 'company-network'
             });
 
           if (dbError) throw dbError;
@@ -208,9 +210,11 @@ export const ImportItemSelector = ({ items, onImportComplete, onCancel }: Import
             .from('network_diagrams')
             .insert({
               branch_id: (destination as any).branch_id || null,
-              diagram_name: `Page ${item.content.pageNumber || 'Unknown'}`,
-              diagram_url: storagePath,
-              description: item.content.text || destination.notes || null
+              name: `Page ${item.content.pageNumber || 'Unknown'}`,
+              image_path: storagePath,
+              description: item.content.text || destination.notes || null,
+              created_by: user.id,
+              is_company_wide: false
             });
 
           if (dbError) throw dbError;
