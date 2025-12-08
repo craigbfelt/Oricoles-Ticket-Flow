@@ -60,8 +60,9 @@ jobs:
 
       - name: Install supabase CLI
         if: steps.slugs.outputs.slugs != ''
-        run: |
-          npm install -g supabase
+        uses: supabase/setup-cli@v1
+        with:
+          version: 1.200.3
 
       - name: Install dependencies
         if: steps.slugs.outputs.slugs != ''
