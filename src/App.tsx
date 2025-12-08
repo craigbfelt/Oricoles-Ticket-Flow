@@ -41,6 +41,7 @@ import Sage from "./pages/Sage";
 import Migrations from "./pages/Migrations";
 import MigrationTrackerPage from "./pages/MigrationTrackerPage";
 import ITSuppliers from "./pages/ITSuppliers";
+import NetworkDiagramOverview from "./pages/NetworkDiagramOverview";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +86,7 @@ const App = () => {
           <Route path="/logistics" element={<Logistics />} />
           <Route path="/nymbis-rdp-cloud" element={<NymbisRdpCloud />} />
           <Route path="/company-network" element={<CompanyNetworkDiagram />} />
+          <Route path="/network-diagram-overview" element={<NetworkDiagramOverview />} />
           <Route path="/document-hub" element={<DocumentHub />} />
           <Route path="/shared-files" element={<SharedFiles />} />
           <Route path="/crm" element={<CRM />} />
