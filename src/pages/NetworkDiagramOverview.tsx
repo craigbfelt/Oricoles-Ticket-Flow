@@ -304,10 +304,12 @@ const NetworkDiagramOverview = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="image-viewer-title"
+            tabIndex={-1}
             className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
             onClick={() => setFullPageImageUrl(null)}
             onKeyDown={(e) => {
-              if (e.key === 'Escape') {
+              if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
                 setFullPageImageUrl(null);
               }
             }}
@@ -330,7 +332,6 @@ const NetworkDiagramOverview = () => {
                 alt={fullPageImageName}
                 className="max-w-full max-h-[85vh] object-contain"
                 onClick={(e) => e.stopPropagation()}
-                tabIndex={0}
               />
               <div className="mt-4 flex gap-2">
                 <Button
