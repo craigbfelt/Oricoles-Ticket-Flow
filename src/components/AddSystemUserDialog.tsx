@@ -182,19 +182,7 @@ export function AddSystemUserDialog({ onSuccess }: { onSuccess: () => void }) {
                   Admin
                 </label>
               </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="add-role-ceo"
-                  checked={roles.includes('ceo')}
-                  onCheckedChange={() => toggleRole('ceo')}
-                />
-                <label
-                  htmlFor="add-role-ceo"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  CEO
-                </label>
-              </div>
+
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="add-role-support-staff"
