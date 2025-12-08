@@ -144,7 +144,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const allNavigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, requiredRoles: [] }, // Everyone
     { name: "Tickets", href: "/tickets", icon: Ticket, requiredRoles: ['admin'] }, // Admin only
-    { name: "Devices / PCs", href: "/devices", icon: Monitor, requiredRoles: ['admin', 'ceo', 'support_staff'] },
+    { name: "Devices / PCs", href: "/devices", icon: Monitor, requiredRoles: ['admin', 'support_staff'] },
     { name: "IT Suppliers", href: "/it-suppliers", icon: Building2, requiredRoles: [] }, // Everyone can view
     { name: "Oricol CRM", href: "/crm", icon: TrendingUp, requiredRoles: ['admin'] }, // Admin only
     { name: "Bluewave CRM", href: "/bluewave-crm", icon: Waves, requiredRoles: ['admin'] }, // Admin only
@@ -154,21 +154,21 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Shared Files", href: "/shared-files", icon: FolderTree, requiredRoles: ['admin'] }, // Admin only
     { name: "Migrations", href: "/migrations", icon: Code, requiredRoles: ['admin'] }, // Admin only
     { name: "Migration Tracker", href: "/migration-tracker", icon: GitBranch, requiredRoles: ['admin'] }, // Admin only
-    { name: "Jobs", href: "/jobs", icon: Briefcase, requiredRoles: ['admin', 'ceo', 'support_staff'] },
-    { name: "Maintenance", href: "/maintenance", icon: Wrench, requiredRoles: ['admin', 'ceo', 'support_staff'] },
-    { name: "Logistics", href: "/logistics", icon: Truck, requiredRoles: ['admin', 'ceo', 'support_staff'] },
-    { name: "Assets", href: "/assets", icon: Package, requiredRoles: ['admin', 'ceo', 'support_staff'] },
-    { name: "Branches", href: "/branches", icon: Building2, requiredRoles: ['admin', 'ceo', 'support_staff'] },
-    { name: "Microsoft 365", href: "/microsoft-365", icon: Cloud, requiredRoles: ['admin', 'ceo', 'support_staff'] },
-    { name: "Hardware", href: "/hardware", icon: Monitor, requiredRoles: ['admin', 'ceo', 'support_staff'] },
-    { name: "Software", href: "/software", icon: Code, requiredRoles: ['admin', 'ceo', 'support_staff'] },
-    { name: "Licenses", href: "/licenses", icon: Key, requiredRoles: ['admin', 'ceo', 'support_staff'] },
-    { name: "Provider Emails", href: "/provider-emails", icon: FileBarChart, requiredRoles: ['admin', 'ceo', 'support_staff'] },
-    { name: "VPN", href: "/vpn", icon: Key, requiredRoles: ['admin', 'ceo', 'support_staff'] },
-    { name: "RDP", href: "/rdp", icon: Monitor, requiredRoles: ['admin', 'ceo', 'support_staff'] },
-    { name: "Nymbis RDP Cloud", href: "/nymbis-rdp-cloud", icon: Cloud, requiredRoles: ['admin', 'ceo', 'support_staff'] },
-    { name: "Company Network", href: "/company-network", icon: Network, requiredRoles: ['admin', 'ceo', 'support_staff'] },
-    { name: "Reports", href: "/reports", icon: FileBarChart, requiredRoles: ['admin', 'ceo', 'support_staff'] },
+    { name: "Jobs", href: "/jobs", icon: Briefcase, requiredRoles: ['admin', 'support_staff'] },
+    { name: "Maintenance", href: "/maintenance", icon: Wrench, requiredRoles: ['admin', 'support_staff'] },
+    { name: "Logistics", href: "/logistics", icon: Truck, requiredRoles: ['admin', 'support_staff'] },
+    { name: "Assets", href: "/assets", icon: Package, requiredRoles: ['admin', 'support_staff'] },
+    { name: "Branches", href: "/branches", icon: Building2, requiredRoles: ['admin', 'support_staff'] },
+    { name: "Microsoft 365", href: "/microsoft-365", icon: Cloud, requiredRoles: ['admin', 'support_staff'] },
+    { name: "Hardware", href: "/hardware", icon: Monitor, requiredRoles: ['admin', 'support_staff'] },
+    { name: "Software", href: "/software", icon: Code, requiredRoles: ['admin', 'support_staff'] },
+    { name: "Licenses", href: "/licenses", icon: Key, requiredRoles: ['admin', 'support_staff'] },
+    { name: "Provider Emails", href: "/provider-emails", icon: FileBarChart, requiredRoles: ['admin', 'support_staff'] },
+    { name: "VPN", href: "/vpn", icon: Key, requiredRoles: ['admin', 'support_staff'] },
+    { name: "RDP", href: "/rdp", icon: Monitor, requiredRoles: ['admin', 'support_staff'] },
+    { name: "Nymbis RDP Cloud", href: "/nymbis-rdp-cloud", icon: Cloud, requiredRoles: ['admin', 'support_staff'] },
+    { name: "Company Network", href: "/company-network", icon: Network, requiredRoles: ['admin', 'support_staff'] },
+    { name: "Reports", href: "/reports", icon: FileBarChart, requiredRoles: ['admin', 'support_staff'] },
     { name: "Users", href: "/users", icon: Users, requiredRoles: ['admin'] }, // Admin only, not CEO
     { name: "Settings", href: "/settings", icon: Settings, requiredRoles: [] }, // Everyone
   ];
@@ -182,7 +182,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       
       // Check if user has any of the required roles
       if (item.requiredRoles.includes('admin') && isAdmin) return true;
-      if (item.requiredRoles.includes('ceo') && isCEO) return true;
       if (item.requiredRoles.includes('support_staff') && isSupportStaff) return true;
       
       return false;

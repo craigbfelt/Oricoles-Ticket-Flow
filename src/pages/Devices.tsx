@@ -78,12 +78,12 @@ const Devices = () => {
       return;
     }
 
-    // Check if user has admin, ceo, or support_staff role
+    // Check if user has admin or support_staff role
     const { data: rolesData, error: rolesError } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", session.user.id)
-      .in("role", ["admin", "ceo", "support_staff"]);
+      .in("role", ["admin", "support_staff"]);
 
     if (rolesError) {
       console.error("Error checking user roles:", rolesError);
@@ -99,7 +99,7 @@ const Devices = () => {
     if (!rolesData || rolesData.length === 0) {
       toast({
         title: "Access Denied",
-        description: "You need admin, CEO, or support staff privileges to view this page. Please contact your administrator to request access.",
+        description: "You need admin or support staff privileges to view this page. Please contact your administrator to request access.",
         variant: "destructive",
       });
       navigate("/dashboard");

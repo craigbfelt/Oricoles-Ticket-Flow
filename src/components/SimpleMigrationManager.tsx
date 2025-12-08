@@ -36,14 +36,13 @@ const ALL_MIGRATION_FILES = [
   "20251112064207_553f2a8d-2fd8-45f6-8f5b-3c7bf3f97c00.sql",
   "20251112065350_76d95c8d-1109-46fa-8b90-e18e53a62df7.sql",
   "20251112065604_0346015b-e2b3-4bfe-a6b5-764f8ae93e59.sql",
-  "20251112124800_add_ceo_role.sql",
+
   "20251112135110_restore_admin_role_for_craig.sql",
   "20251112151903_auto_assign_admin_role.sql",
-  "20251112160000_allow_ceo_view_all_profiles.sql",
-  "20251112161521_restore_admin_and_ceo_roles.sql",
+
   "20251112170113_create_new_admin_account.sql",
   "20251112172925_add_admin_zerobitone_to_auto_admin.sql",
-  "20251112184500_fix_ceo_permissions.sql",
+
   "20251112185000_ensure_admin_roles.sql",
   "20251112190000_verify_permissions.sql",
   "20251112200000_ensure_craig_has_admin_role.sql",
