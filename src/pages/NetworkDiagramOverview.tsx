@@ -67,21 +67,25 @@ const NetworkDiagramOverview = () => {
     },
   });
 
+  // Helper function to check if a diagram is Nymbis-related
+  const isNymbisDiagram = (diagram: NetworkDiagram): boolean => {
+    return !!(
+      diagram.image_path && (
+        diagram.image_path.includes('cloud-networks') || 
+        diagram.name?.toLowerCase().includes('nymbis')
+      )
+    );
+  };
+
   // Separate diagrams by category - ONLY show diagrams with actual images
   const companyDiagrams = allDiagrams?.filter(d => 
     d.is_company_wide && 
     d.image_path && 
-    !d.image_path.includes('cloud-networks') &&
-    !d.name?.toLowerCase().includes('nymbis')
+    !isNymbisDiagram(d)
   ) || [];
   
   // Filter Nymbis Cloud diagrams - must have image_path and be in cloud-networks folder OR have 'nymbis' in name
-  const nymbisDiagrams = allDiagrams?.filter(d => 
-    d.image_path && (
-      d.image_path.includes('cloud-networks') || 
-      d.name?.toLowerCase().includes('nymbis')
-    )
-  ) || [];
+  const nymbisDiagrams = allDiagrams?.filter(d => isNymbisDiagram(d)) || [];
 
   // Get diagrams by branch - ONLY those with images
   const getDiagramsForBranch = (branchId: string) => {
@@ -358,7 +362,7 @@ const DiagramFullDisplay = ({
         </a>
       </div>
       <p className="text-xs text-muted-foreground italic text-center">
-        📸 Click diagram image to open in a new tab for full-size view
+        Click diagram image to open in a new tab for full-size view
       </p>
     </div>
   );
