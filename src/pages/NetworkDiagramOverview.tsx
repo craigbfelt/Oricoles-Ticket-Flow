@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Network, Building2, Cloud } from "lucide-react";
+import { Network, Building2, Cloud, ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
@@ -67,17 +67,27 @@ const NetworkDiagramOverview = () => {
     },
   });
 
-  // Separate diagrams by category
-  const companyDiagrams = allDiagrams?.filter(d => d.is_company_wide && d.image_path) || [];
-  
-  // Filter Nymbis Cloud diagrams - these would be stored in cloud_networks table or marked specially
-  // For now, we'll check if they're in the company-network folder path
-  const nymbisDiagrams = allDiagrams?.filter(d => 
-    d.image_path?.includes('cloud-networks') || 
-    d.name?.toLowerCase().includes('nymbis')
-  ) || [];
+  // Helper function to check if a diagram is Nymbis-related
+  const isNymbisDiagram = (diagram: NetworkDiagram): boolean => {
+    return !!(
+      diagram.image_path && (
+        diagram.image_path.includes('cloud-networks') || 
+        diagram.name?.toLowerCase().includes('nymbis')
+      )
+    );
+  };
 
-  // Get diagrams by branch
+  // Separate diagrams by category - ONLY show diagrams with actual images
+  const companyDiagrams = allDiagrams?.filter(d => 
+    d.is_company_wide && 
+    d.image_path && 
+    !isNymbisDiagram(d)
+  ) || [];
+  
+  // Filter Nymbis Cloud diagrams - must have image_path and be in cloud-networks folder OR have 'nymbis' in name
+  const nymbisDiagrams = allDiagrams?.filter(d => isNymbisDiagram(d)) || [];
+
+  // Get diagrams by branch - ONLY those with images
   const getDiagramsForBranch = (branchId: string) => {
     return allDiagrams?.filter(d => d.branch_id === branchId && d.image_path) || [];
   };
@@ -96,18 +106,34 @@ const NetworkDiagramOverview = () => {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Network className="w-8 h-8" />
-              Visual Network Diagram Overview
+              Network Diagram Images
             </h1>
             <p className="text-muted-foreground">
-              View network diagrams for Nymbis Cloud, Company Network, and all Branches
+              Visual image display of network diagrams for Nymbis Cloud, Company Network, and all Branches
             </p>
           </div>
         </div>
 
+        {/* Information Banner */}
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-3">
+              <ImageIcon className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-primary">Image Display Page</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  This page displays uploaded network diagram images for visual reference. Only diagrams with images are shown here. 
+                  To upload images, navigate to the respective pages: Nymbis RDP Cloud, Company Network, or specific Branch pages.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {isLoading ? (
           <Card>
             <CardContent className="py-12">
-              <p className="text-center text-muted-foreground">Loading network diagrams...</p>
+              <p className="text-center text-muted-foreground">Loading network diagram images...</p>
             </CardContent>
           </Card>
         ) : (
@@ -117,10 +143,10 @@ const NetworkDiagramOverview = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl">
                   <Cloud className="w-6 h-6" />
-                  Nymbis Cloud Network Diagrams
+                  Nymbis Cloud - Network Diagram Images
                 </CardTitle>
                 <CardDescription>
-                  Network topology diagrams for Nymbis RDP Cloud infrastructure
+                  Visual image display of Nymbis RDP Cloud network topology diagrams
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -137,15 +163,18 @@ const NetworkDiagramOverview = () => {
                 ) : (
                   <div className="text-center py-12">
                     <Cloud className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">
-                      No Nymbis Cloud network diagrams available yet.
+                    <p className="text-muted-foreground font-semibold">
+                      No Nymbis Cloud network diagram images available yet.
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      This page displays uploaded diagram images only.
                     </p>
                     <Button
                       variant="link"
                       className="mt-2"
                       onClick={() => navigate("/nymbis-rdp-cloud")}
                     >
-                      Upload diagrams in Nymbis RDP Cloud page →
+                      Upload diagram images in Nymbis RDP Cloud page →
                     </Button>
                   </div>
                 )}
@@ -157,10 +186,10 @@ const NetworkDiagramOverview = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl">
                   <Network className="w-6 h-6" />
-                  Company Network Diagrams
+                  Company Network - Diagram Images
                 </CardTitle>
                 <CardDescription>
-                  Company-wide network topology diagrams
+                  Visual image display of company-wide network topology diagrams
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -177,15 +206,18 @@ const NetworkDiagramOverview = () => {
                 ) : (
                   <div className="text-center py-12">
                     <Network className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">
-                      No company network diagrams available yet.
+                    <p className="text-muted-foreground font-semibold">
+                      No company network diagram images available yet.
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      This page displays uploaded diagram images only.
                     </p>
                     <Button
                       variant="link"
                       className="mt-2"
                       onClick={() => navigate("/company-network")}
                     >
-                      Upload diagrams in Company Network page →
+                      Upload diagram images in Company Network page →
                     </Button>
                   </div>
                 )}
@@ -197,10 +229,10 @@ const NetworkDiagramOverview = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl">
                   <Building2 className="w-6 h-6" />
-                  Branch Network Diagrams
+                  Branches - Network Diagram Images
                 </CardTitle>
                 <CardDescription>
-                  Network diagrams for all branch locations
+                  Visual image display of network diagrams for all branch locations
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -231,15 +263,18 @@ const NetworkDiagramOverview = () => {
                             </div>
                           ) : (
                             <div className="text-center py-8 pl-4">
-                              <p className="text-sm text-muted-foreground">
-                                No network diagrams available for this branch.
+                              <p className="text-sm text-muted-foreground font-semibold">
+                                No network diagram images available for this branch.
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                This page displays uploaded diagram images only.
                               </p>
                               <Button
                                 variant="link"
                                 className="mt-2"
                                 onClick={() => navigate(`/branches/${branch.id}`)}
                               >
-                                Upload diagrams for {branch.name} →
+                                Upload diagram images for {branch.name} →
                               </Button>
                             </div>
                           )}
@@ -250,8 +285,11 @@ const NetworkDiagramOverview = () => {
                 ) : (
                   <div className="text-center py-12">
                     <Building2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground font-semibold">
                       No branches available. Create branches first.
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Once branches are created, upload diagram images for them.
                     </p>
                     <Button
                       variant="link"
@@ -271,7 +309,7 @@ const NetworkDiagramOverview = () => {
   );
 };
 
-// DiagramFullDisplay Component - Shows full diagram directly on page
+// DiagramFullDisplay Component - Shows full diagram image directly on page
 const DiagramFullDisplay = ({
   diagram,
   getImageUrl,
@@ -294,7 +332,10 @@ const DiagramFullDisplay = ({
     <div className="space-y-3">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <h4 className="text-lg font-semibold">{diagram.name}</h4>
+          <h4 className="text-lg font-semibold flex items-center gap-2">
+            <ImageIcon className="w-5 h-5 text-primary" />
+            {diagram.name}
+          </h4>
           {diagram.description && (
             <p className="text-sm text-muted-foreground mt-1">
               {diagram.description}
@@ -302,26 +343,26 @@ const DiagramFullDisplay = ({
           )}
         </div>
         <div className="text-xs text-muted-foreground">
-          {new Date(diagram.created_at).toLocaleDateString()}
+          Uploaded: {new Date(diagram.created_at).toLocaleDateString()}
         </div>
       </div>
-      <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
+      <div className="border-2 border-primary/20 rounded-lg overflow-hidden bg-white shadow-md">
         <a 
           href={imageUrl} 
           target="_blank" 
           rel="noopener noreferrer"
           className="block hover:opacity-95 transition-opacity"
-          aria-label={`Open ${diagram.name} in new tab`}
+          aria-label={`Open ${diagram.name} image in new tab`}
         >
           <img
             src={imageUrl}
-            alt={diagram.name}
+            alt={`Network diagram image: ${diagram.name}`}
             className="w-full h-auto max-h-[1200px] object-contain"
           />
         </a>
       </div>
-      <p className="text-xs text-muted-foreground italic">
-        Click diagram to open in a new tab
+      <p className="text-xs text-muted-foreground italic text-center">
+        Click diagram image to open in a new tab for full-size view
       </p>
     </div>
   );
