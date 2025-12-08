@@ -49,6 +49,10 @@ export function DiagramRedrawer({ open, onOpenChange, onSuccess }: DiagramRedraw
       // For now, create a placeholder entry
       const { data: { user } } = await supabase.auth.getUser();
       
+      if (!user) {
+        throw new Error("You must be logged in to create network diagrams");
+      }
+      
       const modernDescription = `Modernized version of: ${oldDiagramDescription || "Uploaded diagram"}
       
 Features:
