@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 /**
@@ -468,22 +469,220 @@ const Migrations = () => {
           </Alert>
         )}
 
-        {/* Migrations List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>All Migrations</CardTitle>
-            <CardDescription>
-              Chronological list of all database migrations
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {migrations.map((migration) => {
+        {/* Migrations List with Tabs */}
+        <Tabs defaultValue="unapplied" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="unapplied" className="relative">
+              Unapplied Migrations
+              {pendingMigrations.length > 0 && (
+                <Badge variant="destructive" className="ml-2 h-5 min-w-5 px-1">
+                  {pendingMigrations.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="applied">
+              Applied Migrations
+              <Badge variant="secondary" className="ml-2 h-5 min-w-5 px-1">
+                {appliedCount}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger value="all">All Migrations</TabsTrigger>
+          </TabsList>
+
+          {/* Unapplied Migrations Tab */}
+          <TabsContent value="unapplied">
+            <Card>
+              <CardHeader>
+                <CardTitle>Unapplied Migrations</CardTitle>
+                <CardDescription>
+                  Migrations that need to be run on the database
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : pendingMigrations.length === 0 ? (
+                  <div className="text-center py-8">
+                    <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-3" />
+                    <p className="text-lg font-medium">All migrations applied!</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Your database is up to date with all migrations.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {pendingMigrations.map((migration) => {
+                      const { timestamp, description } = formatFilename(migration.filename);
+                      const isSelected = selectedMigrations.has(migration.filename);
+                      const isMarking = markingAsApplied === migration.filename;
+                      return (
+                        <div
+                          key={migration.filename}
+                          className={cn(
+                            "flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors",
+                            isSelected && "ring-2 ring-primary bg-primary/5"
+                          )}
+                        >
+                          <div className="flex items-center gap-4 flex-1">
+                            <Checkbox 
+                              checked={isSelected}
+                              onCheckedChange={() => toggleMigrationSelection(migration.filename)}
+                              className="flex-shrink-0"
+                            />
+                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-sm font-medium">
+                              {migration.order}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <code className="text-xs font-mono text-muted-foreground">
+                                  {timestamp}
+                                </code>
+                                {migration.order === 1 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Required First
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="font-medium truncate capitalize">{description}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              Pending
+                            </Badge>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => markMigrationAsApplied(migration.filename)}
+                              disabled={isMarking || bulkMarking}
+                              title="Mark this migration as already applied"
+                            >
+                              {isMarking ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <CheckCheck className="h-4 w-4 mr-1" />
+                                  Mark Applied
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCopySql(migration.filename)}
+                              title="Copy SQL to clipboard"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewSql(migration.filename)}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              View SQL
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Applied Migrations Tab */}
+          <TabsContent value="applied">
+            <Card>
+              <CardHeader>
+                <CardTitle>Applied Migrations</CardTitle>
+                <CardDescription>
+                  Migrations that have been successfully applied to the database
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {migrations.filter(m => m.applied).map((migration) => {
+                      const { timestamp, description } = formatFilename(migration.filename);
+                      return (
+                        <div
+                          key={migration.filename}
+                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-4 flex-1">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-sm font-medium">
+                              {migration.order}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <code className="text-xs font-mono text-muted-foreground">
+                                  {timestamp}
+                                </code>
+                              </div>
+                              <p className="font-medium truncate capitalize">{description}</p>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                                <Clock className="h-3 w-3" />
+                                Applied: {formatDate(migration.appliedAt)}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="default" className="gap-1">
+                              <CheckCircle2 className="h-3 w-3" />
+                              Applied
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCopySql(migration.filename)}
+                              title="Copy SQL to clipboard"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewSql(migration.filename)}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              View SQL
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* All Migrations Tab */}
+          <TabsContent value="all">
+            <Card>
+              <CardHeader>
+                <CardTitle>All Migrations</CardTitle>
+                <CardDescription>
+                  Chronological list of all database migrations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {migrations.map((migration) => {
                   const { timestamp, description } = formatFilename(migration.filename);
                   const isSelected = selectedMigrations.has(migration.filename);
                   const isMarking = markingAsApplied === migration.filename;
@@ -580,6 +779,8 @@ const Migrations = () => {
             )}
           </CardContent>
         </Card>
+      </TabsContent>
+    </Tabs>
       </div>
 
       {/* SQL Preview Dialog */}
