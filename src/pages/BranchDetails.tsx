@@ -1331,13 +1331,15 @@ const BranchDiagramCard = ({ diagram }: { diagram: any }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (diagram.image_path) {
+    // Support both image_path and diagram_url for backwards compatibility
+    const imagePath = diagram.image_path || diagram.diagram_url;
+    if (imagePath) {
       const { data } = supabase.storage
         .from('diagrams')
-        .getPublicUrl(diagram.image_path);
+        .getPublicUrl(imagePath);
       setImageUrl(data.publicUrl);
     }
-  }, [diagram.image_path]);
+  }, [diagram.image_path, diagram.diagram_url]);
 
   return (
     <Card>
@@ -1346,14 +1348,18 @@ const BranchDiagramCard = ({ diagram }: { diagram: any }) => {
           <div className="mb-3 border rounded-lg overflow-hidden bg-muted">
             <img 
               src={imageUrl} 
-              alt={diagram.name} 
+              alt={diagram.name || diagram.diagram_name} 
               className="w-full h-32 object-cover"
+              onError={(e) => {
+                // Hide image if it fails to load
+                e.currentTarget.style.display = 'none';
+              }}
             />
           </div>
         )}
         <div className="flex items-center gap-2">
           <ImageIcon className="w-4 h-4 text-primary" />
-          <span className="font-medium">{diagram.name}</span>
+          <span className="font-medium">{diagram.name || diagram.diagram_name}</span>
         </div>
         {diagram.description && (
           <p className="text-sm text-muted-foreground mt-2">{diagram.description}</p>

@@ -141,11 +141,14 @@ const CompanyNetworkDiagram = () => {
           to: `device-${device.id}`,
         }));
 
-      const { error } = await (supabase as any).from("network_diagrams").insert([{
-        branch_id: (data as any).branch_id || null,
-        diagram_name: (data as any).name || 'Company Network',
-        diagram_url: '',
-        description: (data as any).description
+      const { error } = await supabase.from("network_diagrams").insert([{
+        branch_id: null,
+        name: data.name || 'Company Network',
+        image_path: null,
+        description: data.description || null,
+        diagram_json: { nodes, edges },
+        is_company_wide: true,
+        created_by: user?.id
       }]);
       if (error) throw error;
     },
@@ -170,11 +173,13 @@ const CompanyNetworkDiagram = () => {
   const uploadImageDiagram = useMutation({
     mutationFn: async (data: typeof imageFormData & { imagePath: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await (supabase as any).from("network_diagrams").insert([{
+      const { error } = await supabase.from("network_diagrams").insert([{
         branch_id: null,
-        diagram_name: data.name,
-        diagram_url: (data as any).imagePath || '',
-        description: data.description || null
+        name: data.name,
+        image_path: data.imagePath || null,
+        description: data.description || null,
+        is_company_wide: true,
+        created_by: user?.id
       }]);
       if (error) throw error;
     },
@@ -707,17 +712,19 @@ const DiagramCard = ({
 }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedName, setEditedName] = useState(diagram.diagram_name);
+  const diagramAny = diagram as any;
+  const [editedName, setEditedName] = useState(diagramAny.name || diagramAny.diagram_name || "");
   const [editedDescription, setEditedDescription] = useState(diagram.description || "");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const diagramAny = diagram as any;
 
   useEffect(() => {
-    if (diagramAny.image_path || diagramAny.diagram_url) {
+    // Support both image_path (new) and diagram_url (old) for backwards compatibility
+    const imagePath = diagramAny.image_path || diagramAny.diagram_url;
+    if (imagePath) {
       const { data } = supabase.storage
         .from('diagrams')
-        .getPublicUrl(diagramAny.image_path || diagramAny.diagram_url);
+        .getPublicUrl(imagePath);
       setImageUrl(data.publicUrl);
     }
   }, [diagramAny.image_path, diagramAny.diagram_url]);
@@ -727,7 +734,7 @@ const DiagramCard = ({
       const { error } = await supabase
         .from("network_diagrams")
         .update({
-          diagram_name: editedName,
+          name: editedName,
           description: editedDescription || null,
         })
         .eq("id", diagram.id);
@@ -781,7 +788,7 @@ const DiagramCard = ({
               <>
                 <h3 className="font-semibold flex items-center gap-2">
                   {(diagramAny.image_path || diagramAny.diagram_url) && <ImageIcon className="h-4 w-4 text-primary" />}
-                  {diagramAny.name || diagramAny.diagram_name}
+                  {diagramAny.name || diagramAny.diagram_name || "Untitled Diagram"}
                 </h3>
                 {diagram.description && (
                   <p className="text-sm text-muted-foreground mt-1">
