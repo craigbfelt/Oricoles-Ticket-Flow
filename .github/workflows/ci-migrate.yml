@@ -36,10 +36,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install supabase CLI
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y ca-certificates
-          npm install -g supabase
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
       - name: Confirm envs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
