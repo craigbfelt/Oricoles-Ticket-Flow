@@ -4,9 +4,18 @@ import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { CopilotPrompt } from "@/components/CopilotPrompt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Ticket, Package, AlertCircle, CheckCircle } from "lucide-react";
+import { Ticket, Package, AlertCircle, CheckCircle, Monitor, User as UserIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+
+interface DirectoryUser {
+  id: string;
+  display_name: string | null;
+  email: string | null;
+  job_title: string | null;
+  account_enabled: boolean | null;
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -18,6 +27,8 @@ const Dashboard = () => {
   });
   const [recentTickets, setRecentTickets] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [directoryUsers, setDirectoryUsers] = useState<DirectoryUser[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -32,7 +43,30 @@ const Dashboard = () => {
   }, [navigate]);
 
   const checkAdminRole = async (userId: string) => {
-    setIsAdmin(true);
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    const adminStatus = !!roles;
+    setIsAdmin(adminStatus);
+
+    if (adminStatus) {
+      fetchDirectoryUsers();
+    }
+  };
+
+  const fetchDirectoryUsers = async () => {
+    const { data, error } = await supabase
+      .from("directory_users")
+      .select("id, display_name, email, job_title, account_enabled")
+      .order("display_name");
+
+    if (!error && data) {
+      setDirectoryUsers(data);
+    }
   };
 
   const fetchDashboardData = async () => {
@@ -148,6 +182,9 @@ const Dashboard = () => {
         <Tabs defaultValue="overview" className="w-full">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="users">Users ({directoryUsers.length})</TabsTrigger>
+            )}
             <TabsTrigger value="copilot">GitHub Copilot</TabsTrigger>
           </TabsList>
 
@@ -181,6 +218,83 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="users" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Monitor className="h-5 w-5" />
+                    Intune Users
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Click on a user to view their complete details including devices, credentials, and history
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-4">
+                    <Input
+                      id="search-users"
+                      name="search-users"
+                      placeholder="Search users by name or email..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="max-w-md"
+                    />
+                  </div>
+                  {directoryUsers.length === 0 ? (
+                    <p className="text-muted-foreground">No users synced from Intune yet</p>
+                  ) : (
+                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                      {directoryUsers
+                        .filter((user) => {
+                          if (!searchQuery) return true;
+                          const query = searchQuery.toLowerCase();
+                          return (
+                            user.display_name?.toLowerCase().includes(query) ||
+                            user.email?.toLowerCase().includes(query) ||
+                            user.job_title?.toLowerCase().includes(query)
+                          );
+                        })
+                        .map((user) => (
+                          <div
+                            key={user.id}
+                            className="flex flex-col items-center p-4 rounded-lg border border-border hover:bg-muted/50 hover:shadow-md transition-all cursor-pointer"
+                            onClick={() => navigate(`/user-details/${user.id}`)}
+                          >
+                            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                              <UserIcon className="h-8 w-8 text-primary" />
+                            </div>
+                            <div className="text-center w-full">
+                              <h3 className="font-semibold text-sm line-clamp-1">
+                                {user.display_name || "Unknown"}
+                              </h3>
+                              <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
+                                {user.email || "No email"}
+                              </p>
+                              {user.job_title && (
+                                <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
+                                  {user.job_title}
+                                </p>
+                              )}
+                              {user.account_enabled !== null && (
+                                <Badge
+                                  className={`mt-2 text-xs ${
+                                    user.account_enabled ? "bg-green-500" : "bg-gray-500"
+                                  }`}
+                                >
+                                  {user.account_enabled ? "Active" : "Disabled"}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
           <TabsContent value="copilot" className="space-y-6">
             <CopilotPrompt />
