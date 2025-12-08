@@ -527,15 +527,24 @@ const BranchDetails = () => {
     const file = diagramFileInputRef.current?.files?.[0];
     if (!file) return;
 
+    // Get current user for authentication and import job tracking
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to import network diagrams",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
       // Create import job record
       const { data: importJob, error: jobError } = await supabase
         .from("import_jobs")
         .insert([{
           branch_id: branchId,
-          uploader: user?.id,
+          uploader: user.id,
           import_type: "network_json",
           resource_type: "network_diagram",
           status: "processing",
@@ -549,12 +558,6 @@ const BranchDetails = () => {
 
       const text = await file.text();
       const diagramData = JSON.parse(text);
-
-      // Get current user for created_by
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error("You must be logged in to import network diagrams");
-      }
 
       // Insert the diagram
       const { error} = await (supabase as any).from("network_diagrams").insert([
@@ -591,11 +594,10 @@ const BranchDetails = () => {
       const errorMessage = error instanceof Error ? error.message : "Failed to import diagram";
       
       // Update import job status to failed
-      const { data: { user } } = await supabase.auth.getUser();
       const { data: failedJobs } = await supabase
         .from("import_jobs")
         .select("*")
-        .eq("uploader", user?.id)
+        .eq("uploader", user.id)
         .eq("status", "processing")
         .order("created_at", { ascending: false })
         .limit(1);
