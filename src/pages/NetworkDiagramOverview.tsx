@@ -311,12 +311,12 @@ const DiagramFullDisplay = ({
           target="_blank" 
           rel="noopener noreferrer"
           className="block hover:opacity-95 transition-opacity"
+          aria-label={`Open ${diagram.name} in new tab`}
         >
           <img
             src={imageUrl}
             alt={diagram.name}
-            className="w-full h-auto"
-            style={{ maxHeight: '1200px', objectFit: 'contain' }}
+            className="w-full h-auto max-h-[1200px] object-contain"
           />
         </a>
       </div>
