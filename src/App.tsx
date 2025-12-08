@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Tickets from "./pages/Tickets";
 import Assets from "./pages/Assets";
 import Users from "./pages/Users";
+import UserDetails from "./pages/UserDetails";
 import Reports from "./pages/Reports";
 import HardwareInventory from "./pages/HardwareInventory";
 import SoftwareInventory from "./pages/SoftwareInventory";
@@ -67,6 +68,7 @@ const App = () => {
           <Route path="/tickets" element={<Tickets />} />
           <Route path="/assets" element={<Assets />} />
           <Route path="/users" element={<Users />} />
+          <Route path="/user-details/:userId" element={<UserDetails />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/hardware" element={<HardwareInventory />} />
           <Route path="/software" element={<SoftwareInventory />} />
