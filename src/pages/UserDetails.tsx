@@ -15,7 +15,8 @@ import {
   Briefcase,
   History,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  IdCard
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -129,14 +130,33 @@ const UserDetails = () => {
       setUser(userData);
 
       if (userData) {
-        // Fetch devices associated with this user
-        const { data: devicesData } = await supabase
-          .from("hardware_inventory")
-          .select("*")
-          .or(`m365_user_principal_name.eq.${userData.user_principal_name},email.eq.${userData.email}`)
-          .order("device_name");
+        // Fetch devices associated with this user - using safe filtering approach
+        let devicesData = [];
+        
+        if (userData.user_principal_name && userData.email) {
+          const { data } = await supabase
+            .from("hardware_inventory")
+            .select("*")
+            .or(`m365_user_principal_name.eq.${userData.user_principal_name},email.eq.${userData.email}`)
+            .order("device_name");
+          devicesData = data || [];
+        } else if (userData.user_principal_name) {
+          const { data } = await supabase
+            .from("hardware_inventory")
+            .select("*")
+            .eq("m365_user_principal_name", userData.user_principal_name)
+            .order("device_name");
+          devicesData = data || [];
+        } else if (userData.email) {
+          const { data } = await supabase
+            .from("hardware_inventory")
+            .select("*")
+            .eq("email", userData.email)
+            .order("device_name");
+          devicesData = data || [];
+        }
 
-        setDevices(devicesData || []);
+        setDevices(devicesData);
 
         // Fetch VPN/RDP credentials for this user
         const { data: credentialsData } = await supabase
@@ -441,7 +461,7 @@ const UserDetails = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <IdCard className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <div className="text-sm text-muted-foreground">Azure AD ID</div>
                       <div className="font-mono text-sm">{user.aad_id || "N/A"}</div>

@@ -43,29 +43,48 @@ const Dashboard = () => {
   }, [navigate]);
 
   const checkAdminRole = async (userId: string) => {
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle();
+    try {
+      const { data: roles, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .maybeSingle();
 
-    const adminStatus = !!roles;
-    setIsAdmin(adminStatus);
+      if (error) {
+        console.error("Error checking admin role:", error);
+        return;
+      }
 
-    if (adminStatus) {
-      fetchDirectoryUsers();
+      const adminStatus = !!roles;
+      setIsAdmin(adminStatus);
+
+      if (adminStatus) {
+        fetchDirectoryUsers();
+      }
+    } catch (error) {
+      console.error("Error checking admin role:", error);
     }
   };
 
   const fetchDirectoryUsers = async () => {
-    const { data, error } = await supabase
-      .from("directory_users")
-      .select("id, display_name, email, job_title, account_enabled")
-      .order("display_name");
+    try {
+      const { data, error } = await supabase
+        .from("directory_users")
+        .select("id, display_name, email, job_title, account_enabled")
+        .order("display_name")
+        .limit(500); // Add reasonable limit for performance
 
-    if (!error && data) {
-      setDirectoryUsers(data);
+      if (error) {
+        console.error("Error fetching directory users:", error);
+        return;
+      }
+
+      if (data) {
+        setDirectoryUsers(data);
+      }
+    } catch (error) {
+      console.error("Error fetching directory users:", error);
     }
   };
 
