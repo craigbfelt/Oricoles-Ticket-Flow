@@ -529,13 +529,16 @@ const BranchDetails = () => {
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("You must be logged in to import network diagrams");
+      }
       
       // Create import job record
       const { data: importJob, error: jobError } = await supabase
         .from("import_jobs")
         .insert([{
           branch_id: branchId,
-          uploader: user?.id,
+          uploader: user.id,
           import_type: "network_json",
           resource_type: "network_diagram",
           status: "processing",
@@ -549,12 +552,6 @@ const BranchDetails = () => {
 
       const text = await file.text();
       const diagramData = JSON.parse(text);
-
-      // Get current user for created_by
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error("You must be logged in to import network diagrams");
-      }
 
       // Insert the diagram
       const { error} = await (supabase as any).from("network_diagrams").insert([
