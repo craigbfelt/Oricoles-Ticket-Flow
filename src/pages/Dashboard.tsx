@@ -18,11 +18,24 @@ interface DirectoryUser {
   user_principal_name: string | null;
 }
 
+interface DeviceInfo {
+  serial_number: string | null;
+  model: string | null;
+  device_name: string | null;
+}
+
+interface CredentialInfo {
+  username: string;
+}
+
 interface UserWithStats extends DirectoryUser {
   staffUser: boolean;
   vpnCount: number;
   rdpCount: number;
   deviceCount: number;
+  devices: DeviceInfo[];
+  vpnCredentials: CredentialInfo[];
+  rdpCredentials: CredentialInfo[];
 }
 
 const Dashboard = () => {
@@ -57,50 +70,68 @@ const Dashboard = () => {
 
       const staffEmails = new Set(profiles?.map(p => p.email?.toLowerCase()) || []);
 
-      // Fetch all VPN/RDP credentials
+      // Fetch VPN/RDP credentials including usernames for display
       const { data: credentials } = await supabase
         .from("vpn_rdp_credentials")
-        .select("email, service_type");
+        .select("email, service_type, username");
 
-      // Fetch all hardware inventory with user assignments
+      // Fetch hardware inventory including serial numbers, models, and device names
       const { data: devices } = await supabase
         .from("hardware_inventory")
-        .select("m365_user_principal_name");
+        .select("m365_user_principal_name, serial_number, model, device_name");
 
-      // Create maps for quick lookup
-      const vpnMap = new Map<string, number>();
-      const rdpMap = new Map<string, number>();
+      // Create maps for quick lookup with detailed data
+      const vpnMap = new Map<string, CredentialInfo[]>();
+      const rdpMap = new Map<string, CredentialInfo[]>();
       
       credentials?.forEach(cred => {
         const email = cred.email?.toLowerCase();
         if (email) {
+          const credInfo: CredentialInfo = {
+            username: cred.username
+          };
           if (cred.service_type === 'VPN') {
-            vpnMap.set(email, (vpnMap.get(email) || 0) + 1);
+            const existing = vpnMap.get(email) || [];
+            vpnMap.set(email, [...existing, credInfo]);
           } else if (cred.service_type === 'RDP') {
-            rdpMap.set(email, (rdpMap.get(email) || 0) + 1);
+            const existing = rdpMap.get(email) || [];
+            rdpMap.set(email, [...existing, credInfo]);
           }
         }
       });
 
-      const deviceMap = new Map<string, number>();
+      const deviceMap = new Map<string, DeviceInfo[]>();
       devices?.forEach(device => {
         const upn = device.m365_user_principal_name?.toLowerCase();
         if (upn) {
-          deviceMap.set(upn, (deviceMap.get(upn) || 0) + 1);
+          const deviceInfo: DeviceInfo = {
+            serial_number: device.serial_number,
+            model: device.model,
+            device_name: device.device_name
+          };
+          const existing = deviceMap.get(upn) || [];
+          deviceMap.set(upn, [...existing, deviceInfo]);
         }
       });
 
-      // Enrich users with stats
+      // Enrich users with counts and arrays of device/credential details
       const enrichedUsers: UserWithStats[] = users.map(user => {
         const email = user.email?.toLowerCase() || '';
         const upn = user.user_principal_name?.toLowerCase() || '';
         
+        const userDevices = deviceMap.get(upn) || [];
+        const userVpnCreds = vpnMap.get(email) || [];
+        const userRdpCreds = rdpMap.get(email) || [];
+        
         return {
           ...user,
           staffUser: staffEmails.has(email),
-          vpnCount: vpnMap.get(email) || 0,
-          rdpCount: rdpMap.get(email) || 0,
-          deviceCount: deviceMap.get(upn) || 0,
+          vpnCount: userVpnCreds.length,
+          rdpCount: userRdpCreds.length,
+          deviceCount: userDevices.length,
+          devices: userDevices,
+          vpnCredentials: userVpnCreds,
+          rdpCredentials: userRdpCreds,
         };
       });
 
@@ -228,7 +259,10 @@ const Dashboard = () => {
       staffUser: false,
       vpnCount: 0,
       rdpCount: 0,
-      deviceCount: 0
+      deviceCount: 0,
+      devices: [],
+      vpnCredentials: [],
+      rdpCredentials: []
     }));
   }, [usersWithStats, directoryUsers]);
 
@@ -428,6 +462,74 @@ const Dashboard = () => {
                                       <Server className="h-3 w-3" />
                                       {userWithStats.rdpCount}
                                     </Badge>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Device Details */}
+                              {userWithStats.devices.length > 0 && (
+                                <div className="text-xs space-y-1 mb-2 text-left w-full">
+                                  {userWithStats.devices.slice(0, 2).map((device, idx) => (
+                                    <div key={device.serial_number || device.device_name || idx} className="border-t pt-1 border-border/50">
+                                      {device.device_name && (
+                                        <div className="font-medium text-muted-foreground truncate">
+                                          {device.device_name}
+                                        </div>
+                                      )}
+                                      {device.serial_number && (
+                                        <div className="text-muted-foreground">
+                                          <span className="font-semibold">SN:</span> {device.serial_number}
+                                        </div>
+                                      )}
+                                      {device.model && (
+                                        <div className="text-muted-foreground truncate">
+                                          <span className="font-semibold">Model:</span> {device.model}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                  {userWithStats.devices.length > 2 && (
+                                    <div className="text-center text-muted-foreground">
+                                      +{userWithStats.devices.length - 2} more
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* VPN Credentials */}
+                              {userWithStats.vpnCredentials.length > 0 && (
+                                <div className="text-xs space-y-1 mb-2 text-left w-full border-t pt-1 border-border/50">
+                                  <div className="font-semibold text-muted-foreground flex items-center gap-1">
+                                    <Wifi className="h-3 w-3" /> VPN:
+                                  </div>
+                                  {userWithStats.vpnCredentials.slice(0, 2).map((cred, idx) => (
+                                    <div key={`vpn-${cred.username}-${idx}`} className="text-muted-foreground truncate pl-4">
+                                      {cred.username}
+                                    </div>
+                                  ))}
+                                  {userWithStats.vpnCredentials.length > 2 && (
+                                    <div className="text-center text-muted-foreground">
+                                      +{userWithStats.vpnCredentials.length - 2} more
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* RDP Credentials */}
+                              {userWithStats.rdpCredentials.length > 0 && (
+                                <div className="text-xs space-y-1 mb-2 text-left w-full border-t pt-1 border-border/50">
+                                  <div className="font-semibold text-muted-foreground flex items-center gap-1">
+                                    <Server className="h-3 w-3" /> RDP:
+                                  </div>
+                                  {userWithStats.rdpCredentials.slice(0, 2).map((cred, idx) => (
+                                    <div key={`rdp-${cred.username}-${idx}`} className="text-muted-foreground truncate pl-4">
+                                      {cred.username}
+                                    </div>
+                                  ))}
+                                  {userWithStats.rdpCredentials.length > 2 && (
+                                    <div className="text-center text-muted-foreground">
+                                      +{userWithStats.rdpCredentials.length - 2} more
+                                    </div>
                                   )}
                                 </div>
                               )}
