@@ -56,7 +56,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isCEO, setIsCEO] = useState(false);
   const [isSupportStaff, setIsSupportStaff] = useState(false);
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>({});
 
@@ -80,7 +79,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         console.error("Error fetching user roles:", error);
         // Set default roles on error - users will have basic access
         setIsAdmin(false);
-        setIsCEO(false);
         setIsSupportStaff(false);
         return;
       }
@@ -88,14 +86,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       if (data) {
         const roles = data.map(r => r.role as string);
         setIsAdmin(roles.includes('admin'));
-        setIsCEO(roles.includes('admin')); // Using admin role for CEO check
         setIsSupportStaff(roles.includes('support_staff'));
       }
     } catch (err) {
       console.error("Unexpected error fetching user roles:", err);
       // Set default roles on error
       setIsAdmin(false);
-      setIsCEO(false);
       setIsSupportStaff(false);
     }
   };
