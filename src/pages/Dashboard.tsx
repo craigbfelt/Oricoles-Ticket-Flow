@@ -46,6 +46,7 @@ const Dashboard = () => {
   const [directoryUsers, setDirectoryUsers] = useState<DirectoryUser[]>([]);
   const [usersWithStats, setUsersWithStats] = useState<UserWithStats[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<string | undefined>(undefined);
 
   const enrichUsersWithStats = useCallback(async (users: DirectoryUser[]) => {
     try {
@@ -148,6 +149,9 @@ const Dashboard = () => {
 
       const adminStatus = !!roles;
       setIsAdmin(adminStatus);
+      
+      // Set the active tab based on admin status
+      setActiveTab(adminStatus ? "users" : "overview");
 
       if (adminStatus) {
         fetchDirectoryUsers();
@@ -294,7 +298,7 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        <Tabs defaultValue={isAdmin ? "users" : "overview"} className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList>
             {isAdmin && (
               <TabsTrigger value="users">Users ({directoryUsers.length})</TabsTrigger>

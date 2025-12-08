@@ -362,6 +362,69 @@ export const NetworkDataImporter = ({ onDataImported, targetPage }: NetworkDataI
         return;
       }
 
+      let uploadedImagesCount = 0;
+
+      // Upload extracted images as network diagrams
+      if (extractedData.extractedImages && extractedData.extractedImages.length > 0) {
+        for (let i = 0; i < extractedData.extractedImages.length; i++) {
+          const img = extractedData.extractedImages[i];
+          
+          try {
+            // Convert data URL to blob
+            const response = await fetch(img.dataUrl);
+            const blob = await response.blob();
+            
+            // Extract MIME type from data URL (e.g., "data:image/png;base64,...")
+            const mimeMatch = img.dataUrl.match(/data:image\/(\w+);/);
+            const mimeType = mimeMatch ? mimeMatch[1] : 'png';
+            
+            // Generate unique filename using crypto UUID and index for uniqueness
+            const uuid = crypto.randomUUID();
+            const fileName = `${uuid}_${i}.${mimeType}`;
+            
+            // Determine storage path based on target page
+            const folderPath = targetPage === 'nymbis-cloud' ? 'cloud-networks' : 'company-network';
+            const filePath = `${folderPath}/${fileName}`;
+            
+            // Upload to Supabase Storage
+            const { error: uploadError } = await supabase.storage
+              .from('diagrams')
+              .upload(filePath, blob, {
+                metadata: {
+                  owner: user.id
+                }
+              });
+            
+            if (uploadError) {
+              console.error(`Failed to upload image ${i + 1}:`, uploadError);
+              continue;
+            }
+            
+            // Create network_diagrams entry
+            const diagramName = img.name || `Imported Diagram ${i + 1} - ${new Date().toLocaleDateString()}`;
+            const { error: dbError } = await supabase
+              .from("network_diagrams")
+              .insert({
+                name: diagramName,
+                image_path: filePath,
+                description: `Extracted from imported document`,
+                is_company_wide: targetPage === 'company-network',
+                branch_id: null,
+                created_by: user.id,
+              });
+            
+            if (dbError) {
+              console.error(`Failed to create diagram entry for image ${i + 1}:`, dbError);
+              continue;
+            }
+            
+            uploadedImagesCount++;
+          } catch (imgError) {
+            console.error(`Error processing image ${i + 1}:`, imgError);
+          }
+        }
+      }
+
       // Save extracted data to appropriate tables
       if (extractedData.servers.length > 0 && targetPage === 'nymbis-cloud') {
         // For Nymbis Cloud, save to cloud_networks or a related table
@@ -395,7 +458,10 @@ export const NetworkDataImporter = ({ onDataImported, targetPage }: NetworkDataI
         if (error) throw error;
       }
 
-      toast.success("Network data imported successfully!");
+      const imageMsg = uploadedImagesCount > 0 ? ` and ${uploadedImagesCount} diagram images` : '';
+      toast.success(`Network data imported successfully!`, {
+        description: `Imported ${extractedData.servers.length} servers, ${extractedData.networkDevices.length} devices${imageMsg}`
+      });
       
       if (onDataImported) {
         onDataImported(extractedData);

@@ -357,7 +357,7 @@ const DiagramFullDisplay = ({
           <img
             src={imageUrl}
             alt={`Network diagram image: ${diagram.name}`}
-            className="w-full h-auto max-h-[1200px] object-contain"
+            className="w-full h-auto object-contain"
           />
         </a>
       </div>
