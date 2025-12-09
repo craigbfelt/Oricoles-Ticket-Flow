@@ -222,23 +222,28 @@ export function CSVUserImporter() {
       if (deviceAssignments.length > 0) {
         // First, mark existing assignments for these serial numbers as not current
         const serialNumbers = deviceAssignments.map(d => d.device_serial_number);
-        await supabase
+        const { error: updateError } = await supabase
           .from('device_user_assignments')
           .update({ is_current: false })
           .in('device_serial_number', serialNumbers)
           .eq('tenant_id', tenantId)
           .eq('is_current', true);
 
-        // Insert new device assignments
-        const { error: deviceError } = await supabase
-          .from('device_user_assignments')
-          .insert(deviceAssignments);
-
-        if (deviceError) {
-          console.error('Error creating device assignments:', deviceError);
-          toast.warning(`Users imported, but some device assignments failed: ${deviceError.message}`);
+        if (updateError) {
+          console.error('Error updating existing device assignments:', updateError);
+          toast.warning(`Users imported, but failed to update existing device assignments: ${updateError.message}`);
         } else {
-          toast.success(`Successfully imported ${data?.length || 0} users and ${deviceAssignments.length} device assignments!`);
+          // Only insert new assignments if update succeeded
+          const { error: deviceError } = await supabase
+            .from('device_user_assignments')
+            .insert(deviceAssignments);
+
+          if (deviceError) {
+            console.error('Error creating device assignments:', deviceError);
+            toast.warning(`Users imported, but some device assignments failed: ${deviceError.message}`);
+          } else {
+            toast.success(`Successfully imported ${data?.length || 0} users and ${deviceAssignments.length} device assignments!`);
+          }
         }
       } else {
         toast.success(`Successfully imported ${data?.length || 0} users!`);
