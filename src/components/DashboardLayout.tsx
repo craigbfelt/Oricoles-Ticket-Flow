@@ -166,6 +166,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Network Diagram Overview", href: "/network-diagram-overview", icon: Network, requiredRoles: ['admin', 'support_staff'] },
     { name: "Reports", href: "/reports", icon: FileBarChart, requiredRoles: ['admin', 'support_staff'] },
     { name: "Users", href: "/users", icon: Users, requiredRoles: ['admin'] }, // Admin only, not CEO
+    { name: "User Management", href: "/user-management", icon: Users, requiredRoles: ['admin'] }, // Admin only - CSV user imports
     { name: "Settings", href: "/settings", icon: Settings, requiredRoles: [] }, // Everyone
   ];
 

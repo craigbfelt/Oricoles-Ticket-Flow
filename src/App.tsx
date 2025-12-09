@@ -45,6 +45,7 @@ import MigrationTrackerPage from "./pages/MigrationTrackerPage";
 import ITSuppliers from "./pages/ITSuppliers";
 import ITSupplierDetails from "./pages/ITSupplierDetails";
 import NetworkDiagramOverview from "./pages/NetworkDiagramOverview";
+import UserManagement from "./pages/UserManagement";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +72,7 @@ const App = () => {
           <Route path="/tickets" element={<Tickets />} />
           <Route path="/assets" element={<Assets />} />
           <Route path="/users" element={<Users />} />
+          <Route path="/user-management" element={<UserManagement />} />
           <Route path="/user-details/:userId" element={<UserDetails />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/hardware" element={<HardwareInventory />} />
