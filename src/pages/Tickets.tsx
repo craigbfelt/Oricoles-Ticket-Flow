@@ -66,6 +66,8 @@ const Tickets = () => {
   const [timeLogMinutes, setTimeLogMinutes] = useState("");
   const [timeLogNotes, setTimeLogNotes] = useState("");
   const [timeLogs, setTimeLogs] = useState<any[]>([]);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -83,6 +85,13 @@ const Tickets = () => {
       fetchTickets();
     }
   }, [isAdmin, isSupportStaff, currentProfileId]);
+
+  // Fetch all users when admin status is determined
+  useEffect(() => {
+    if (isAdmin) {
+      fetchAllUsers();
+    }
+  }, [isAdmin]);
 
   const fetchUserProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -205,6 +214,56 @@ const Tickets = () => {
       console.error("Unexpected error checking support role:", err);
       setIsSupportStaff(false);
     }
+  };
+
+  const fetchAllUsers = async () => {
+    try {
+      // Fetch all profiles for the dropdown
+      const { data: profiles, error } = await supabase
+        .from("profiles")
+        .select("id, user_id, email, full_name, branch_id, branches:branch_id(name)")
+        .order("full_name");
+
+      if (error) {
+        console.error("Error fetching users:", error);
+        return;
+      }
+
+      setAllUsers(profiles || []);
+    } catch (err) {
+      console.error("Error fetching all users:", err);
+    }
+  };
+
+  const handleUserSelection = (userId: string) => {
+    setSelectedUserId(userId);
+    if (!userId) {
+      // Reset to current user's info if clearing selection
+      setUserEmail(currentUserEmail);
+      return;
+    }
+    const selectedUser = allUsers.find(u => u.id === userId);
+    if (selectedUser) {
+      setUserEmail(selectedUser.email || "");
+      if (selectedUser.branches && selectedUser.branches.name) {
+        setBranch(selectedUser.branches.name);
+      } else {
+        setBranch("");
+      }
+    }
+  };
+
+  const handleOpenTicketDialog = () => {
+    // Reset form to defaults when opening dialog
+    setSelectedUserId("");
+    setUserEmail(currentUserEmail);
+    setTitle("");
+    setDescription("");
+    setPriority("medium");
+    setCategory("");
+    setFaultType("");
+    setErrorCode("");
+    setOpen(true);
   };
 
   const fetchTickets = async () => {
@@ -343,6 +402,7 @@ const Tickets = () => {
     setFaultType("");
     setUserEmail("");
     setErrorCode("");
+    setSelectedUserId("");
     setIsSubmitting(false);
     fetchTickets();
   };
@@ -631,7 +691,7 @@ const Tickets = () => {
             )}
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button onClick={handleOpenTicketDialog}>
                   <Plus className="mr-2 h-4 w-4" />
                   New Ticket
                 </Button>
@@ -641,8 +701,26 @@ const Tickets = () => {
                   <DialogTitle>Create New Ticket</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {isAdmin && allUsers.length > 0 && (
+                    <div className="space-y-2">
+                      <Label htmlFor="userSelect">Select User</Label>
+                      <Select value={selectedUserId} onValueChange={handleUserSelection}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a user (optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allUsers.map((user) => (
+                            <SelectItem key={user.id} value={user.id}>
+                              {user.full_name ? `${user.full_name} (${user.email})` : user.email}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
-                    <Label htmlFor="userEmail">Your Email</Label>
+                    <Label htmlFor="userEmail">User Email</Label>
                     <Input
                       id="userEmail"
                       type="email"
@@ -650,6 +728,7 @@ const Tickets = () => {
                       onChange={(e) => setUserEmail(e.target.value)}
                       placeholder="your.email@oricol.co.za"
                       required
+                      disabled={!!selectedUserId && isAdmin}
                     />
                   </div>
 
