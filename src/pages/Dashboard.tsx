@@ -73,19 +73,34 @@ const Dashboard = () => {
       const staffEmails = new Set(profiles?.map(p => p.email?.toLowerCase()) || []);
 
       // Fetch VPN/RDP credentials including usernames for display
+      // This table stores credentials from CSV imports and other sources
       const { data: credentials } = await supabase
         .from("vpn_rdp_credentials")
         .select("email, service_type, username");
+      
+      // Also fetch credentials from master_user_list (CSV imports)
+      const { data: masterListUsers } = await supabase
+        .from("master_user_list")
+        .select("email, vpn_username, rdp_username")
+        .eq("is_active", true);
 
-      // Fetch hardware inventory including serial numbers, models, and device names
+      // Fetch device assignments from device_user_assignments (tracked assignments)
+      // This includes both Intune devices and manually added devices
+      const { data: deviceAssignments } = await supabase
+        .from("device_user_assignments")
+        .select("user_email, device_serial_number, device_name, device_model, is_current")
+        .eq("is_current", true);
+      
+      // Also fetch hardware inventory for any devices not in assignments yet
       const { data: devices } = await supabase
         .from("hardware_inventory")
-        .select("m365_user_principal_name, serial_number, model, device_name");
+        .select("m365_user_principal_name, m365_user_email, serial_number, model, device_name");
 
       // Create maps for quick lookup with detailed data
       const vpnMap = new Map<string, CredentialInfo[]>();
       const rdpMap = new Map<string, CredentialInfo[]>();
       
+      // Process credentials from vpn_rdp_credentials table
       credentials?.forEach(cred => {
         const email = cred.email?.toLowerCase();
         if (email) {
@@ -101,18 +116,66 @@ const Dashboard = () => {
           }
         }
       });
+      
+      // Process credentials from master_user_list
+      masterListUsers?.forEach(user => {
+        const email = user.email?.toLowerCase();
+        if (email) {
+          // Add VPN credentials if present
+          if (user.vpn_username) {
+            const existing = vpnMap.get(email) || [];
+            // Check if this username is already in the list to avoid duplicates
+            if (!existing.some(cred => cred.username === user.vpn_username)) {
+              vpnMap.set(email, [...existing, { username: user.vpn_username }]);
+            }
+          }
+          // Add RDP credentials if present
+          if (user.rdp_username) {
+            const existing = rdpMap.get(email) || [];
+            // Check if this username is already in the list to avoid duplicates
+            if (!existing.some(cred => cred.username === user.rdp_username)) {
+              rdpMap.set(email, [...existing, { username: user.rdp_username }]);
+            }
+          }
+        }
+      });
 
       const deviceMap = new Map<string, DeviceInfo[]>();
-      devices?.forEach(device => {
-        const upn = device.m365_user_principal_name?.toLowerCase();
-        if (upn) {
+      
+      // First, add devices from device_user_assignments (tracked assignments)
+      deviceAssignments?.forEach(assignment => {
+        const email = assignment.user_email?.toLowerCase();
+        if (email) {
           const deviceInfo: DeviceInfo = {
-            serial_number: device.serial_number,
-            model: device.model,
-            device_name: device.device_name
+            serial_number: assignment.device_serial_number,
+            model: assignment.device_model,
+            device_name: assignment.device_name
           };
-          const existing = deviceMap.get(upn) || [];
-          deviceMap.set(upn, [...existing, deviceInfo]);
+          const existing = deviceMap.get(email) || [];
+          deviceMap.set(email, [...existing, deviceInfo]);
+        }
+      });
+      
+      // Then add any devices from hardware_inventory that aren't already tracked
+      // Match by both email and UPN
+      devices?.forEach(device => {
+        const email = device.m365_user_email?.toLowerCase();
+        const upn = device.m365_user_principal_name?.toLowerCase();
+        const userKey = email || upn;
+        
+        if (userKey) {
+          // Check if this serial number is already in the map
+          const existing = deviceMap.get(userKey) || [];
+          const alreadyExists = existing.some(d => d.serial_number === device.serial_number);
+          
+          if (!alreadyExists) {
+            const deviceInfo: DeviceInfo = {
+              serial_number: device.serial_number,
+              model: device.model,
+              device_name: device.device_name
+            };
+            deviceMap.set(userKey, [...existing, deviceInfo]);
+          }
         }
       });
 
@@ -170,39 +233,96 @@ const Dashboard = () => {
 
   const fetchDirectoryUsers = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from("directory_users")
-        .select("id, display_name, email, job_title, account_enabled, user_principal_name")
+      // PRIMARY SOURCE: Fetch from master_user_list (fixed user list)
+      // This is now the source of truth for who should be in the system
+      const { data: masterListData, error: masterListError } = await supabase
+        .from("master_user_list")
+        .select("id, display_name, email, job_title, department, vpn_username, rdp_username, is_active, source")
+        .eq("is_active", true)
         .order("display_name")
-        .limit(500); // Add reasonable limit for performance
+        .limit(500);
 
-      if (error) {
-        console.error("Error fetching directory users:", error);
-        return;
+      if (masterListError) {
+        console.error("Error fetching master user list:", masterListError);
       }
 
-      if (data) {
-        // Filter out Microsoft default tenant domain users (onmicrosoft.com)
-        // Only show @afripipes.co.za users
-        const filteredData = data.filter(user => {
+      // SECONDARY SOURCE: Fetch from directory_users (Intune/M365 sync) for enrichment
+      // This provides additional data like account_enabled status and UPN
+      const { data: intuneData, error: intuneError } = await supabase
+        .from("directory_users")
+        .select("id, display_name, email, job_title, account_enabled, user_principal_name, department")
+        .order("display_name")
+        .limit(500);
+
+      if (intuneError) {
+        console.error("Error fetching directory users:", intuneError);
+      }
+
+      // Build a map of Intune data for quick lookup
+      const intuneMap = new Map<string, any>();
+      if (intuneData) {
+        intuneData.forEach(user => {
+          const email = user.email?.toLowerCase() || '';
+          if (email && !email.includes('onmicrosoft.com') && email.endsWith('@afripipes.co.za')) {
+            intuneMap.set(email, user);
+          }
+        });
+      }
+
+      // Build final user list from master_user_list, enriched with Intune data
+      const allUsers: DirectoryUser[] = [];
+      
+      if (masterListData) {
+        masterListData.forEach(masterUser => {
+          const email = masterUser.email?.toLowerCase() || '';
+          
+          // Only include afripipes.co.za domain
+          if (!email.endsWith('@afripipes.co.za')) {
+            return;
+          }
+
+          // Check if user exists in Intune for additional data
+          const intuneUser = intuneMap.get(email);
+          
+          // Create directory user with data from master list as primary source
+          // Intune data supplements where master list is missing info
+          const directoryUser: DirectoryUser = {
+            id: masterUser.id,
+            display_name: masterUser.display_name || intuneUser?.display_name || null,
+            email: masterUser.email,
+            job_title: masterUser.job_title || intuneUser?.job_title || null,
+            account_enabled: intuneUser?.account_enabled ?? true, // From Intune if available, else assume active
+            user_principal_name: intuneUser?.user_principal_name || masterUser.email, // Use Intune UPN if available
+          };
+          
+          allUsers.push(directoryUser);
+        });
+      }
+
+      // If master list is empty but Intune has users, show Intune users as fallback
+      // This handles the case before CSV import has been done
+      if (allUsers.length === 0 && intuneData && intuneData.length > 0) {
+        intuneData.forEach(user => {
           const email = user.email?.toLowerCase() || '';
           const upn = user.user_principal_name?.toLowerCase() || '';
           
           // Exclude onmicrosoft.com domain
           if (email.includes('onmicrosoft.com') || upn.includes('onmicrosoft.com')) {
-            return false;
+            return;
           }
           
           // Only include afripipes.co.za domain
-          return email.endsWith('@afripipes.co.za');
+          if (email.endsWith('@afripipes.co.za')) {
+            allUsers.push(user);
+          }
         });
-        
-        setDirectoryUsers(filteredData);
-        // Fetch additional stats for each user
-        await enrichUsersWithStats(filteredData);
       }
+      
+      setDirectoryUsers(allUsers);
+      // Fetch additional stats for each user
+      await enrichUsersWithStats(allUsers);
     } catch (error) {
-      console.error("Error fetching directory users:", error);
+      console.error("Error fetching users:", error);
     }
   }, [enrichUsersWithStats]);
 
@@ -479,7 +599,7 @@ const Dashboard = () => {
                     />
                   </div>
                   {directoryUsers.length === 0 ? (
-                    <p className="text-muted-foreground">No users synced from Intune yet</p>
+                    <p className="text-muted-foreground">No users found. Users can be synced from Microsoft 365 or imported via CSV.</p>
                   ) : (
                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                       {displayUsers
