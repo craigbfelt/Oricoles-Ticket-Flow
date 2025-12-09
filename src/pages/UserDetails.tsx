@@ -16,9 +16,19 @@ import {
   History,
   Loader2,
   AlertCircle,
-  IdCard
+  IdCard,
+  Plus
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FaultTypeSelector } from "@/components/FaultTypeSelector";
+import { useToast } from "@/hooks/use-toast";
+import { ticketSchema } from "@/lib/validations";
 
 interface DirectoryUser {
   id: string;
@@ -72,6 +82,7 @@ interface Profile {
 const UserDetails = () => {
   const navigate = useNavigate();
   const { userId } = useParams<{ userId: string }>();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState<DirectoryUser | null>(null);
@@ -79,6 +90,17 @@ const UserDetails = () => {
   const [credentials, setCredentials] = useState<Credential[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [currentUserProfileId, setCurrentUserProfileId] = useState<string | null>(null);
+  
+  // Ticket creation dialog state
+  const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [faultType, setFaultType] = useState("");
+  const [priority, setPriority] = useState("medium");
+  const [category, setCategory] = useState("");
+  const [errorCode, setErrorCode] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -95,6 +117,17 @@ const UserDetails = () => {
     if (!session) {
       navigate("/auth");
       return;
+    }
+
+    // Get current user's profile ID
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", session.user.id)
+      .maybeSingle();
+
+    if (profileData) {
+      setCurrentUserProfileId(profileData.id);
     }
 
     // Check if user is admin
@@ -199,6 +232,118 @@ const UserDetails = () => {
     }
   };
 
+  const handleCreateTicket = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!currentUserProfileId || !user) {
+      toast({
+        title: "Error",
+        description: "Unable to create ticket. Missing user information.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Get the profile ID for the user we're creating a ticket for
+    let targetProfileId = null;
+    if (user.email) {
+      const { data: targetProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", user.email)
+        .maybeSingle();
+      
+      if (targetProfile) {
+        targetProfileId = targetProfile.id;
+      }
+    }
+
+    // Validate form data
+    const formData = {
+      title,
+      description,
+      priority,
+      category: category || null,
+      branch: profile?.branch || null,
+      fault_type: faultType || null,
+      user_email: user.email || null,
+      error_code: errorCode || null,
+    };
+
+    const validationResult = ticketSchema.safeParse(formData);
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(err => err.message).join(", ");
+      toast({
+        title: "Validation Error",
+        description: errors,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const { data: ticketData, error } = await supabase
+      .from("tickets")
+      .insert([
+        {
+          ...validationResult.data as any,
+          created_by: targetProfileId || currentUserProfileId,
+          status: "open" as any,
+          last_activity_at: new Date().toISOString(),
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Route email to IT support
+    if (ticketData) {
+      try {
+        await supabase.functions.invoke("route-ticket-email", {
+          body: {
+            ticketId: ticketData.id,
+            title,
+            description,
+            faultType,
+            branch: profile?.branch || "",
+            userEmail: user.email || "",
+            errorCode,
+            priority,
+          },
+        });
+      } catch (emailError) {
+        console.error("Email routing error:", emailError);
+      }
+    }
+
+    toast({
+      title: "Success",
+      description: "Ticket created successfully",
+    });
+
+    setTicketDialogOpen(false);
+    setTitle("");
+    setDescription("");
+    setFaultType("");
+    setPriority("medium");
+    setCategory("");
+    setErrorCode("");
+    setIsSubmitting(false);
+    
+    // Refresh tickets list
+    fetchUserData();
+  };
+
   const getStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
       open: "bg-status-open",
@@ -260,6 +405,10 @@ const UserDetails = () => {
               {user.account_enabled ? "Active" : "Disabled"}
             </Badge>
           )}
+          <Button onClick={() => setTicketDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Ticket
+          </Button>
         </div>
 
         {/* Basic Info Cards */}
@@ -486,6 +635,95 @@ const UserDetails = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Create Ticket Dialog */}
+        <Dialog open={ticketDialogOpen} onOpenChange={setTicketDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Create Ticket for {user.display_name || user.email}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleCreateTicket} className="space-y-4">
+              <div className="space-y-2">
+                <Label>User Email</Label>
+                <Input value={user.email || ""} disabled />
+                <p className="text-xs text-muted-foreground">
+                  User details are automatically populated
+                </p>
+              </div>
+
+              {profile?.branch && (
+                <div className="space-y-2">
+                  <Label>Branch</Label>
+                  <Input value={profile.branch} disabled />
+                </div>
+              )}
+
+              <FaultTypeSelector value={faultType} onChange={setFaultType} required />
+
+              <div className="space-y-2">
+                <Label htmlFor="title">Fault Title</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Brief description of the issue"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Fault Description / Error Message</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe the issue in detail or paste any error messages"
+                  rows={4}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="errorCode">Error Code (Optional)</Label>
+                <Input
+                  id="errorCode"
+                  value={errorCode}
+                  onChange={(e) => setErrorCode(e.target.value)}
+                  placeholder="e.g., 0x80070005"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="category">Category (Optional)</Label>
+                <Input
+                  id="category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  placeholder="e.g., Hardware, Software, Network"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="priority">Priority</Label>
+                <Select value={priority} onValueChange={setPriority}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? "Creating..." : "Create Ticket"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

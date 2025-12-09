@@ -60,8 +60,10 @@ const Dashboard = () => {
   const [usersWithStats, setUsersWithStats] = useState<UserWithStats[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<string | undefined>(undefined);
+  const [currentUserProfile, setCurrentUserProfile] = useState<UserWithStats | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  const enrichUsersWithStats = useCallback(async (users: DirectoryUser[]) => {
+  const enrichUsersWithStats = useCallback(async (users: DirectoryUser[]): Promise<UserWithStats[]> => {
     try {
       // Fetch all staff users (profiles)
       const { data: profiles } = await supabase
@@ -136,8 +138,10 @@ const Dashboard = () => {
       });
 
       setUsersWithStats(enrichedUsers);
+      return enrichedUsers;
     } catch (error) {
       console.error("Error enriching users with stats:", error);
+      return [];
     }
   }, []);
 
@@ -164,8 +168,43 @@ const Dashboard = () => {
     }
   }, [enrichUsersWithStats]);
 
+  const fetchCurrentUserProfile = useCallback(async (userId: string) => {
+    try {
+      // Get user's email from profiles
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (!profile?.email) {
+        console.log("No profile found for user");
+        return;
+      }
+
+      // Find the user in directory_users by email
+      const { data: directoryUser } = await supabase
+        .from("directory_users")
+        .select("id, display_name, email, job_title, account_enabled, user_principal_name")
+        .eq("email", profile.email)
+        .maybeSingle();
+
+      if (directoryUser) {
+        // Enrich with stats
+        const enriched = await enrichUsersWithStats([directoryUser]);
+        if (enriched && enriched.length > 0) {
+          setCurrentUserProfile(enriched[0]);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching current user profile:", error);
+    }
+  }, [enrichUsersWithStats]);
+
   const checkAdminRole = useCallback(async (userId: string) => {
     try {
+      setCurrentUserId(userId);
+      
       const { data: roles, error } = await supabase
         .from("user_roles")
         .select("role")
@@ -182,10 +221,13 @@ const Dashboard = () => {
       setIsAdmin(adminStatus);
       
       // Set the active tab based on admin status
-      setActiveTab(adminStatus ? "users" : "overview");
+      setActiveTab(adminStatus ? "users" : "profile");
 
       if (adminStatus) {
         fetchDirectoryUsers();
+      } else {
+        // For regular users, fetch their own profile from directory_users
+        fetchCurrentUserProfile(userId);
       }
     } catch (error) {
       console.error("Error checking admin role:", error);
@@ -336,6 +378,9 @@ const Dashboard = () => {
           <TabsList>
             {isAdmin && (
               <TabsTrigger value="users">Users ({directoryUsers.length})</TabsTrigger>
+            )}
+            {!isAdmin && currentUserProfile && (
+              <TabsTrigger value="profile">My Profile</TabsTrigger>
             )}
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="copilot">GitHub Copilot</TabsTrigger>
@@ -548,6 +593,132 @@ const Dashboard = () => {
                         })}
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {!isAdmin && currentUserProfile && (
+            <TabsContent value="profile" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <UserIcon className="h-5 w-5" />
+                    My Profile
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Your user information and resources
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col p-6 rounded-lg border border-border max-w-md mx-auto">
+                    <div className="flex flex-col items-center mb-4">
+                      <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                        <UserIcon className="h-12 w-12 text-primary" />
+                      </div>
+                      <div className="text-center w-full">
+                        <h3 className="font-semibold text-xl mb-1">
+                          {currentUserProfile.display_name || "Unknown"}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {currentUserProfile.email || "No email"}
+                        </p>
+                        {currentUserProfile.job_title && (
+                          <p className="text-sm text-muted-foreground mb-3">
+                            {currentUserProfile.job_title}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Stats section */}
+                    {(currentUserProfile.deviceCount > 0 || currentUserProfile.vpnCount > 0 || currentUserProfile.rdpCount > 0) && (
+                      <div className="flex flex-wrap gap-2 justify-center mb-4">
+                        {currentUserProfile.deviceCount > 0 && (
+                          <Badge variant="outline" className="text-sm gap-1">
+                            <Computer className="h-4 w-4" />
+                            {currentUserProfile.deviceCount} {currentUserProfile.deviceCount === 1 ? 'Device' : 'Devices'}
+                          </Badge>
+                        )}
+                        {currentUserProfile.vpnCount > 0 && (
+                          <Badge variant="outline" className="text-sm gap-1">
+                            <Wifi className="h-4 w-4" />
+                            {currentUserProfile.vpnCount} VPN
+                          </Badge>
+                        )}
+                        {currentUserProfile.rdpCount > 0 && (
+                          <Badge variant="outline" className="text-sm gap-1">
+                            <Server className="h-4 w-4" />
+                            {currentUserProfile.rdpCount} RDP
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Device Details */}
+                    {currentUserProfile.devices.length > 0 && (
+                      <div className="text-sm space-y-2 mb-3 text-left w-full">
+                        <div className="font-semibold text-muted-foreground mb-2">My Devices:</div>
+                        {currentUserProfile.devices.map((device, idx) => (
+                          <div key={device.serial_number || device.device_name || idx} className="border-t pt-2 border-border/50">
+                            {device.device_name && (
+                              <div className="font-medium">
+                                {device.device_name}
+                              </div>
+                            )}
+                            {device.serial_number && (
+                              <div className="text-muted-foreground">
+                                <span className="font-semibold">Serial:</span> {device.serial_number}
+                              </div>
+                            )}
+                            {device.model && (
+                              <div className="text-muted-foreground">
+                                <span className="font-semibold">Model:</span> {device.model}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* VPN Credentials */}
+                    {currentUserProfile.vpnCredentials.length > 0 && (
+                      <div className="text-sm space-y-2 mb-3 text-left w-full border-t pt-2 border-border/50">
+                        <div className="font-semibold text-muted-foreground flex items-center gap-1">
+                          <Wifi className="h-4 w-4" /> VPN Accounts:
+                        </div>
+                        {currentUserProfile.vpnCredentials.map((cred, idx) => (
+                          <div key={`vpn-${cred.username}-${idx}`} className="text-muted-foreground pl-6">
+                            {cred.username}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* RDP Credentials */}
+                    {currentUserProfile.rdpCredentials.length > 0 && (
+                      <div className="text-sm space-y-2 mb-3 text-left w-full border-t pt-2 border-border/50">
+                        <div className="font-semibold text-muted-foreground flex items-center gap-1">
+                          <Server className="h-4 w-4" /> RDP Accounts:
+                        </div>
+                        {currentUserProfile.rdpCredentials.map((cred, idx) => (
+                          <div key={`rdp-${cred.username}-${idx}`} className="text-muted-foreground pl-6">
+                            {cred.username}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {currentUserProfile.account_enabled !== null && (
+                      <Badge
+                        className={`text-sm w-full justify-center ${
+                          currentUserProfile.account_enabled ? "bg-green-500" : "bg-gray-500"
+                        }`}
+                      >
+                        {currentUserProfile.account_enabled ? "Account Active" : "Account Disabled"}
+                      </Badge>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
