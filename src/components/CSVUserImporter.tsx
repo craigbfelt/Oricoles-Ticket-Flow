@@ -273,6 +273,9 @@ export function CSVUserImporter() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    
+    // Revoke the blob URL to prevent memory leaks
+    URL.revokeObjectURL(url);
 
     toast.success('Template downloaded successfully!');
   };
