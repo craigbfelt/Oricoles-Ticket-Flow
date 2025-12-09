@@ -222,7 +222,7 @@ const Dashboard = () => {
         const userVpnCreds = vpnMap.get(email) || [];
         const userRdpCreds = rdpMap.get(email) || [];
         
-        // User is in M365 if they came from directory_users table (have aad_id or upn)
+        // User is in M365 if they came from directory_users table (have user_principal_name or id)
         const inM365 = !!user.user_principal_name || !!user.id;
         
         // Determine device type based on M365 presence and RDP credentials
@@ -511,6 +511,34 @@ const Dashboard = () => {
     );
   };
 
+  const getDeviceTypeBadge = (deviceType: 'thin_client' | 'full_pc' | 'unknown') => {
+    if (deviceType === 'unknown') return null;
+    
+    const config = {
+      full_pc: {
+        icon: Computer,
+        label: 'Full PC',
+        variant: 'default' as const
+      },
+      thin_client: {
+        icon: Monitor,
+        label: 'Thin Client',
+        variant: 'secondary' as const
+      }
+    };
+
+    const { icon: Icon, label, variant } = config[deviceType];
+    
+    return (
+      <div className="mt-2 flex justify-center">
+        <Badge variant={variant} className="text-xs gap-1">
+          <Icon className="h-3 w-3" />
+          {label}
+        </Badge>
+      </div>
+    );
+  };
+
   return (
     <DashboardLayout>
       <div className="p-4 md:p-6 space-y-6 w-full">
@@ -673,17 +701,15 @@ const Dashboard = () => {
                           
                           // Filter by device type
                           if (deviceTypeFilter !== 'all') {
-                            const userWithStats = user as UserWithStats;
-                            if (userWithStats.deviceType !== deviceTypeFilter) {
+                            if (user.deviceType !== deviceTypeFilter) {
                               return false;
                             }
                           }
                           
                           return true;
                         })
-                        .map((user) => {
+                        .map((user: UserWithStats) => {
                           // At this point, all users have stats (either real or default values)
-                          const userWithStats = user as UserWithStats;
                           return (
                             <div
                               key={user.id}
@@ -693,7 +719,7 @@ const Dashboard = () => {
                               <div className="flex flex-col items-center mb-3">
                                 <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-2 relative">
                                   <UserIcon className="h-8 w-8 text-primary" />
-                                  {userWithStats.staffUser && (
+                                  {user.staffUser && (
                                     <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center" title="Staff User">
                                       <UsersIcon className="h-3 w-3 text-white" />
                                     </div>
@@ -712,57 +738,38 @@ const Dashboard = () => {
                                     </p>
                                   )}
                                   {/* Device Type Badge */}
-                                  {userWithStats.deviceType !== 'unknown' && (
-                                    <div className="mt-2 flex justify-center">
-                                      <Badge 
-                                        variant={userWithStats.deviceType === 'full_pc' ? 'default' : 'secondary'}
-                                        className="text-xs gap-1"
-                                      >
-                                        {userWithStats.deviceType === 'full_pc' ? (
-                                          <>
-                                            <Computer className="h-3 w-3" />
-                                            Full PC
-                                          </>
-                                        ) : (
-                                          <>
-                                            <Monitor className="h-3 w-3" />
-                                            Thin Client
-                                          </>
-                                        )}
-                                      </Badge>
-                                    </div>
-                                  )}
+                                  {getDeviceTypeBadge(user.deviceType)}
                                 </div>
                               </div>
 
                               {/* Stats section */}
-                              {(userWithStats.deviceCount > 0 || userWithStats.vpnCount > 0 || userWithStats.rdpCount > 0) && (
+                              {(user.deviceCount > 0 || user.vpnCount > 0 || user.rdpCount > 0) && (
                                 <div className="flex flex-wrap gap-1 justify-center mb-2">
-                                  {userWithStats.deviceCount > 0 && (
+                                  {user.deviceCount > 0 && (
                                     <Badge variant="outline" className="text-xs gap-1">
                                       <Computer className="h-3 w-3" />
-                                      {userWithStats.deviceCount}
+                                      {user.deviceCount}
                                     </Badge>
                                   )}
-                                  {userWithStats.vpnCount > 0 && (
+                                  {user.vpnCount > 0 && (
                                     <Badge variant="outline" className="text-xs gap-1">
                                       <Wifi className="h-3 w-3" />
-                                      {userWithStats.vpnCount}
+                                      {user.vpnCount}
                                     </Badge>
                                   )}
-                                  {userWithStats.rdpCount > 0 && (
+                                  {user.rdpCount > 0 && (
                                     <Badge variant="outline" className="text-xs gap-1">
                                       <Server className="h-3 w-3" />
-                                      {userWithStats.rdpCount}
+                                      {user.rdpCount}
                                     </Badge>
                                   )}
                                 </div>
                               )}
 
                               {/* Device Details */}
-                              {userWithStats.devices.length > 0 && (
+                              {user.devices.length > 0 && (
                                 <div className="text-xs space-y-1 mb-2 text-left w-full">
-                                  {userWithStats.devices.slice(0, 2).map((device, idx) => (
+                                  {user.devices.slice(0, 2).map((device, idx) => (
                                     <div key={device.serial_number || device.device_name || idx} className="border-t pt-1 border-border/50">
                                       {device.device_name && (
                                         <div className="font-medium text-muted-foreground truncate">
@@ -781,47 +788,47 @@ const Dashboard = () => {
                                       )}
                                     </div>
                                   ))}
-                                  {userWithStats.devices.length > 2 && (
+                                  {user.devices.length > 2 && (
                                     <div className="text-center text-muted-foreground">
-                                      +{userWithStats.devices.length - 2} more
+                                      +{user.devices.length - 2} more
                                     </div>
                                   )}
                                 </div>
                               )}
 
                               {/* VPN Credentials */}
-                              {userWithStats.vpnCredentials.length > 0 && (
+                              {user.vpnCredentials.length > 0 && (
                                 <div className="text-xs space-y-1 mb-2 text-left w-full border-t pt-1 border-border/50">
                                   <div className="font-semibold text-muted-foreground flex items-center gap-1">
                                     <Wifi className="h-3 w-3" /> VPN:
                                   </div>
-                                  {userWithStats.vpnCredentials.slice(0, 2).map((cred, idx) => (
+                                  {user.vpnCredentials.slice(0, 2).map((cred, idx) => (
                                     <div key={`vpn-${cred.username}-${idx}`} className="text-muted-foreground truncate pl-4">
                                       {cred.username}
                                     </div>
                                   ))}
-                                  {userWithStats.vpnCredentials.length > 2 && (
+                                  {user.vpnCredentials.length > 2 && (
                                     <div className="text-center text-muted-foreground">
-                                      +{userWithStats.vpnCredentials.length - 2} more
+                                      +{user.vpnCredentials.length - 2} more
                                     </div>
                                   )}
                                 </div>
                               )}
 
                               {/* RDP Credentials */}
-                              {userWithStats.rdpCredentials.length > 0 && (
+                              {user.rdpCredentials.length > 0 && (
                                 <div className="text-xs space-y-1 mb-2 text-left w-full border-t pt-1 border-border/50">
                                   <div className="font-semibold text-muted-foreground flex items-center gap-1">
                                     <Server className="h-3 w-3" /> RDP:
                                   </div>
-                                  {userWithStats.rdpCredentials.slice(0, 2).map((cred, idx) => (
+                                  {user.rdpCredentials.slice(0, 2).map((cred, idx) => (
                                     <div key={`rdp-${cred.username}-${idx}`} className="text-muted-foreground truncate pl-4">
                                       {cred.username}
                                     </div>
                                   ))}
-                                  {userWithStats.rdpCredentials.length > 2 && (
+                                  {user.rdpCredentials.length > 2 && (
                                     <div className="text-center text-muted-foreground">
-                                      +{userWithStats.rdpCredentials.length - 2} more
+                                      +{user.rdpCredentials.length - 2} more
                                     </div>
                                   )}
                                 </div>
