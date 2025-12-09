@@ -6,6 +6,7 @@ import { CopilotPrompt } from "@/components/CopilotPrompt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ticket, Package, AlertCircle, CheckCircle, Monitor, User as UserIcon, Users as UsersIcon, Wifi, Server, Computer } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 
@@ -36,6 +37,8 @@ interface UserWithStats extends DirectoryUser {
   devices: DeviceInfo[];
   vpnCredentials: CredentialInfo[];
   rdpCredentials: CredentialInfo[];
+  inM365: boolean; // User exists in directory_users (M365)
+  deviceType: 'thin_client' | 'full_pc' | 'unknown'; // Thin client (RDP only) or Full PC (M365 + RDP)
 }
 
 const Dashboard = () => {
@@ -59,6 +62,7 @@ const Dashboard = () => {
   const [directoryUsers, setDirectoryUsers] = useState<DirectoryUser[]>([]);
   const [usersWithStats, setUsersWithStats] = useState<UserWithStats[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [deviceTypeFilter, setDeviceTypeFilter] = useState<'all' | 'thin_client' | 'full_pc'>('all');
   const [activeTab, setActiveTab] = useState<string | undefined>(undefined);
   const [currentUserProfile, setCurrentUserProfile] = useState<UserWithStats | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -218,6 +222,20 @@ const Dashboard = () => {
         const userVpnCreds = vpnMap.get(email) || [];
         const userRdpCreds = rdpMap.get(email) || [];
         
+        // User is in M365 if they came from directory_users table (have aad_id or upn)
+        const inM365 = !!user.user_principal_name || !!user.id;
+        
+        // Determine device type based on M365 presence and RDP credentials
+        // Thin Client: Has RDP but NOT in M365
+        // Full PC: Has RDP AND is in M365
+        let deviceType: 'thin_client' | 'full_pc' | 'unknown' = 'unknown';
+        if (userRdpCreds.length > 0) {
+          deviceType = inM365 ? 'full_pc' : 'thin_client';
+        } else if (inM365) {
+          // User is in M365 but no RDP credentials - likely a full PC user
+          deviceType = 'full_pc';
+        }
+        
         return {
           ...user,
           staffUser: staffEmails.has(email),
@@ -227,6 +245,8 @@ const Dashboard = () => {
           devices: userDevices,
           vpnCredentials: userVpnCreds,
           rdpCredentials: userRdpCreds,
+          inM365,
+          deviceType,
         };
       });
 
@@ -469,7 +489,9 @@ const Dashboard = () => {
       deviceCount: 0,
       devices: [],
       vpnCredentials: [],
-      rdpCredentials: []
+      rdpCredentials: [],
+      inM365: true, // Assume true since they're in directoryUsers
+      deviceType: 'unknown' as const
     }));
   }, [usersWithStats, directoryUsers]);
 
@@ -595,7 +617,7 @@ const Dashboard = () => {
                   </p>
                 </CardHeader>
                 <CardContent>
-                  <div className="mb-4">
+                  <div className="mb-4 space-y-3">
                     <Input
                       id="search-users"
                       name="search-users"
@@ -604,6 +626,34 @@ const Dashboard = () => {
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="max-w-md"
                     />
+                    <div className="flex gap-2 items-center flex-wrap">
+                      <span className="text-sm font-medium">Device Type:</span>
+                      <Button
+                        variant={deviceTypeFilter === 'all' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setDeviceTypeFilter('all')}
+                      >
+                        All Users
+                      </Button>
+                      <Button
+                        variant={deviceTypeFilter === 'full_pc' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setDeviceTypeFilter('full_pc')}
+                        className="gap-1"
+                      >
+                        <Computer className="h-3 w-3" />
+                        Full PC
+                      </Button>
+                      <Button
+                        variant={deviceTypeFilter === 'thin_client' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setDeviceTypeFilter('thin_client')}
+                        className="gap-1"
+                      >
+                        <Monitor className="h-3 w-3" />
+                        Thin Client
+                      </Button>
+                    </div>
                   </div>
                   {directoryUsers.length === 0 ? (
                     <p className="text-muted-foreground">No users found. Users can be synced from Microsoft 365 or imported via CSV.</p>
@@ -611,13 +661,25 @@ const Dashboard = () => {
                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                       {displayUsers
                         .filter((user) => {
-                          if (!searchQuery) return true;
-                          const query = searchQuery.toLowerCase();
-                          return (
-                            user.display_name?.toLowerCase().includes(query) ||
-                            user.email?.toLowerCase().includes(query) ||
-                            user.job_title?.toLowerCase().includes(query)
-                          );
+                          // Filter by search query
+                          if (searchQuery) {
+                            const query = searchQuery.toLowerCase();
+                            const matchesSearch = 
+                              user.display_name?.toLowerCase().includes(query) ||
+                              user.email?.toLowerCase().includes(query) ||
+                              user.job_title?.toLowerCase().includes(query);
+                            if (!matchesSearch) return false;
+                          }
+                          
+                          // Filter by device type
+                          if (deviceTypeFilter !== 'all') {
+                            const userWithStats = user as UserWithStats;
+                            if (userWithStats.deviceType !== deviceTypeFilter) {
+                              return false;
+                            }
+                          }
+                          
+                          return true;
                         })
                         .map((user) => {
                           // At this point, all users have stats (either real or default values)
@@ -648,6 +710,27 @@ const Dashboard = () => {
                                     <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
                                       {user.job_title}
                                     </p>
+                                  )}
+                                  {/* Device Type Badge */}
+                                  {userWithStats.deviceType !== 'unknown' && (
+                                    <div className="mt-2 flex justify-center">
+                                      <Badge 
+                                        variant={userWithStats.deviceType === 'full_pc' ? 'default' : 'secondary'}
+                                        className="text-xs gap-1"
+                                      >
+                                        {userWithStats.deviceType === 'full_pc' ? (
+                                          <>
+                                            <Computer className="h-3 w-3" />
+                                            Full PC
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Monitor className="h-3 w-3" />
+                                            Thin Client
+                                          </>
+                                        )}
+                                      </Badge>
+                                    </div>
                                   )}
                                 </div>
                               </div>
