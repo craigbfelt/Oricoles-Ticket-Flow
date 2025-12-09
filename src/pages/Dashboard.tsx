@@ -116,27 +116,28 @@ const Dashboard = () => {
         }
       });
 
-      // Deduplicate users by email (prefer @afripipes.co.za over other domains)
-      const usersByEmail = new Map<string, DirectoryUser>();
+      // Deduplicate users by email local part (prefer @afripipes.co.za over other domains)
+      const usersByLocalPart = new Map<string, DirectoryUser>();
       users.forEach(user => {
         const email = user.email?.toLowerCase() || '';
-        if (!email) return;
+        if (!email || !email.includes('@')) return;
         
-        const existing = usersByEmail.get(email);
+        const localPart = email.split('@')[0];
+        const existing = usersByLocalPart.get(localPart);
         if (!existing) {
-          usersByEmail.set(email, user);
+          usersByLocalPart.set(localPart, user);
         } else {
           // Prefer @afripipes.co.za domain over others
           const existingDomain = existing.email?.toLowerCase().split('@')[1] || '';
           const currentDomain = email.split('@')[1] || '';
           
           if (currentDomain === 'afripipes.co.za' && existingDomain !== 'afripipes.co.za') {
-            usersByEmail.set(email, user);
+            usersByLocalPart.set(localPart, user);
           }
         }
       });
       
-      const deduplicatedUsers = Array.from(usersByEmail.values());
+      const deduplicatedUsers = Array.from(usersByLocalPart.values());
       
       // Enrich users with counts and arrays of device/credential details
       const enrichedUsers: UserWithStats[] = deduplicatedUsers.map(user => {
@@ -192,8 +193,8 @@ const Dashboard = () => {
             return false;
           }
           
-          // Only include afripipes.co.za domain or users without domain
-          return email.includes('@afripipes.co.za') || !email.includes('@');
+          // Only include afripipes.co.za domain
+          return email.endsWith('@afripipes.co.za');
         });
         
         setDirectoryUsers(filteredData);
