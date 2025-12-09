@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useThemeInitializer } from "@/hooks/use-theme-initializer";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
 import ConfigurationError from "@/components/ConfigurationError";
+import { PermissionsProvider } from "@/contexts/PermissionsContext";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Tickets from "./pages/Tickets";
@@ -42,6 +43,7 @@ import Sage from "./pages/Sage";
 import Migrations from "./pages/Migrations";
 import MigrationTrackerPage from "./pages/MigrationTrackerPage";
 import ITSuppliers from "./pages/ITSuppliers";
+import ITSupplierDetails from "./pages/ITSupplierDetails";
 import NetworkDiagramOverview from "./pages/NetworkDiagramOverview";
 
 const queryClient = new QueryClient();
@@ -58,10 +60,11 @@ const App = () => {
   return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
+      <PermissionsProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
           <Route path="/" element={<Auth />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
@@ -97,11 +100,13 @@ const App = () => {
           <Route path="/migrations" element={<Migrations />} />
           <Route path="/migration-tracker" element={<MigrationTrackerPage />} />
           <Route path="/it-suppliers" element={<ITSuppliers />} />
+          <Route path="/it-suppliers/:supplierId" element={<ITSupplierDetails />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-      <LiveChat />
+          </Routes>
+        </BrowserRouter>
+        <LiveChat />
+      </PermissionsProvider>
     </TooltipProvider>
   </QueryClientProvider>
   );
