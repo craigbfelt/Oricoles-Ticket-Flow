@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, X } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, X, Download } from "lucide-react";
 import { toast } from "sonner";
 
 // Get allowed email domain from environment or use default
@@ -230,16 +230,76 @@ export function CSVUserImporter() {
     }
   };
 
+  const downloadTemplate = () => {
+    // Define the template data with headers and example rows
+    const templateData = [
+      {
+        email: 'user@afripipes.co.za',
+        display_name: 'John Doe',
+        vpn_username: 'jdoe_vpn',
+        rdp_username: 'jdoe_rdp',
+        job_title: 'Manager',
+        department: 'IT',
+        branch: 'Head Office',
+        notes: 'Example user - replace with actual data'
+      },
+      {
+        email: 'jane.smith@afripipes.co.za',
+        display_name: 'Jane Smith',
+        vpn_username: 'jsmith_vpn',
+        rdp_username: 'jsmith_rdp',
+        job_title: 'Developer',
+        department: 'IT',
+        branch: 'Branch 1',
+        notes: ''
+      }
+    ];
+
+    // Convert to CSV using PapaParse
+    const csv = Papa.unparse(templateData, {
+      quotes: false,
+      header: true
+    });
+
+    // Create a blob and download link
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'user_import_template.csv');
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success('Template downloaded successfully!');
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileSpreadsheet className="h-5 w-5" />
-          Import Users from CSV
-        </CardTitle>
-        <CardDescription>
-          Import users from RDP/VPN spreadsheets. The CSV file should include columns: email, display_name, vpn_username, rdp_username, job_title, department, branch, notes.
-        </CardDescription>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5" />
+              Import Users from CSV
+            </CardTitle>
+            <CardDescription>
+              Import users from RDP/VPN spreadsheets. The CSV file should include columns: email, display_name, vpn_username, rdp_username, job_title, department, branch, notes.
+            </CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={downloadTemplate}
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Download Template
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* File Upload Section */}
