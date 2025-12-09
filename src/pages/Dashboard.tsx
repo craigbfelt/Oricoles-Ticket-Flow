@@ -602,13 +602,22 @@ const Dashboard = () => {
             <TabsContent value="profile" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <UserIcon className="h-5 w-5" />
-                    My Profile
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Your user information and resources
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <UserIcon className="h-5 w-5" />
+                        My Profile
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Your user information and resources
+                      </p>
+                    </div>
+                    {currentUserProfile.id && (
+                      <Button onClick={() => navigate(`/user-details/${currentUserProfile.id}`)}>
+                        View Full Details
+                      </Button>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-col p-6 rounded-lg border border-border max-w-md mx-auto">

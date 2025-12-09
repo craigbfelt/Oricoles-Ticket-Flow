@@ -240,9 +240,6 @@ const Tickets = () => {
     if (!userId) {
       // Reset to current user's info if clearing selection
       setUserEmail(currentUserEmail);
-      if (branch) {
-        // Keep existing branch if set
-      }
       return;
     }
     const selectedUser = allUsers.find(u => u.id === userId);
@@ -714,7 +711,7 @@ const Tickets = () => {
                         <SelectContent>
                           {allUsers.map((user) => (
                             <SelectItem key={user.id} value={user.id}>
-                              {user.full_name || user.email} {user.email && `(${user.email})`}
+                              {user.full_name ? `${user.full_name} (${user.email})` : user.email}
                             </SelectItem>
                           ))}
                         </SelectContent>

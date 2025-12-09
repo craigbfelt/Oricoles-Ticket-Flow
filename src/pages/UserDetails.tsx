@@ -107,7 +107,7 @@ const UserDetails = () => {
   }, []);
 
   useEffect(() => {
-    if (isAdmin && userId) {
+    if (userId) {
       fetchUserData();
     }
   }, [isAdmin, userId]);
@@ -119,10 +119,10 @@ const UserDetails = () => {
       return;
     }
 
-    // Get current user's profile ID
+    // Get current user's profile ID and email
     const { data: profileData } = await supabase
       .from("profiles")
-      .select("id")
+      .select("id, email")
       .eq("user_id", session.user.id)
       .maybeSingle();
 
@@ -138,12 +138,24 @@ const UserDetails = () => {
       .eq("role", "admin")
       .maybeSingle();
 
-    if (!roles) {
-      navigate("/dashboard");
-      return;
-    }
+    const adminStatus = !!roles;
+    setIsAdmin(adminStatus);
 
-    setIsAdmin(true);
+    // If not admin, check if they're trying to access their own profile
+    if (!adminStatus && userId && profileData) {
+      // Get the directory user being viewed
+      const { data: viewedUser } = await supabase
+        .from("directory_users")
+        .select("email")
+        .eq("id", userId)
+        .maybeSingle();
+
+      // If not their own profile, redirect to dashboard
+      if (!viewedUser || viewedUser.email?.toLowerCase() !== profileData.email?.toLowerCase()) {
+        navigate("/dashboard");
+        return;
+      }
+    }
   };
 
   const fetchUserData = async () => {
@@ -287,9 +299,16 @@ const UserDetails = () => {
       .from("tickets")
       .insert([
         {
-          ...validationResult.data as any,
+          title: validationResult.data.title,
+          description: validationResult.data.description,
+          priority: validationResult.data.priority,
+          category: validationResult.data.category,
+          branch: validationResult.data.branch,
+          fault_type: validationResult.data.fault_type,
+          user_email: validationResult.data.user_email,
+          error_code: validationResult.data.error_code,
           created_by: targetProfileId || currentUserProfileId,
-          status: "open" as any,
+          status: "open",
           last_activity_at: new Date().toISOString(),
         },
       ])
