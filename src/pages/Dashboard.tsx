@@ -158,23 +158,30 @@ const Dashboard = () => {
       
       // Then add any devices from hardware_inventory that aren't already tracked
       // Match by both email and UPN
+      // Use a Set for O(1) lookups instead of Array.some() for better performance
+      const trackedSerials = new Set<string>();
+      deviceMap.forEach(devices => {
+        devices.forEach(d => {
+          if (d.serial_number) trackedSerials.add(d.serial_number);
+        });
+      });
+      
       devices?.forEach(device => {
         const email = device.m365_user_email?.toLowerCase();
         const upn = device.m365_user_principal_name?.toLowerCase();
         const userKey = email || upn;
         
-        if (userKey) {
-          // Check if this serial number is already in the map
-          const existing = deviceMap.get(userKey) || [];
-          const alreadyExists = existing.some(d => d.serial_number === device.serial_number);
-          
-          if (!alreadyExists) {
+        if (userKey && device.serial_number) {
+          // Check if this serial number is already tracked (O(1) lookup)
+          if (!trackedSerials.has(device.serial_number)) {
             const deviceInfo: DeviceInfo = {
               serial_number: device.serial_number,
               model: device.model,
               device_name: device.device_name
             };
+            const existing = deviceMap.get(userKey) || [];
             deviceMap.set(userKey, [...existing, deviceInfo]);
+            trackedSerials.add(device.serial_number);
           }
         }
       });

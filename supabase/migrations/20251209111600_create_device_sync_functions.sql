@@ -29,6 +29,11 @@ BEGIN
   FROM public.profiles
   WHERE user_id = auth.uid()
   LIMIT 1;
+  
+  -- If no profile found, raise an error
+  IF v_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'No tenant_id found for current user. Cannot proceed with sync.';
+  END IF;
 
   -- Loop through all devices in hardware_inventory that have M365 user assignments
   FOR v_device IN 
@@ -105,7 +110,7 @@ BEGIN
 
           v_changes_detected := v_changes_detected + 1;
         ELSE
-          -- Same user, just update device details if changed
+          -- Same user, just update device details if changed (NULL-safe comparison)
           UPDATE public.device_user_assignments
           SET 
             device_name = v_device.device_name,
@@ -113,8 +118,8 @@ BEGIN
             updated_at = now()
           WHERE id = v_current_assignment.id
           AND (
-            device_name != v_device.device_name OR
-            device_model != v_device.model
+            device_name IS DISTINCT FROM v_device.device_name OR
+            device_model IS DISTINCT FROM v_device.model
           );
         END IF;
       ELSE
@@ -157,7 +162,11 @@ BEGIN
 
     EXCEPTION WHEN OTHERS THEN
       v_errors_count := v_errors_count + 1;
-      RAISE WARNING 'Error syncing device %: %', v_device.serial_number, SQLERRM;
+      RAISE WARNING 'Error syncing device % (user: %): % - SQLSTATE: %', 
+        v_device.serial_number, 
+        COALESCE(v_device.m365_user_email, v_device.m365_user_principal_name, 'unknown'),
+        SQLERRM,
+        SQLSTATE;
     END;
   END LOOP;
 

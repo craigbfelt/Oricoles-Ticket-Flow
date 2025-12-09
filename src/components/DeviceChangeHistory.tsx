@@ -60,16 +60,25 @@ export function DeviceChangeHistory() {
 
   const markAsReviewed = async (changeId: string) => {
     try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        toast.error("Unable to get current user");
+        return;
+      }
+
       const { error } = await supabase
         .from("device_change_history")
         .update({
           reviewed: true,
           reviewed_at: new Date().toISOString(),
-          reviewed_by: (await supabase.auth.getUser()).data.user?.id
+          reviewed_by: user.id
         })
         .eq('id', changeId);
 
       if (error) {
+        console.error("Error updating review status:", error);
         toast.error("Failed to mark as reviewed");
         return;
       }
@@ -78,6 +87,7 @@ export function DeviceChangeHistory() {
       fetchChanges();
     } catch (error) {
       console.error("Error marking as reviewed:", error);
+      toast.error("An unexpected error occurred");
     }
   };
 
