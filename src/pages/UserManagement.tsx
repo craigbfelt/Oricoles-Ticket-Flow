@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { CSVUserImporter } from "@/components/CSVUserImporter";
+import { DeviceSyncManager } from "@/components/DeviceSyncManager";
+import { DeviceChangeHistory } from "@/components/DeviceChangeHistory";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Users, Upload, History, Settings } from "lucide-react";
+import { Users, Upload, History, Settings, Activity } from "lucide-react";
 import { toast } from "sonner";
 
 interface MasterUser {
@@ -209,14 +211,26 @@ const UserManagement = () => {
               <Users className="h-4 w-4 mr-2" />
               Master User List ({masterUsers.length})
             </TabsTrigger>
+            <TabsTrigger value="sync">
+              <Activity className="h-4 w-4 mr-2" />
+              Device Sync
+            </TabsTrigger>
             <TabsTrigger value="history">
               <History className="h-4 w-4 mr-2" />
-              Import History
+              Change History
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="import" className="space-y-6">
             <CSVUserImporter />
+          </TabsContent>
+
+          <TabsContent value="sync" className="space-y-6">
+            <DeviceSyncManager />
+          </TabsContent>
+
+          <TabsContent value="history" className="space-y-6">
+            <DeviceChangeHistory />
           </TabsContent>
 
           <TabsContent value="users" className="space-y-6">
