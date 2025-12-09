@@ -6,6 +6,7 @@ import { CopilotPrompt } from "@/components/CopilotPrompt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ticket, Package, AlertCircle, CheckCircle, Monitor, User as UserIcon, Users as UsersIcon, Wifi, Server, Computer } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 
@@ -36,6 +37,8 @@ interface UserWithStats extends DirectoryUser {
   devices: DeviceInfo[];
   vpnCredentials: CredentialInfo[];
   rdpCredentials: CredentialInfo[];
+  inM365: boolean; // User exists in directory_users (M365)
+  deviceType: 'thin_client' | 'full_pc' | 'unknown'; // Thin client (RDP only) or Full PC (M365 + RDP)
 }
 
 const Dashboard = () => {
@@ -59,6 +62,7 @@ const Dashboard = () => {
   const [directoryUsers, setDirectoryUsers] = useState<DirectoryUser[]>([]);
   const [usersWithStats, setUsersWithStats] = useState<UserWithStats[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [deviceTypeFilter, setDeviceTypeFilter] = useState<'all' | 'thin_client' | 'full_pc'>('all');
   const [activeTab, setActiveTab] = useState<string | undefined>(undefined);
   const [currentUserProfile, setCurrentUserProfile] = useState<UserWithStats | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -218,6 +222,20 @@ const Dashboard = () => {
         const userVpnCreds = vpnMap.get(email) || [];
         const userRdpCreds = rdpMap.get(email) || [];
         
+        // User is in M365 if they came from directory_users table (have user_principal_name or id)
+        const inM365 = !!user.user_principal_name || !!user.id;
+        
+        // Determine device type based on M365 presence and RDP credentials
+        // Thin Client: Has RDP but NOT in M365
+        // Full PC: Has RDP AND is in M365
+        let deviceType: 'thin_client' | 'full_pc' | 'unknown' = 'unknown';
+        if (userRdpCreds.length > 0) {
+          deviceType = inM365 ? 'full_pc' : 'thin_client';
+        } else if (inM365) {
+          // User is in M365 but no RDP credentials - likely a full PC user
+          deviceType = 'full_pc';
+        }
+        
         return {
           ...user,
           staffUser: staffEmails.has(email),
@@ -227,6 +245,8 @@ const Dashboard = () => {
           devices: userDevices,
           vpnCredentials: userVpnCreds,
           rdpCredentials: userRdpCreds,
+          inM365,
+          deviceType,
         };
       });
 
@@ -469,7 +489,9 @@ const Dashboard = () => {
       deviceCount: 0,
       devices: [],
       vpnCredentials: [],
-      rdpCredentials: []
+      rdpCredentials: [],
+      inM365: true, // Assume true since they're in directoryUsers
+      deviceType: 'unknown' as const
     }));
   }, [usersWithStats, directoryUsers]);
 
@@ -486,6 +508,34 @@ const Dashboard = () => {
       <Badge className={`${colors[status]} text-white`}>
         {status.replace("_", " ")}
       </Badge>
+    );
+  };
+
+  const getDeviceTypeBadge = (deviceType: 'thin_client' | 'full_pc' | 'unknown') => {
+    if (deviceType === 'unknown') return null;
+    
+    const config = {
+      full_pc: {
+        icon: Computer,
+        label: 'Full PC',
+        variant: 'default' as const
+      },
+      thin_client: {
+        icon: Monitor,
+        label: 'Thin Client',
+        variant: 'secondary' as const
+      }
+    };
+
+    const { icon: Icon, label, variant } = config[deviceType];
+    
+    return (
+      <div className="mt-2 flex justify-center">
+        <Badge variant={variant} className="text-xs gap-1">
+          <Icon className="h-3 w-3" />
+          {label}
+        </Badge>
+      </div>
     );
   };
 
@@ -595,7 +645,7 @@ const Dashboard = () => {
                   </p>
                 </CardHeader>
                 <CardContent>
-                  <div className="mb-4">
+                  <div className="mb-4 space-y-3">
                     <Input
                       id="search-users"
                       name="search-users"
@@ -604,6 +654,34 @@ const Dashboard = () => {
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="max-w-md"
                     />
+                    <div className="flex gap-2 items-center flex-wrap">
+                      <span className="text-sm font-medium">Device Type:</span>
+                      <Button
+                        variant={deviceTypeFilter === 'all' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setDeviceTypeFilter('all')}
+                      >
+                        All Users
+                      </Button>
+                      <Button
+                        variant={deviceTypeFilter === 'full_pc' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setDeviceTypeFilter('full_pc')}
+                        className="gap-1"
+                      >
+                        <Computer className="h-3 w-3" />
+                        Full PC
+                      </Button>
+                      <Button
+                        variant={deviceTypeFilter === 'thin_client' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setDeviceTypeFilter('thin_client')}
+                        className="gap-1"
+                      >
+                        <Monitor className="h-3 w-3" />
+                        Thin Client
+                      </Button>
+                    </div>
                   </div>
                   {directoryUsers.length === 0 ? (
                     <p className="text-muted-foreground">No users found. Users can be synced from Microsoft 365 or imported via CSV.</p>
@@ -611,17 +689,27 @@ const Dashboard = () => {
                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                       {displayUsers
                         .filter((user) => {
-                          if (!searchQuery) return true;
-                          const query = searchQuery.toLowerCase();
-                          return (
-                            user.display_name?.toLowerCase().includes(query) ||
-                            user.email?.toLowerCase().includes(query) ||
-                            user.job_title?.toLowerCase().includes(query)
-                          );
+                          // Filter by search query
+                          if (searchQuery) {
+                            const query = searchQuery.toLowerCase();
+                            const matchesSearch = 
+                              user.display_name?.toLowerCase().includes(query) ||
+                              user.email?.toLowerCase().includes(query) ||
+                              user.job_title?.toLowerCase().includes(query);
+                            if (!matchesSearch) return false;
+                          }
+                          
+                          // Filter by device type
+                          if (deviceTypeFilter !== 'all') {
+                            if (user.deviceType !== deviceTypeFilter) {
+                              return false;
+                            }
+                          }
+                          
+                          return true;
                         })
-                        .map((user) => {
+                        .map((user: UserWithStats) => {
                           // At this point, all users have stats (either real or default values)
-                          const userWithStats = user as UserWithStats;
                           return (
                             <div
                               key={user.id}
@@ -631,7 +719,7 @@ const Dashboard = () => {
                               <div className="flex flex-col items-center mb-3">
                                 <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-2 relative">
                                   <UserIcon className="h-8 w-8 text-primary" />
-                                  {userWithStats.staffUser && (
+                                  {user.staffUser && (
                                     <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center" title="Staff User">
                                       <UsersIcon className="h-3 w-3 text-white" />
                                     </div>
@@ -649,37 +737,39 @@ const Dashboard = () => {
                                       {user.job_title}
                                     </p>
                                   )}
+                                  {/* Device Type Badge */}
+                                  {getDeviceTypeBadge(user.deviceType)}
                                 </div>
                               </div>
 
                               {/* Stats section */}
-                              {(userWithStats.deviceCount > 0 || userWithStats.vpnCount > 0 || userWithStats.rdpCount > 0) && (
+                              {(user.deviceCount > 0 || user.vpnCount > 0 || user.rdpCount > 0) && (
                                 <div className="flex flex-wrap gap-1 justify-center mb-2">
-                                  {userWithStats.deviceCount > 0 && (
+                                  {user.deviceCount > 0 && (
                                     <Badge variant="outline" className="text-xs gap-1">
                                       <Computer className="h-3 w-3" />
-                                      {userWithStats.deviceCount}
+                                      {user.deviceCount}
                                     </Badge>
                                   )}
-                                  {userWithStats.vpnCount > 0 && (
+                                  {user.vpnCount > 0 && (
                                     <Badge variant="outline" className="text-xs gap-1">
                                       <Wifi className="h-3 w-3" />
-                                      {userWithStats.vpnCount}
+                                      {user.vpnCount}
                                     </Badge>
                                   )}
-                                  {userWithStats.rdpCount > 0 && (
+                                  {user.rdpCount > 0 && (
                                     <Badge variant="outline" className="text-xs gap-1">
                                       <Server className="h-3 w-3" />
-                                      {userWithStats.rdpCount}
+                                      {user.rdpCount}
                                     </Badge>
                                   )}
                                 </div>
                               )}
 
                               {/* Device Details */}
-                              {userWithStats.devices.length > 0 && (
+                              {user.devices.length > 0 && (
                                 <div className="text-xs space-y-1 mb-2 text-left w-full">
-                                  {userWithStats.devices.slice(0, 2).map((device, idx) => (
+                                  {user.devices.slice(0, 2).map((device, idx) => (
                                     <div key={device.serial_number || device.device_name || idx} className="border-t pt-1 border-border/50">
                                       {device.device_name && (
                                         <div className="font-medium text-muted-foreground truncate">
@@ -698,47 +788,47 @@ const Dashboard = () => {
                                       )}
                                     </div>
                                   ))}
-                                  {userWithStats.devices.length > 2 && (
+                                  {user.devices.length > 2 && (
                                     <div className="text-center text-muted-foreground">
-                                      +{userWithStats.devices.length - 2} more
+                                      +{user.devices.length - 2} more
                                     </div>
                                   )}
                                 </div>
                               )}
 
                               {/* VPN Credentials */}
-                              {userWithStats.vpnCredentials.length > 0 && (
+                              {user.vpnCredentials.length > 0 && (
                                 <div className="text-xs space-y-1 mb-2 text-left w-full border-t pt-1 border-border/50">
                                   <div className="font-semibold text-muted-foreground flex items-center gap-1">
                                     <Wifi className="h-3 w-3" /> VPN:
                                   </div>
-                                  {userWithStats.vpnCredentials.slice(0, 2).map((cred, idx) => (
+                                  {user.vpnCredentials.slice(0, 2).map((cred, idx) => (
                                     <div key={`vpn-${cred.username}-${idx}`} className="text-muted-foreground truncate pl-4">
                                       {cred.username}
                                     </div>
                                   ))}
-                                  {userWithStats.vpnCredentials.length > 2 && (
+                                  {user.vpnCredentials.length > 2 && (
                                     <div className="text-center text-muted-foreground">
-                                      +{userWithStats.vpnCredentials.length - 2} more
+                                      +{user.vpnCredentials.length - 2} more
                                     </div>
                                   )}
                                 </div>
                               )}
 
                               {/* RDP Credentials */}
-                              {userWithStats.rdpCredentials.length > 0 && (
+                              {user.rdpCredentials.length > 0 && (
                                 <div className="text-xs space-y-1 mb-2 text-left w-full border-t pt-1 border-border/50">
                                   <div className="font-semibold text-muted-foreground flex items-center gap-1">
                                     <Server className="h-3 w-3" /> RDP:
                                   </div>
-                                  {userWithStats.rdpCredentials.slice(0, 2).map((cred, idx) => (
+                                  {user.rdpCredentials.slice(0, 2).map((cred, idx) => (
                                     <div key={`rdp-${cred.username}-${idx}`} className="text-muted-foreground truncate pl-4">
                                       {cred.username}
                                     </div>
                                   ))}
-                                  {userWithStats.rdpCredentials.length > 2 && (
+                                  {user.rdpCredentials.length > 2 && (
                                     <div className="text-center text-muted-foreground">
-                                      +{userWithStats.rdpCredentials.length - 2} more
+                                      +{user.rdpCredentials.length - 2} more
                                     </div>
                                   )}
                                 </div>

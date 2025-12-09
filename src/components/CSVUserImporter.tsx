@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, X } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, X, Download } from "lucide-react";
 import { toast } from "sonner";
 
 // Get allowed email domain from environment or use default
@@ -15,6 +15,7 @@ const ALLOWED_EMAIL_DOMAIN = import.meta.env.VITE_ALLOWED_EMAIL_DOMAIN || '@afri
 
 interface CSVRow {
   email: string;
+  device_serial_number?: string;
   display_name?: string;
   vpn_username?: string;
   rdp_username?: string;
@@ -205,7 +206,48 @@ export function CSVUserImporter() {
         return;
       }
 
-      toast.success(`Successfully imported ${data?.length || 0} users!`);
+      // Create device assignments for rows with device serial numbers
+      const deviceAssignments = preview.validRows
+        .filter(row => row.device_serial_number && row.device_serial_number.trim())
+        .map(row => ({
+          device_serial_number: row.device_serial_number!.trim(),
+          user_email: row.email.toLowerCase(),
+          device_name: row.display_name || null,
+          assignment_source: 'csv_import',
+          is_current: true,
+          tenant_id: tenantId,
+          assignment_date: new Date().toISOString()
+        }));
+
+      if (deviceAssignments.length > 0) {
+        // First, mark existing assignments for these serial numbers as not current
+        const serialNumbers = deviceAssignments.map(d => d.device_serial_number);
+        const { error: updateError } = await supabase
+          .from('device_user_assignments')
+          .update({ is_current: false })
+          .in('device_serial_number', serialNumbers)
+          .eq('tenant_id', tenantId)
+          .eq('is_current', true);
+
+        if (updateError) {
+          console.error('Error updating existing device assignments:', updateError);
+          toast.warning(`Users imported, but failed to update existing device assignments: ${updateError.message}`);
+        } else {
+          // Only insert new assignments if update succeeded
+          const { error: deviceError } = await supabase
+            .from('device_user_assignments')
+            .insert(deviceAssignments);
+
+          if (deviceError) {
+            console.error('Error creating device assignments:', deviceError);
+            toast.warning(`Users imported, but some device assignments failed: ${deviceError.message}`);
+          } else {
+            toast.success(`Successfully imported ${data?.length || 0} users and ${deviceAssignments.length} device assignments!`);
+          }
+        }
+      } else {
+        toast.success(`Successfully imported ${data?.length || 0} users!`);
+      }
       
       // Reset form
       setFile(null);
@@ -230,16 +272,81 @@ export function CSVUserImporter() {
     }
   };
 
+  const downloadTemplate = () => {
+    // Define the template data with headers and example rows
+    const templateData = [
+      {
+        email: 'user@afripipes.co.za',
+        device_serial_number: 'SN123456789',
+        display_name: 'John Doe',
+        vpn_username: 'jdoe_vpn',
+        rdp_username: 'jdoe_rdp',
+        job_title: 'Manager',
+        department: 'IT',
+        branch: 'Head Office',
+        notes: 'Example user - replace with actual data'
+      },
+      {
+        email: 'jane.smith@afripipes.co.za',
+        device_serial_number: 'SN987654321',
+        display_name: 'Jane Smith',
+        vpn_username: 'jsmith_vpn',
+        rdp_username: 'jsmith_rdp',
+        job_title: 'Developer',
+        department: 'IT',
+        branch: 'Branch 1',
+        notes: ''
+      }
+    ];
+
+    // Convert to CSV using PapaParse
+    const csv = Papa.unparse(templateData, {
+      quotes: false,
+      header: true
+    });
+
+    // Create a blob and download link
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'user_import_template.csv');
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Revoke the blob URL to prevent memory leaks
+    URL.revokeObjectURL(url);
+
+    toast.success('Template downloaded successfully!');
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileSpreadsheet className="h-5 w-5" />
-          Import Users from CSV
-        </CardTitle>
-        <CardDescription>
-          Import users from RDP/VPN spreadsheets. The CSV file should include columns: email, display_name, vpn_username, rdp_username, job_title, department, branch, notes.
-        </CardDescription>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5" />
+              Import Users from CSV
+            </CardTitle>
+            <CardDescription>
+              Import users from RDP/VPN spreadsheets. The CSV file should include columns: email, device_serial_number, display_name, vpn_username, rdp_username, job_title, department, branch, notes. Device serial number serves as the unique identifier across the system.
+            </CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={downloadTemplate}
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Download Template
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* File Upload Section */}
@@ -273,8 +380,8 @@ export function CSVUserImporter() {
           <AlertTitle>CSV Format</AlertTitle>
           <AlertDescription>
             <pre className="text-xs mt-2 p-2 bg-muted rounded">
-              email,display_name,vpn_username,rdp_username,job_title,department,branch,notes{'\n'}
-              user@afripipes.co.za,John Doe,jdoe_vpn,jdoe_rdp,Manager,IT,Head Office,
+              email,device_serial_number,display_name,vpn_username,rdp_username,job_title,department,branch,notes{'\n'}
+              user@afripipes.co.za,SN123456789,John Doe,jdoe_vpn,jdoe_rdp,Manager,IT,Head Office,
             </pre>
           </AlertDescription>
         </Alert>
