@@ -15,6 +15,7 @@ const ALLOWED_EMAIL_DOMAIN = import.meta.env.VITE_ALLOWED_EMAIL_DOMAIN || '@afri
 
 interface CSVRow {
   email: string;
+  device_serial_number?: string;
   display_name?: string;
   vpn_username?: string;
   rdp_username?: string;
@@ -205,7 +206,43 @@ export function CSVUserImporter() {
         return;
       }
 
-      toast.success(`Successfully imported ${data?.length || 0} users!`);
+      // Create device assignments for rows with device serial numbers
+      const deviceAssignments = preview.validRows
+        .filter(row => row.device_serial_number && row.device_serial_number.trim())
+        .map(row => ({
+          device_serial_number: row.device_serial_number!.trim(),
+          user_email: row.email.toLowerCase(),
+          device_name: row.display_name || null,
+          assignment_source: 'csv_import',
+          is_current: true,
+          tenant_id: tenantId,
+          assignment_date: new Date().toISOString()
+        }));
+
+      if (deviceAssignments.length > 0) {
+        // First, mark existing assignments for these serial numbers as not current
+        const serialNumbers = deviceAssignments.map(d => d.device_serial_number);
+        await supabase
+          .from('device_user_assignments')
+          .update({ is_current: false })
+          .in('device_serial_number', serialNumbers)
+          .eq('tenant_id', tenantId)
+          .eq('is_current', true);
+
+        // Insert new device assignments
+        const { error: deviceError } = await supabase
+          .from('device_user_assignments')
+          .insert(deviceAssignments);
+
+        if (deviceError) {
+          console.error('Error creating device assignments:', deviceError);
+          toast.warning(`Users imported, but some device assignments failed: ${deviceError.message}`);
+        } else {
+          toast.success(`Successfully imported ${data?.length || 0} users and ${deviceAssignments.length} device assignments!`);
+        }
+      } else {
+        toast.success(`Successfully imported ${data?.length || 0} users!`);
+      }
       
       // Reset form
       setFile(null);
@@ -235,6 +272,7 @@ export function CSVUserImporter() {
     const templateData = [
       {
         email: 'user@afripipes.co.za',
+        device_serial_number: 'SN123456789',
         display_name: 'John Doe',
         vpn_username: 'jdoe_vpn',
         rdp_username: 'jdoe_rdp',
@@ -245,6 +283,7 @@ export function CSVUserImporter() {
       },
       {
         email: 'jane.smith@afripipes.co.za',
+        device_serial_number: 'SN987654321',
         display_name: 'Jane Smith',
         vpn_username: 'jsmith_vpn',
         rdp_username: 'jsmith_rdp',
@@ -290,7 +329,7 @@ export function CSVUserImporter() {
               Import Users from CSV
             </CardTitle>
             <CardDescription>
-              Import users from RDP/VPN spreadsheets. The CSV file should include columns: email, display_name, vpn_username, rdp_username, job_title, department, branch, notes.
+              Import users from RDP/VPN spreadsheets. The CSV file should include columns: email, device_serial_number, display_name, vpn_username, rdp_username, job_title, department, branch, notes. Device serial number serves as the unique identifier across the system.
             </CardDescription>
           </div>
           <Button
@@ -336,8 +375,8 @@ export function CSVUserImporter() {
           <AlertTitle>CSV Format</AlertTitle>
           <AlertDescription>
             <pre className="text-xs mt-2 p-2 bg-muted rounded">
-              email,display_name,vpn_username,rdp_username,job_title,department,branch,notes{'\n'}
-              user@afripipes.co.za,John Doe,jdoe_vpn,jdoe_rdp,Manager,IT,Head Office,
+              email,device_serial_number,display_name,vpn_username,rdp_username,job_title,department,branch,notes{'\n'}
+              user@afripipes.co.za,SN123456789,John Doe,jdoe_vpn,jdoe_rdp,Manager,IT,Head Office,
             </pre>
           </AlertDescription>
         </Alert>
