@@ -77,11 +77,12 @@ const UserManagement = () => {
 
   const fetchMasterUsers = async () => {
     try {
+      // Fetch all users without limit for now. 
+      // TODO: Implement pagination when user count exceeds 1000
       const { data, error } = await supabase
         .from("master_user_list")
         .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
+        .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Error fetching master users:", error);

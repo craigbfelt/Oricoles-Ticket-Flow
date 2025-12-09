@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import Papa from "papaparse";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, X } from "lucide-react";
 import { toast } from "sonner";
+
+// Get allowed email domain from environment or use default
+const ALLOWED_EMAIL_DOMAIN = import.meta.env.VITE_ALLOWED_EMAIL_DOMAIN || '@afripipes.co.za';
 
 interface CSVRow {
   email: string;
@@ -45,26 +49,18 @@ export function CSVUserImporter() {
   };
 
   const parseCSV = (text: string): CSVRow[] => {
-    const lines = text.split('\n').filter(line => line.trim());
-    if (lines.length < 2) return []; // Need at least header + 1 row
+    const result = Papa.parse(text, {
+      header: true,
+      skipEmptyLines: true,
+      transformHeader: (header) => header.trim().toLowerCase(),
+    });
 
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-    const rows: CSVRow[] = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim());
-      const row: any = {};
-      
-      headers.forEach((header, index) => {
-        if (values[index]) {
-          row[header] = values[index];
-        }
-      });
-
-      rows.push(row as CSVRow);
+    if (result.errors.length > 0) {
+      console.error('CSV parsing errors:', result.errors);
+      toast.error('CSV parsing encountered errors. Please check the file format.');
     }
 
-    return rows;
+    return result.data as CSVRow[];
   };
 
   const validateRows = (rows: CSVRow[]): ImportPreview => {
@@ -94,12 +90,12 @@ export function CSVUserImporter() {
         return;
       }
 
-      // Check for @afripipes.co.za domain
-      if (!row.email.toLowerCase().endsWith('@afripipes.co.za')) {
+      // Check for allowed email domain
+      if (!row.email.toLowerCase().endsWith(ALLOWED_EMAIL_DOMAIN)) {
         errors.push({
           row: rowNumber,
           field: 'email',
-          message: 'Email must be @afripipes.co.za domain'
+          message: `Email must use ${ALLOWED_EMAIL_DOMAIN} domain`
         });
         return;
       }
@@ -164,13 +160,19 @@ export function CSVUserImporter() {
       }
 
       // Get tenant ID from user's profile
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('tenant_id')
         .eq('user_id', user.id)
         .single();
 
-      const tenantId = profile?.tenant_id || '00000000-0000-0000-0000-000000000001';
+      if (profileError || !profile?.tenant_id) {
+        console.error('Error fetching tenant ID:', profileError);
+        toast.error('Unable to determine your tenant. Please contact support.');
+        return;
+      }
+
+      const tenantId = profile.tenant_id;
 
       // Prepare rows for insertion
       const usersToInsert = preview.validRows.map(row => ({

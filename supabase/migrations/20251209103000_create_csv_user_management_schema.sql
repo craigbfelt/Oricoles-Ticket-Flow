@@ -82,9 +82,9 @@ CREATE TABLE IF NOT EXISTS public.device_user_assignments (
   tenant_id UUID REFERENCES public.tenants(id)
 );
 
--- Create partial unique index for current assignments only
+-- Create partial unique index for current assignments only, scoped by tenant
 CREATE UNIQUE INDEX IF NOT EXISTS idx_device_assignments_current_unique 
-  ON public.device_user_assignments(device_serial_number) 
+  ON public.device_user_assignments(device_serial_number, tenant_id) 
   WHERE is_current = true;
 
 CREATE INDEX IF NOT EXISTS idx_device_assignments_serial ON public.device_user_assignments(device_serial_number);
