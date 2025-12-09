@@ -7,13 +7,14 @@ export type LogoPosition = 'left' | 'center' | 'right';
 export type LogoLayout = 'horizontal' | 'stacked';
 
 // Default theme settings - used for initialization and reset
+// Using vibrant custom color scheme: Primary #ff0f77, Secondary #64022c, Accent #00b0c7
 export const defaultThemeSettings = {
-  primaryColor: '#1e40af',
-  secondaryColor: '#7c3aed',
-  accentColor: '#f59e0b',
-  primaryColorHSL: '212 85% 48%',
-  secondaryColorHSL: '271 91% 65%',
-  accentColorHSL: '38 92% 50%',
+  primaryColor: '#ff0f77',
+  secondaryColor: '#64022c',
+  accentColor: '#00b0c7',
+  primaryColorHSL: '331 100% 53%',
+  secondaryColorHSL: '342 97% 20%',
+  accentColorHSL: '187 100% 39%',
   colorTheme: 'custom' as const,
   fontFamily: 'system-ui',
   fontSize: 16,
@@ -27,12 +28,13 @@ export const defaultThemeSettings = {
   showSecondaryLogo: false,
   layoutDensity: 'comfortable' as const,
   darkMode: false,
-  // Sidebar colors (defaults from CSS)
-  sidebarBackground: '215 28% 17%',
-  sidebarForeground: '210 20% 98%',
-  sidebarAccent: '217 32% 24%',
-  sidebarAccentForeground: '210 20% 98%',
-  sidebarBorder: '217 32% 24%',
+  // Sidebar colors - Custom vibrant scheme
+  // Background: #ffffff (white), Text: #f20262 (bright pink), Accent: #007573 (teal), Border: #2a3951 (dark blue-gray)
+  sidebarBackground: '0 0% 100%',
+  sidebarForeground: '337 98% 47%',
+  sidebarAccent: '179 100% 23%',
+  sidebarAccentForeground: '0 0% 100%',
+  sidebarBorder: '211 30% 24%',
   // Font colors
   headingColor: '215 25% 15%',
   textColor: '215 25% 15%',

@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useThemeInitializer } from "@/hooks/use-theme-initializer";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
 import ConfigurationError from "@/components/ConfigurationError";
+import { PermissionsProvider } from "@/contexts/PermissionsContext";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Tickets from "./pages/Tickets";
@@ -59,10 +60,11 @@ const App = () => {
   return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
+      <PermissionsProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
           <Route path="/" element={<Auth />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
@@ -101,9 +103,10 @@ const App = () => {
           <Route path="/it-suppliers/:supplierId" element={<ITSupplierDetails />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-      <LiveChat />
+          </Routes>
+        </BrowserRouter>
+        <LiveChat />
+      </PermissionsProvider>
     </TooltipProvider>
   </QueryClientProvider>
   );
