@@ -42,6 +42,7 @@ import Sage from "./pages/Sage";
 import Migrations from "./pages/Migrations";
 import MigrationTrackerPage from "./pages/MigrationTrackerPage";
 import ITSuppliers from "./pages/ITSuppliers";
+import ITSupplierDetails from "./pages/ITSupplierDetails";
 import NetworkDiagramOverview from "./pages/NetworkDiagramOverview";
 
 const queryClient = new QueryClient();
@@ -97,6 +98,7 @@ const App = () => {
           <Route path="/migrations" element={<Migrations />} />
           <Route path="/migration-tracker" element={<MigrationTrackerPage />} />
           <Route path="/it-suppliers" element={<ITSuppliers />} />
+          <Route path="/it-suppliers/:supplierId" element={<ITSupplierDetails />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -64,13 +64,82 @@ const Settings = () => {
           </div>
 
           <Tabs defaultValue="theme" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="theme">Theme & Appearance</TabsTrigger>
+              <TabsTrigger value="suppliers">IT Suppliers Style</TabsTrigger>
               <TabsTrigger value="connection">Connection Status</TabsTrigger>
             </TabsList>
 
             <TabsContent value="theme" className="space-y-6">
               <ThemeCustomizer />
+            </TabsContent>
+
+            <TabsContent value="suppliers" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>IT Suppliers Page Styling</CardTitle>
+                  <CardDescription>
+                    Customize the appearance of the IT Suppliers page
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Styling Information</AlertTitle>
+                    <AlertDescription>
+                      The IT Suppliers page uses a consistent pink-red color scheme (#E91E63) for headings, 
+                      card titles, buttons, and links. The page styling is integrated with the main theme 
+                      customizer. To change colors, fonts, or layout, please use the "Theme & Appearance" tab.
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2">Current Styling</h3>
+                      <div className="grid gap-3">
+                        <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                          <span className="text-sm font-medium">Primary Color (Headings/Links)</span>
+                          <Badge className="bg-[#E91E63] hover:bg-[#C2185B]">#E91E63</Badge>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                          <span className="text-sm font-medium">Hover Color</span>
+                          <Badge className="bg-[#C2185B]">#C2185B</Badge>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                          <span className="text-sm font-medium">Layout</span>
+                          <Badge variant="outline">Grid (1/2/3 columns responsive)</Badge>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                          <span className="text-sm font-medium">Card Style</span>
+                          <Badge variant="outline">Shadow on hover, clickable</Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2">Features</h3>
+                      <ul className="space-y-2 text-sm text-muted-foreground">
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-500" />
+                          <span>Clickable supplier cards that navigate to detailed view</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-500" />
+                          <span>Back navigation button on detail pages</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-500" />
+                          <span>Responsive grid layout (mobile to desktop)</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-500" />
+                          <span>Admin-only edit and delete controls</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="connection" className="space-y-6">

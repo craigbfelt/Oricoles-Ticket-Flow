@@ -116,8 +116,30 @@ const Dashboard = () => {
         }
       });
 
+      // Deduplicate users by email (prefer @afripipes.co.za over other domains)
+      const usersByEmail = new Map<string, DirectoryUser>();
+      users.forEach(user => {
+        const email = user.email?.toLowerCase() || '';
+        if (!email) return;
+        
+        const existing = usersByEmail.get(email);
+        if (!existing) {
+          usersByEmail.set(email, user);
+        } else {
+          // Prefer @afripipes.co.za domain over others
+          const existingDomain = existing.email?.toLowerCase().split('@')[1] || '';
+          const currentDomain = email.split('@')[1] || '';
+          
+          if (currentDomain === 'afripipes.co.za' && existingDomain !== 'afripipes.co.za') {
+            usersByEmail.set(email, user);
+          }
+        }
+      });
+      
+      const deduplicatedUsers = Array.from(usersByEmail.values());
+      
       // Enrich users with counts and arrays of device/credential details
-      const enrichedUsers: UserWithStats[] = users.map(user => {
+      const enrichedUsers: UserWithStats[] = deduplicatedUsers.map(user => {
         const email = user.email?.toLowerCase() || '';
         const upn = user.user_principal_name?.toLowerCase() || '';
         
@@ -159,9 +181,24 @@ const Dashboard = () => {
       }
 
       if (data) {
-        setDirectoryUsers(data);
+        // Filter out Microsoft default tenant domain users (onmicrosoft.com)
+        // Only show @afripipes.co.za users
+        const filteredData = data.filter(user => {
+          const email = user.email?.toLowerCase() || '';
+          const upn = user.user_principal_name?.toLowerCase() || '';
+          
+          // Exclude onmicrosoft.com domain
+          if (email.includes('onmicrosoft.com') || upn.includes('onmicrosoft.com')) {
+            return false;
+          }
+          
+          // Only include afripipes.co.za domain or users without domain
+          return email.includes('@afripipes.co.za') || !email.includes('@');
+        });
+        
+        setDirectoryUsers(filteredData);
         // Fetch additional stats for each user
-        await enrichUsersWithStats(data);
+        await enrichUsersWithStats(filteredData);
       }
     } catch (error) {
       console.error("Error fetching directory users:", error);

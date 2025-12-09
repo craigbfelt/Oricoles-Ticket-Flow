@@ -342,7 +342,11 @@ const ITSuppliers = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {suppliers.map((supplier) => (
-              <Card key={supplier.id} className="hover:shadow-lg transition-shadow">
+              <Card 
+                key={supplier.id} 
+                className="hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => navigate(`/it-suppliers/${supplier.id}`)}
+              >
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex items-center space-x-2">
@@ -350,11 +354,14 @@ const ITSuppliers = () => {
                       <CardTitle className="text-lg text-[#E91E63]">{supplier.name}</CardTitle>
                     </div>
                     {isAdmin && (
-                      <div className="flex space-x-1">
+                      <div className="flex space-x-1" onClick={(e) => e.stopPropagation()}>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleOpenDialog(supplier)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenDialog(supplier);
+                          }}
                           className="h-8 w-8 p-0"
                         >
                           <Edit className="h-4 w-4" />
@@ -362,7 +369,10 @@ const ITSuppliers = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => openDeleteDialog(supplier.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openDeleteDialog(supplier.id);
+                          }}
                           className="h-8 w-8 p-0 text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
