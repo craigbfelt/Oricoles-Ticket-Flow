@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LiveChat } from "@/components/LiveChat";
+import { FloatingCopilot } from "@/components/FloatingCopilot";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useThemeInitializer } from "@/hooks/use-theme-initializer";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
@@ -108,6 +109,7 @@ const App = () => {
           </Routes>
         </BrowserRouter>
         <LiveChat />
+        <FloatingCopilot />
       </PermissionsProvider>
     </TooltipProvider>
   </QueryClientProvider>

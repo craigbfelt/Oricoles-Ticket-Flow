@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copilot Widget Demo - Visual Reference</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .demo-container {
+            max-width: 1200px;
+            width: 100%;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .states-container {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .widget-demo {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        
+        .state-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        /* Minimized State */
+        .widget-minimized {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .widget-minimized:hover {
+            transform: scale(1.1);
+        }
+        
+        .sparkles {
+            width: 24px;
+            height: 24px;
+            color: white;
+        }
+        
+        /* Expanded State */
+        .widget-expanded {
+            width: 384px;
+            background: white;
+            border-radius: 12px;
+            border: 2px solid #667eea33;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        .widget-header {
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        
+        .widget-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .widget-title svg {
+            width: 16px;
+            height: 16px;
+            color: #667eea;
+        }
+        
+        .widget-title h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #111827;
+        }
+        
+        .badge {
+            background: #f3f4f6;
+            color: #6b7280;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .badge-admin {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+        
+        .widget-controls {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .icon-button {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+        
+        .icon-button:hover {
+            background: #f3f4f6;
+        }
+        
+        .widget-description {
+            color: #6b7280;
+            font-size: 0.75rem;
+            margin-top: 4px;
+        }
+        
+        .widget-content {
+            padding: 16px;
+        }
+        
+        .actions-section {
+            margin-bottom: 16px;
+        }
+        
+        .actions-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        
+        .actions-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        
+        .action-badge {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .action-badge:hover {
+            background: #f9fafb;
+            border-color: #667eea;
+        }
+        
+        .action-badge svg {
+            width: 12px;
+            height: 12px;
+        }
+        
+        .textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.875rem;
+            resize: none;
+            margin-bottom: 12px;
+        }
+        
+        .textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .input-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .listening-badge {
+            background: #fee;
+            color: #991b1b;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .send-button {
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .send-button:hover {
+            background: #5568d3;
+        }
+        
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .progress-section {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 6px;
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            margin-bottom: 4px;
+        }
+        
+        .progress-bar {
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #667eea;
+            transition: width 0.3s;
+        }
+        
+        .alert {
+            margin-top: 12px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .alert-success {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .alert svg {
+            width: 12px;
+            height: 12px;
+            flex-shrink: 0;
+        }
+        
+        .history-section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .history-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        
+        .history-item {
+            padding: 8px;
+            background: #f9fafb;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        
+        .features {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 40px;
+        }
+        
+        .features h2 {
+            font-size: 2rem;
+            color: #111827;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .feature {
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+        }
+        
+        .feature h3 {
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .feature p {
+            color: #6b7280;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .feature ul {
+            margin-top: 10px;
+            padding-left: 20px;
+        }
+        
+        .feature li {
+            color: #374151;
+            font-size: 0.85rem;
+            margin: 4px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="header">
+            <h1>✨ Copilot Widget</h1>
+            <p>AI-Powered Dashboard Assistant with Permission-Based Access Control</p>
+        </div>
+        
+        <div class="states-container">
+            <!-- Minimized State -->
+            <div class="widget-demo">
+                <div class="state-title">Minimized State</div>
+                <div class="widget-minimized">
+                    <svg class="sparkles" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                </div>
+                <p style="text-align: center; margin-top: 16px; color: #6b7280; font-size: 0.875rem;">
+                    Click to expand and start using AI commands
+                </p>
+            </div>
+            
+            <!-- Expanded State -->
+            <div class="widget-demo">
+                <div class="state-title">Expanded - Ready State</div>
+                <div class="widget-expanded">
+                    <div class="widget-header">
+                        <div>
+                            <div class="widget-title">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                                </svg>
+                                <h3>AI Copilot</h3>
+                                <span class="badge badge-admin">Admin</span>
+                            </div>
+                            <p class="widget-description">Voice or text commands for dashboard functions</p>
+                        </div>
+                        <div class="widget-controls">
+                            <button class="icon-button">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                                </svg>
+                            </button>
+                            <button class="icon-button">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="widget-content">
+                        <div class="actions-section">
+                            <p class="actions-label">Available Actions:</p>
+                            <div class="actions-badges">
+                                <div class="action-badge">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    Import Document
+                                </div>
+                                <div class="action-badge">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
+                                    Import Users
+                                </div>
+                                <div class="action-badge">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                    Network Data
+                                </div>
+                                <div class="action-badge">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                              d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                                    </svg>
+                                    Create Ticket
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <textarea class="textarea" rows="3" placeholder="Tell me what to do... (e.g., 'import document')"></textarea>
+                        
+                        <div class="input-actions">
+                            <div></div>
+                            <button class="send-button">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
+                                Send
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Active State with Progress -->
+            <div class="widget-demo">
+                <div class="state-title">Processing Command</div>
+                <div class="widget-expanded">
+                    <div class="widget-header">
+                        <div>
+                            <div class="widget-title">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                                </svg>
+                                <h3>AI Copilot</h3>
+                                <span class="badge badge-admin">Admin</span>
+                            </div>
+                            <p class="widget-description">Voice or text commands for dashboard functions</p>
+                        </div>
+                        <div class="widget-controls">
+                            <button class="icon-button">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="widget-content">
+                        <div class="actions-section">
+                            <p class="actions-label">Available Actions:</p>
+                            <div class="actions-badges">
+                                <div class="action-badge">📄 Import Document</div>
+                                <div class="action-badge">👥 Import Users</div>
+                                <div class="action-badge">🌐 Network Data</div>
+                            </div>
+                        </div>
+                        
+                        <textarea class="textarea" rows="3" placeholder="Tell me what to do..." disabled>import document from network</textarea>
+                        
+                        <div class="input-actions">
+                            <div class="listening-badge">
+                                <svg fill="currentColor" viewBox="0 0 24 24" width="12" height="12">
+                                    <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/>
+                                </svg>
+                                Processing
+                            </div>
+                            <button class="send-button" disabled>
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <div class="progress-section">
+                            <div class="progress-header">
+                                <span>Import Document</span>
+                                <span style="font-weight: 600;">65%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 65%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Completed State -->
+            <div class="widget-demo">
+                <div class="state-title">Task Completed</div>
+                <div class="widget-expanded">
+                    <div class="widget-header">
+                        <div>
+                            <div class="widget-title">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                                </svg>
+                                <h3>AI Copilot</h3>
+                                <span class="badge badge-admin">Admin</span>
+                            </div>
+                            <p class="widget-description">Voice or text commands for dashboard functions</p>
+                        </div>
+                        <div class="widget-controls">
+                            <button class="icon-button">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="widget-content">
+                        <div class="actions-section">
+                            <p class="actions-label">Available Actions:</p>
+                            <div class="actions-badges">
+                                <div class="action-badge">📄 Import Document</div>
+                                <div class="action-badge">👥 Import Users</div>
+                            </div>
+                        </div>
+                        
+                        <textarea class="textarea" rows="3" placeholder="Tell me what to do..."></textarea>
+                        
+                        <div class="input-actions">
+                            <div></div>
+                            <button class="send-button">Send</button>
+                        </div>
+                        
+                        <div class="alert alert-success">
+                            <svg fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                            </svg>
+                            <div>Document import dialog opened. Please select a file to import.</div>
+                        </div>
+                        
+                        <div class="history-section">
+                            <p class="history-label">Recent:</p>
+                            <div class="history-item">
+                                <svg fill="currentColor" viewBox="0 0 24 24" width="16" height="16" style="color: #16a34a;">
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                </svg>
+                                <span style="flex: 1;">Import Document</span>
+                            </div>
+                            <div class="history-item">
+                                <svg fill="currentColor" viewBox="0 0 24 24" width="16" height="16" style="color: #16a34a;">
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                </svg>
+                                <span style="flex: 1;">Create Ticket</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="features">
+            <h2>Key Features</h2>
+            <div class="features-grid">
+                <div class="feature">
+                    <h3>🎤 Voice & Text Input</h3>
+                    <p>Use natural language commands either by typing or speaking. The widget supports Web Speech API for voice recognition.</p>
+                </div>
+                
+                <div class="feature">
+                    <h3>🔐 Permission-Based</h3>
+                    <p>Actions are filtered based on user permissions:</p>
+                    <ul>
+                        <li><strong>Admins:</strong> Full access to all functions</li>
+                        <li><strong>Users:</strong> Limited to granted permissions</li>
+                    </ul>
+                </div>
+                
+                <div class="feature">
+                    <h3>📍 Always Available</h3>
+                    <p>Stays on every page of the dashboard. Minimize to a floating button when not needed. Expands to full widget on click.</p>
+                </div>
+                
+                <div class="feature">
+                    <h3>✨ Smart Actions</h3>
+                    <p>Recognizes natural language commands:</p>
+                    <ul>
+                        <li>"import document"</li>
+                        <li>"create ticket"</li>
+                        <li>"import users from CSV"</li>
+                        <li>"import network data"</li>
+                    </ul>
+                </div>
+                
+                <div class="feature">
+                    <h3>📊 Real-time Feedback</h3>
+                    <p>See progress bars during execution. Get success/error messages. View history of recent commands.</p>
+                </div>
+                
+                <div class="feature">
+                    <h3>🎯 Context Aware</h3>
+                    <p>Understands current page context and user role. Shows only available actions. Provides relevant command suggestions.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
