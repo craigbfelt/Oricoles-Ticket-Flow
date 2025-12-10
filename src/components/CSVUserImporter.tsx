@@ -10,9 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, X, Download } from "lucide-react";
 import { toast } from "sonner";
 
-// Get allowed email domain from environment or use default
-const ALLOWED_EMAIL_DOMAIN = import.meta.env.VITE_ALLOWED_EMAIL_DOMAIN || '@afripipes.co.za';
-
 interface CSVRow {
   full_name?: string;
   display_name?: string;
@@ -99,16 +96,6 @@ export function CSVUserImporter() {
           row: rowNumber,
           field: '365_username',
           message: 'Invalid email format for 365_username'
-        });
-        return;
-      }
-
-      // Check for allowed email domain
-      if (!row["365_username"].toLowerCase().endsWith(ALLOWED_EMAIL_DOMAIN)) {
-        errors.push({
-          row: rowNumber,
-          field: '365_username',
-          message: `365_username must use ${ALLOWED_EMAIL_DOMAIN} domain`
         });
         return;
       }
@@ -356,7 +343,7 @@ export function CSVUserImporter() {
         vpn_password: 'VPN@Password123',
         rdp_username: 'jdoe_rdp',
         rdp_password: 'RDP@Password123',
-        '365_username': 'john.doe@afripipes.co.za',
+        '365_username': 'john.doe@company.com',
         '365 password': 'M365@Password123',
         branch: 'Head Office'
       },
@@ -368,7 +355,7 @@ export function CSVUserImporter() {
         vpn_password: 'VPN@Password456',
         rdp_username: 'jsmith_rdp',
         rdp_password: 'RDP@Password456',
-        '365_username': 'jane.smith@afripipes.co.za',
+        '365_username': 'jane.smith@company.com',
         '365 password': 'M365@Password456',
         branch: 'Branch 1'
       }
@@ -456,7 +443,7 @@ export function CSVUserImporter() {
           <AlertDescription>
             <pre className="text-xs mt-2 p-2 bg-muted rounded">
               full_name,display_name,device_serial_number,vpn_username,vpn_password,rdp_username,rdp_password,365_username,365 password,branch{'\n'}
-              John Doe,John Doe,SN123456789,jdoe_vpn,VPN@Pass123,jdoe_rdp,RDP@Pass123,john.doe@afripipes.co.za,M365@Pass123,Head Office
+              John Doe,John Doe,SN123456789,jdoe_vpn,VPN@Pass123,jdoe_rdp,RDP@Pass123,john.doe@company.com,M365@Pass123,Head Office
             </pre>
           </AlertDescription>
         </Alert>
