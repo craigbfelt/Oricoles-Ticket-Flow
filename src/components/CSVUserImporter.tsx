@@ -56,6 +56,23 @@ export function CSVUserImporter() {
     return emailRegex.test(email);
   };
 
+  const generateUserEmail = (row: CSVRow): string => {
+    // Use 365_username if available, otherwise create placeholder
+    if (row["365_username"]) {
+      return row["365_username"].toLowerCase();
+    }
+    
+    // Generate placeholder email from available data
+    const baseName = row.display_name || row.full_name || row.device_serial_number || 'user';
+    // Sanitize: convert to lowercase, replace non-alphanumeric with dots, remove consecutive dots
+    const sanitizedName = baseName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '.')
+      .replace(/^\.+|\.+$/g, ''); // Remove leading/trailing dots
+    
+    return `${sanitizedName}.placeholder@local.user`;
+  };
+
   const parseCSV = (text: string): CSVRow[] => {
     const result = Papa.parse(text, {
       header: true,
@@ -175,33 +192,20 @@ export function CSVUserImporter() {
       const tenantId = profile.tenant_id;
 
       // Prepare rows for insertion
-      const usersToInsert = preview.validRows.map(row => {
-        // Generate email: use 365_username if available, otherwise create placeholder
-        let email: string;
-        if (row["365_username"]) {
-          email = row["365_username"].toLowerCase();
-        } else {
-          // Generate placeholder email from available data
-          const baseName = row.display_name || row.full_name || row.device_serial_number || 'user';
-          const sanitizedName = baseName.toLowerCase().replace(/[^a-z0-9]/g, '.');
-          email = `${sanitizedName}.placeholder@local.user`;
-        }
-        
-        return {
-          email,
-          display_name: row.display_name || row.full_name || null,
-          job_title: null,
-          department: null,
-          vpn_username: row.vpn_username || null,
-          rdp_username: row.rdp_username || null,
-          notes: row["365_username"] ? null : 'User imported without 365_username - placeholder email generated',
-          source: 'csv_import',
-          is_active: true,
-          imported_at: new Date().toISOString(),
-          imported_by: user.id,
-          tenant_id: tenantId
-        };
-      });
+      const usersToInsert = preview.validRows.map(row => ({
+        email: generateUserEmail(row),
+        display_name: row.display_name || row.full_name || null,
+        job_title: null,
+        department: null,
+        vpn_username: row.vpn_username || null,
+        rdp_username: row.rdp_username || null,
+        notes: row["365_username"] ? null : 'User imported without 365_username - placeholder email generated',
+        source: 'csv_import',
+        is_active: true,
+        imported_at: new Date().toISOString(),
+        imported_by: user.id,
+        tenant_id: tenantId
+      }));
 
       // Insert users into master_user_list
       const { data, error } = await supabase
@@ -221,27 +225,15 @@ export function CSVUserImporter() {
       // Create device assignments for rows with device serial numbers
       const deviceAssignments = preview.validRows
         .filter(row => row.device_serial_number && row.device_serial_number.trim())
-        .map(row => {
-          // Generate email: use 365_username if available, otherwise create placeholder
-          let email: string;
-          if (row["365_username"]) {
-            email = row["365_username"].toLowerCase();
-          } else {
-            const baseName = row.display_name || row.full_name || row.device_serial_number || 'user';
-            const sanitizedName = baseName.toLowerCase().replace(/[^a-z0-9]/g, '.');
-            email = `${sanitizedName}.placeholder@local.user`;
-          }
-          
-          return {
-            device_serial_number: row.device_serial_number!.trim(),
-            user_email: email,
-            device_name: row.display_name || row.full_name || null,
-            assignment_source: 'csv_import',
-            is_current: true,
-            tenant_id: tenantId,
-            assignment_date: new Date().toISOString()
-          };
-        });
+        .map(row => ({
+          device_serial_number: row.device_serial_number!.trim(),
+          user_email: generateUserEmail(row),
+          device_name: row.display_name || row.full_name || null,
+          assignment_source: 'csv_import',
+          is_current: true,
+          tenant_id: tenantId,
+          assignment_date: new Date().toISOString()
+        }));
 
       if (deviceAssignments.length > 0) {
         // First, mark existing assignments for these serial numbers as not current
@@ -273,15 +265,7 @@ export function CSVUserImporter() {
       const credentialsToInsert: CredentialInsert[] = [];
       
       preview.validRows.forEach(row => {
-        // Generate email: use 365_username if available, otherwise create placeholder
-        let userEmail: string;
-        if (row["365_username"]) {
-          userEmail = row["365_username"].toLowerCase();
-        } else {
-          const baseName = row.display_name || row.full_name || row.device_serial_number || 'user';
-          const sanitizedName = baseName.toLowerCase().replace(/[^a-z0-9]/g, '.');
-          userEmail = `${sanitizedName}.placeholder@local.user`;
-        }
+        const userEmail = generateUserEmail(row);
         
         // Add VPN credentials if provided
         if (row.vpn_username && row.vpn_password) {
