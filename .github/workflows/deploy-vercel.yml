@@ -3,6 +3,16 @@ name: Deploy to Vercel
 # This workflow handles Vercel deployments alongside Supabase migrations
 # Vercel is connected to GitHub and will auto-deploy, but this workflow
 # ensures migrations are applied first for production deployments
+#
+# Required Secrets (configure in Settings > Secrets and variables > Actions):
+# - VERCEL_TOKEN: Your Vercel API token (get from https://vercel.com/account/tokens)
+# - VERCEL_ORG_ID: Your Vercel organization ID (optional but recommended)
+# - VERCEL_PROJECT_ID: Your Vercel project ID (optional but recommended)
+# - VITE_SUPABASE_URL: Your Supabase project URL
+# - VITE_SUPABASE_PUBLISHABLE_KEY: Your Supabase anon/public key
+# - VITE_SUPABASE_PROJECT_ID: Your Supabase project ID
+# - SUPABASE_ACCESS_TOKEN: For applying migrations (optional)
+# - SUPABASE_DB_PASSWORD: For database access (optional)
 
 on:
   push:
@@ -97,6 +107,30 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'npm'
+
+      - name: Validate Required Secrets
+        id: validate
+        run: |
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "❌ ERROR: VERCEL_TOKEN secret is not configured"
+            echo "Please add the VERCEL_TOKEN secret to your repository settings:"
+            echo "https://github.com/${{ github.repository }}/settings/secrets/actions"
+            echo ""
+            echo "To get your Vercel token:"
+            echo "1. Go to https://vercel.com/account/tokens"
+            echo "2. Create a new token"
+            echo "3. Add it as VERCEL_TOKEN in GitHub Secrets"
+            echo "has_token=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ] || [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "⚠️ WARNING: VERCEL_ORG_ID or VERCEL_PROJECT_ID not configured"
+            echo "These secrets are recommended for Vercel deployments"
+          fi
+          
+          echo "✅ Required secrets validated"
+          echo "has_token=true" >> $GITHUB_OUTPUT
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
