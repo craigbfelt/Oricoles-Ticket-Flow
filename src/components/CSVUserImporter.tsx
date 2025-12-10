@@ -38,6 +38,15 @@ interface ImportPreview {
   totalRows: number;
 }
 
+interface CredentialInsert {
+  username: string;
+  password: string;
+  service_type: 'VPN' | 'RDP' | 'M365';
+  email: string;
+  notes: string;
+  tenant_id?: string;
+}
+
 export function CSVUserImporter() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
@@ -247,7 +256,7 @@ export function CSVUserImporter() {
       }
 
       // Insert VPN and RDP credentials
-      const credentialsToInsert: any[] = [];
+      const credentialsToInsert: CredentialInsert[] = [];
       
       preview.validRows.forEach(row => {
         const userEmail = row["365_username"]!.toLowerCase();
@@ -259,7 +268,8 @@ export function CSVUserImporter() {
             password: row.vpn_password,
             service_type: 'VPN',
             email: userEmail,
-            notes: `Imported from CSV on ${new Date().toISOString()}`
+            notes: `Imported from CSV on ${new Date().toISOString()}`,
+            tenant_id: tenantId
           });
         }
         
@@ -270,7 +280,8 @@ export function CSVUserImporter() {
             password: row.rdp_password,
             service_type: 'RDP',
             email: userEmail,
-            notes: `Imported from CSV on ${new Date().toISOString()}`
+            notes: `Imported from CSV on ${new Date().toISOString()}`,
+            tenant_id: tenantId
           });
         }
 
@@ -281,7 +292,8 @@ export function CSVUserImporter() {
             password: row["365 password"],
             service_type: 'M365',
             email: userEmail,
-            notes: `Imported from CSV on ${new Date().toISOString()}`
+            notes: `Imported from CSV on ${new Date().toISOString()}`,
+            tenant_id: tenantId
           });
         }
       });
