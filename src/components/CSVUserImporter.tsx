@@ -518,7 +518,7 @@ export function CSVUserImporter() {
                   <div className="mt-2 space-y-1">
                     {preview.validRows.slice(0, 5).map((row, index) => (
                       <div key={index} className="text-xs">
-                        • {row.display_name || row.full_name || 'No Name'} ({row["365_username"]})
+                        • {row.display_name || row.full_name || 'No Name'} ({row["365_username"] || 'No 365 email'})
                       </div>
                     ))}
                     {preview.validRows.length > 5 && (
