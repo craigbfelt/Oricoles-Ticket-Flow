@@ -186,20 +186,21 @@ export function CSVUserImporter() {
         return;
       }
 
-      // Get tenant ID from user's profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
+      // Get tenant ID from user's tenant membership
+      const { data: membership, error: membershipError } = await supabase
+        .from('user_tenant_memberships')
         .select('tenant_id')
         .eq('user_id', user.id)
+        .eq('is_default', true)
         .single();
 
-      if (profileError || !profile?.tenant_id) {
-        console.error('Error fetching tenant ID:', profileError);
+      if (membershipError || !membership?.tenant_id) {
+        console.error('Error fetching tenant ID:', membershipError);
         toast.error('Unable to determine your tenant. Please contact support.');
         return;
       }
 
-      const tenantId = profile.tenant_id;
+      const tenantId = membership.tenant_id;
 
       // Prepare rows for insertion
       const usersToInsert = preview.validRows.map(row => ({
