@@ -64,7 +64,7 @@ export function CSVUserImporter() {
       header: true,
       skipEmptyLines: true,
       transformHeader: (header) => header.trim().toLowerCase(),
-      transform: (value) => value?.trim() || '', // Trim all cell values and handle null/undefined
+      transform: (value) => typeof value === 'string' ? value.trim() : (value || ''), // Trim string values and handle other types
     });
 
     if (result.errors.length > 0) {
