@@ -64,13 +64,23 @@ export function CSVUserImporter() {
     
     // Generate placeholder email from available data
     const baseName = row.display_name || row.full_name || row.device_serial_number || 'user';
-    // Sanitize: convert to lowercase, replace non-alphanumeric with dots, remove consecutive dots
+    // Sanitize: convert to lowercase, replace non-alphanumeric with dots, collapse consecutive dots, remove leading/trailing dots
     const sanitizedName = baseName
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '.')
+      .replace(/\.{2,}/g, '.') // Collapse consecutive dots
       .replace(/^\.+|\.+$/g, ''); // Remove leading/trailing dots
     
-    return `${sanitizedName}.placeholder@local.user`;
+    // Fallback to 'user' if sanitization results in empty string
+    const finalName = sanitizedName || 'user';
+    
+    return `${finalName}.placeholder@local.user`;
+  };
+
+  const generateUserNotes = (row: CSVRow): string | null => {
+    return row["365_username"] 
+      ? null 
+      : 'User imported without 365_username - placeholder email generated';
   };
 
   const parseCSV = (text: string): CSVRow[] => {
@@ -199,7 +209,7 @@ export function CSVUserImporter() {
         department: null,
         vpn_username: row.vpn_username || null,
         rdp_username: row.rdp_username || null,
-        notes: row["365_username"] ? null : 'User imported without 365_username - placeholder email generated',
+        notes: generateUserNotes(row),
         source: 'csv_import',
         is_active: true,
         imported_at: new Date().toISOString(),
