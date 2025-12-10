@@ -19,12 +19,40 @@ import {
   FileText,
   Users,
   Network,
-  Ticket
+  Ticket,
+  LucideIcon
 } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { usePermissions } from "@/contexts/PermissionsContext";
 import { supabase } from "@/integrations/supabase/client";
+
+// Type definitions for Web Speech API
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition?: new () => SpeechRecognition;
+    webkitSpeechRecognition?: new () => SpeechRecognition;
+  }
+}
 
 interface CopilotTask {
   id: string;
@@ -42,7 +70,7 @@ interface CopilotAction {
   name: string;
   keywords: string[];
   requiredPermission: string;
-  icon: any;
+  icon: LucideIcon;
   execute: (prompt: string) => Promise<{ success: boolean; message: string }>;
 }
 
@@ -55,7 +83,7 @@ export const FloatingCopilot = () => {
   const [taskHistory, setTaskHistory] = useState<CopilotTask[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const { permissions, isAdmin, hasPermission } = usePermissions();
 
   // Define available actions with permission requirements
@@ -133,15 +161,15 @@ export const FloatingCopilot = () => {
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'en-US';
 
-      recognitionRef.current.onresult = (event: any) => {
+      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = Array.from(event.results)
-          .map((result: any) => result[0].transcript)
+          .map((result) => result[0].transcript)
           .join('');
         
         setPrompt(transcript);
       };
 
-      recognitionRef.current.onerror = (event: any) => {
+      recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
         if (event.error === 'not-allowed') {
@@ -237,7 +265,8 @@ export const FloatingCopilot = () => {
 
   const checkPermissionForAction = (action: CopilotAction): boolean => {
     if (isAdmin) return true;
-    return hasPermission(action.requiredPermission as any);
+    // Type assertion is necessary here since permission keys are dynamic strings
+    return hasPermission(action.requiredPermission as keyof typeof permissions);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -276,9 +305,9 @@ export const FloatingCopilot = () => {
       return;
     }
 
-    // Create new task
+    // Create new task with unique ID
     const newTask: CopilotTask = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       prompt: prompt,
       action: matchingAction.name,
       status: 'in_progress',
