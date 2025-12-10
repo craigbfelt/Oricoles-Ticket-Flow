@@ -64,6 +64,7 @@ export function CSVUserImporter() {
       header: true,
       skipEmptyLines: true,
       transformHeader: (header) => header.trim().toLowerCase(),
+      transform: (value) => value.trim(), // Trim all cell values to handle whitespace
     });
 
     if (result.errors.length > 0) {
@@ -82,6 +83,7 @@ export function CSVUserImporter() {
       const rowNumber = index + 2; // +2 because: +1 for header, +1 for 0-based index
 
       // Check required field: 365_username (this is the email)
+      // Note: Values are already trimmed by parseCSV transform
       if (!row["365_username"]) {
         errors.push({
           row: rowNumber,
