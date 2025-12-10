@@ -14,15 +14,16 @@ import { toast } from "sonner";
 const ALLOWED_EMAIL_DOMAIN = import.meta.env.VITE_ALLOWED_EMAIL_DOMAIN || '@afripipes.co.za';
 
 interface CSVRow {
-  email: string;
-  device_serial_number?: string;
+  full_name?: string;
   display_name?: string;
+  device_serial_number?: string;
   vpn_username?: string;
+  vpn_password?: string;
   rdp_username?: string;
-  job_title?: string;
-  department?: string;
+  rdp_password?: string;
+  "365_username"?: string;
+  "365 password"?: string;
   branch?: string;
-  notes?: string;
 }
 
 interface ValidationError {
@@ -71,32 +72,32 @@ export function CSVUserImporter() {
     rows.forEach((row, index) => {
       const rowNumber = index + 2; // +2 because: +1 for header, +1 for 0-based index
 
-      // Check required field: email
-      if (!row.email) {
+      // Check required field: 365_username (this is the email)
+      if (!row["365_username"]) {
         errors.push({
           row: rowNumber,
-          field: 'email',
-          message: 'Email is required'
+          field: '365_username',
+          message: '365_username is required'
         });
         return;
       }
 
       // Validate email format
-      if (!validateEmail(row.email)) {
+      if (!validateEmail(row["365_username"])) {
         errors.push({
           row: rowNumber,
-          field: 'email',
-          message: 'Invalid email format'
+          field: '365_username',
+          message: 'Invalid email format for 365_username'
         });
         return;
       }
 
       // Check for allowed email domain
-      if (!row.email.toLowerCase().endsWith(ALLOWED_EMAIL_DOMAIN)) {
+      if (!row["365_username"].toLowerCase().endsWith(ALLOWED_EMAIL_DOMAIN)) {
         errors.push({
           row: rowNumber,
-          field: 'email',
-          message: `Email must use ${ALLOWED_EMAIL_DOMAIN} domain`
+          field: '365_username',
+          message: `365_username must use ${ALLOWED_EMAIL_DOMAIN} domain`
         });
         return;
       }
@@ -177,13 +178,13 @@ export function CSVUserImporter() {
 
       // Prepare rows for insertion
       const usersToInsert = preview.validRows.map(row => ({
-        email: row.email.toLowerCase(),
-        display_name: row.display_name || null,
-        job_title: row.job_title || null,
-        department: row.department || null,
+        email: row["365_username"]!.toLowerCase(),
+        display_name: row.display_name || row.full_name || null,
+        job_title: null,
+        department: null,
         vpn_username: row.vpn_username || null,
         rdp_username: row.rdp_username || null,
-        notes: row.notes || null,
+        notes: null,
         source: 'csv_import',
         is_active: true,
         imported_at: new Date().toISOString(),
@@ -211,8 +212,8 @@ export function CSVUserImporter() {
         .filter(row => row.device_serial_number && row.device_serial_number.trim())
         .map(row => ({
           device_serial_number: row.device_serial_number!.trim(),
-          user_email: row.email.toLowerCase(),
-          device_name: row.display_name || null,
+          user_email: row["365_username"]!.toLowerCase(),
+          device_name: row.display_name || row.full_name || null,
           assignment_source: 'csv_import',
           is_current: true,
           tenant_id: tenantId,
@@ -241,13 +242,71 @@ export function CSVUserImporter() {
           if (deviceError) {
             console.error('Error creating device assignments:', deviceError);
             toast.warning(`Users imported, but some device assignments failed: ${deviceError.message}`);
-          } else {
-            toast.success(`Successfully imported ${data?.length || 0} users and ${deviceAssignments.length} device assignments!`);
           }
         }
-      } else {
-        toast.success(`Successfully imported ${data?.length || 0} users!`);
       }
+
+      // Insert VPN and RDP credentials
+      const credentialsToInsert: any[] = [];
+      
+      preview.validRows.forEach(row => {
+        const userEmail = row["365_username"]!.toLowerCase();
+        
+        // Add VPN credentials if provided
+        if (row.vpn_username && row.vpn_password) {
+          credentialsToInsert.push({
+            username: row.vpn_username,
+            password: row.vpn_password,
+            service_type: 'VPN',
+            email: userEmail,
+            notes: `Imported from CSV on ${new Date().toISOString()}`
+          });
+        }
+        
+        // Add RDP credentials if provided
+        if (row.rdp_username && row.rdp_password) {
+          credentialsToInsert.push({
+            username: row.rdp_username,
+            password: row.rdp_password,
+            service_type: 'RDP',
+            email: userEmail,
+            notes: `Imported from CSV on ${new Date().toISOString()}`
+          });
+        }
+
+        // Add M365 credentials if provided
+        if (row["365_username"] && row["365 password"]) {
+          credentialsToInsert.push({
+            username: row["365_username"],
+            password: row["365 password"],
+            service_type: 'M365',
+            email: userEmail,
+            notes: `Imported from CSV on ${new Date().toISOString()}`
+          });
+        }
+      });
+
+      if (credentialsToInsert.length > 0) {
+        const { error: credError } = await supabase
+          .from('vpn_rdp_credentials')
+          .insert(credentialsToInsert);
+
+        if (credError) {
+          console.error('Error creating credentials:', credError);
+          toast.warning(`Users imported, but some credentials failed: ${credError.message}`);
+        }
+      }
+
+      // Final success message
+      let successMessage = `Successfully imported ${data?.length || 0} users`;
+      if (deviceAssignments.length > 0) {
+        successMessage += `, ${deviceAssignments.length} device assignments`;
+      }
+      if (credentialsToInsert.length > 0) {
+        successMessage += `, ${credentialsToInsert.length} credentials`;
+      }
+      successMessage += '!';
+      toast.success(successMessage);
       
       // Reset form
       setFile(null);
@@ -276,26 +335,28 @@ export function CSVUserImporter() {
     // Define the template data with headers and example rows
     const templateData = [
       {
-        email: 'user@afripipes.co.za',
-        device_serial_number: 'SN123456789',
+        full_name: 'John Doe',
         display_name: 'John Doe',
+        device_serial_number: 'SN123456789',
         vpn_username: 'jdoe_vpn',
+        vpn_password: 'VPN@Password123',
         rdp_username: 'jdoe_rdp',
-        job_title: 'Manager',
-        department: 'IT',
-        branch: 'Head Office',
-        notes: 'Example user - replace with actual data'
+        rdp_password: 'RDP@Password123',
+        '365_username': 'john.doe@afripipes.co.za',
+        '365 password': 'M365@Password123',
+        branch: 'Head Office'
       },
       {
-        email: 'jane.smith@afripipes.co.za',
-        device_serial_number: 'SN987654321',
+        full_name: 'Jane Smith',
         display_name: 'Jane Smith',
+        device_serial_number: 'SN987654321',
         vpn_username: 'jsmith_vpn',
+        vpn_password: 'VPN@Password456',
         rdp_username: 'jsmith_rdp',
-        job_title: 'Developer',
-        department: 'IT',
-        branch: 'Branch 1',
-        notes: ''
+        rdp_password: 'RDP@Password456',
+        '365_username': 'jane.smith@afripipes.co.za',
+        '365 password': 'M365@Password456',
+        branch: 'Branch 1'
       }
     ];
 
@@ -334,7 +395,7 @@ export function CSVUserImporter() {
               Import Users from CSV
             </CardTitle>
             <CardDescription>
-              Import users from RDP/VPN spreadsheets. The CSV file should include columns: email, device_serial_number, display_name, vpn_username, rdp_username, job_title, department, branch, notes. Device serial number serves as the unique identifier across the system.
+              Import users from RDP/VPN spreadsheets. The CSV file should include columns: full_name, display_name, device_serial_number, vpn_username, vpn_password, rdp_username, rdp_password, 365_username, 365_password, branch. Device serial number serves as the unique identifier across the system.
             </CardDescription>
           </div>
           <Button
@@ -380,8 +441,8 @@ export function CSVUserImporter() {
           <AlertTitle>CSV Format</AlertTitle>
           <AlertDescription>
             <pre className="text-xs mt-2 p-2 bg-muted rounded">
-              email,device_serial_number,display_name,vpn_username,rdp_username,job_title,department,branch,notes{'\n'}
-              user@afripipes.co.za,SN123456789,John Doe,jdoe_vpn,jdoe_rdp,Manager,IT,Head Office,
+              full_name,display_name,device_serial_number,vpn_username,vpn_password,rdp_username,rdp_password,365_username,365 password,branch{'\n'}
+              John Doe,John Doe,SN123456789,jdoe_vpn,VPN@Pass123,jdoe_rdp,RDP@Pass123,john.doe@afripipes.co.za,M365@Pass123,Head Office
             </pre>
           </AlertDescription>
         </Alert>
@@ -420,7 +481,7 @@ export function CSVUserImporter() {
                   <div className="mt-2 space-y-1">
                     {preview.validRows.slice(0, 5).map((row, index) => (
                       <div key={index} className="text-xs">
-                        • {row.display_name || 'No Name'} ({row.email})
+                        • {row.display_name || row.full_name || 'No Name'} ({row["365_username"]})
                       </div>
                     ))}
                     {preview.validRows.length > 5 && (
