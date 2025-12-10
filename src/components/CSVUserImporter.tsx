@@ -64,7 +64,7 @@ export function CSVUserImporter() {
       header: true,
       skipEmptyLines: true,
       transformHeader: (header) => header.trim().toLowerCase(),
-      transform: (value) => value.trim(), // Trim all cell values to handle whitespace
+      transform: (value) => value?.trim() || '', // Trim all cell values and handle null/undefined
     });
 
     if (result.errors.length > 0) {
