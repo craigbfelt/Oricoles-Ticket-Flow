@@ -56,6 +56,33 @@ export function CSVUserImporter() {
     return emailRegex.test(email);
   };
 
+  const generateUserEmail = (row: CSVRow): string => {
+    // Use 365_username if available, otherwise create placeholder
+    if (row["365_username"]) {
+      return row["365_username"].toLowerCase();
+    }
+    
+    // Generate placeholder email from available data
+    const baseName = row.display_name || row.full_name || row.device_serial_number || 'user';
+    // Sanitize: convert to lowercase, replace non-alphanumeric with dots, collapse consecutive dots, remove leading/trailing dots
+    const sanitizedName = baseName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '.')
+      .replace(/\.{2,}/g, '.') // Collapse consecutive dots
+      .replace(/^\.+|\.+$/g, ''); // Remove leading/trailing dots
+    
+    // Fallback to 'user' if sanitization results in empty string
+    const finalName = sanitizedName || 'user';
+    
+    return `${finalName}.placeholder@local.user`;
+  };
+
+  const generateUserNotes = (row: CSVRow): string | null => {
+    return row["365_username"] 
+      ? null 
+      : 'User imported without 365_username - placeholder email generated';
+  };
+
   const parseCSV = (text: string): CSVRow[] => {
     const result = Papa.parse(text, {
       header: true,
@@ -79,23 +106,23 @@ export function CSVUserImporter() {
     rows.forEach((row, index) => {
       const rowNumber = index + 2; // +2 because: +1 for header, +1 for 0-based index
 
-      // Check required field: 365_username (this is the email)
+      // 365_username is now optional - validate format only if provided
       // Note: Values are already trimmed by parseCSV transform
-      if (!row["365_username"]) {
-        errors.push({
-          row: rowNumber,
-          field: '365_username',
-          message: '365_username is required'
-        });
-        return;
-      }
-
-      // Validate email format
-      if (!validateEmail(row["365_username"])) {
+      if (row["365_username"] && !validateEmail(row["365_username"])) {
         errors.push({
           row: rowNumber,
           field: '365_username',
           message: 'Invalid email format for 365_username'
+        });
+        return;
+      }
+
+      // At least one identifier should be present
+      if (!row["365_username"] && !row.display_name && !row.full_name && !row.device_serial_number) {
+        errors.push({
+          row: rowNumber,
+          field: 'general',
+          message: 'Row must have at least one of: 365_username, display_name, full_name, or device_serial_number'
         });
         return;
       }
@@ -176,13 +203,13 @@ export function CSVUserImporter() {
 
       // Prepare rows for insertion
       const usersToInsert = preview.validRows.map(row => ({
-        email: row["365_username"]!.toLowerCase(),
+        email: generateUserEmail(row),
         display_name: row.display_name || row.full_name || null,
         job_title: null,
         department: null,
         vpn_username: row.vpn_username || null,
         rdp_username: row.rdp_username || null,
-        notes: null,
+        notes: generateUserNotes(row),
         source: 'csv_import',
         is_active: true,
         imported_at: new Date().toISOString(),
@@ -210,7 +237,7 @@ export function CSVUserImporter() {
         .filter(row => row.device_serial_number && row.device_serial_number.trim())
         .map(row => ({
           device_serial_number: row.device_serial_number!.trim(),
-          user_email: row["365_username"]!.toLowerCase(),
+          user_email: generateUserEmail(row),
           device_name: row.display_name || row.full_name || null,
           assignment_source: 'csv_import',
           is_current: true,
@@ -248,7 +275,7 @@ export function CSVUserImporter() {
       const credentialsToInsert: CredentialInsert[] = [];
       
       preview.validRows.forEach(row => {
-        const userEmail = row["365_username"]!.toLowerCase();
+        const userEmail = generateUserEmail(row);
         
         // Add VPN credentials if provided
         if (row.vpn_username && row.vpn_password) {
@@ -396,7 +423,7 @@ export function CSVUserImporter() {
               Import Users from CSV
             </CardTitle>
             <CardDescription>
-              Import users from RDP/VPN spreadsheets. The CSV file should include columns: full_name, display_name, device_serial_number, vpn_username, vpn_password, rdp_username, rdp_password, 365_username, 365_password, branch. Device serial number serves as the unique identifier across the system.
+              Import users from RDP/VPN spreadsheets. The CSV file should include columns: full_name, display_name, device_serial_number, vpn_username, vpn_password, rdp_username, rdp_password, 365_username (optional), 365_password, branch. Device serial number serves as the unique identifier across the system.
             </CardDescription>
           </div>
           <Button
@@ -445,6 +472,9 @@ export function CSVUserImporter() {
               full_name,display_name,device_serial_number,vpn_username,vpn_password,rdp_username,rdp_password,365_username,365 password,branch{'\n'}
               John Doe,John Doe,SN123456789,jdoe_vpn,VPN@Pass123,jdoe_rdp,RDP@Pass123,john.doe@company.com,M365@Pass123,Head Office
             </pre>
+            <p className="text-xs mt-2 text-muted-foreground">
+              Note: 365_username is optional. If not provided, a placeholder email will be generated from the user's name or device serial number.
+            </p>
           </AlertDescription>
         </Alert>
 
@@ -462,13 +492,13 @@ export function CSVUserImporter() {
                   </Badge>
                 )}
               </div>
-              {preview.validRows.length > 0 && preview.errors.length === 0 && (
+              {preview.validRows.length > 0 && (
                 <Button
                   onClick={handleImport}
                   disabled={isImporting}
                 >
                   <Upload className="mr-2 h-4 w-4" />
-                  {isImporting ? 'Importing...' : 'Import Users'}
+                  {isImporting ? 'Importing...' : `Import ${preview.validRows.length} Valid Users`}
                 </Button>
               )}
             </div>
@@ -482,7 +512,7 @@ export function CSVUserImporter() {
                   <div className="mt-2 space-y-1">
                     {preview.validRows.slice(0, 5).map((row, index) => (
                       <div key={index} className="text-xs">
-                        • {row.display_name || row.full_name || 'No Name'} ({row["365_username"]})
+                        • {row.display_name || row.full_name || 'No Name'} ({row["365_username"] || 'No 365 email'})
                       </div>
                     ))}
                     {preview.validRows.length > 5 && (
