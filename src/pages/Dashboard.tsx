@@ -190,28 +190,19 @@ const Dashboard = () => {
         }
       });
 
-      // Deduplicate users by email local part (prefer @afripipes.co.za over other domains)
-      const usersByLocalPart = new Map<string, DirectoryUser>();
+      // Deduplicate users by full email address to prevent duplicate cards
+      const usersByEmail = new Map<string, DirectoryUser>();
       users.forEach(user => {
         const email = user.email?.toLowerCase() || '';
         if (!email || !email.includes('@')) return;
         
-        const localPart = email.split('@')[0];
-        const existing = usersByLocalPart.get(localPart);
-        if (!existing) {
-          usersByLocalPart.set(localPart, user);
-        } else {
-          // Prefer @afripipes.co.za domain over others
-          const existingDomain = existing.email?.toLowerCase().split('@')[1] || '';
-          const currentDomain = email.split('@')[1] || '';
-          
-          if (currentDomain === 'afripipes.co.za' && existingDomain !== 'afripipes.co.za') {
-            usersByLocalPart.set(localPart, user);
-          }
+        // Use full email as the key to ensure uniqueness
+        if (!usersByEmail.has(email)) {
+          usersByEmail.set(email, user);
         }
       });
       
-      const deduplicatedUsers = Array.from(usersByLocalPart.values());
+      const deduplicatedUsers = Array.from(usersByEmail.values());
       
       // Enrich users with counts and arrays of device/credential details
       const enrichedUsers: UserWithStats[] = deduplicatedUsers.map(user => {
@@ -290,7 +281,8 @@ const Dashboard = () => {
       if (intuneData) {
         intuneData.forEach(user => {
           const email = user.email?.toLowerCase() || '';
-          if (email && !email.includes('onmicrosoft.com') && email.endsWith('@afripipes.co.za')) {
+          // Exclude onmicrosoft.com domain, accept oricoles.co.za users
+          if (email && !email.includes('onmicrosoft.com') && email.endsWith('@oricoles.co.za')) {
             intuneMap.set(email, user);
           }
         });
@@ -303,12 +295,12 @@ const Dashboard = () => {
         masterListData.forEach(masterUser => {
           const email = masterUser.email?.toLowerCase() || '';
           
-          // Include users with @afripipes.co.za domain OR placeholder emails from CSV import
+          // Include users with @oricoles.co.za domain OR placeholder emails from CSV import
           // Placeholder emails have format: {name}.placeholder@local.user
-          const isAfripipesDomain = email.endsWith('@afripipes.co.za');
+          const isOricolDomain = email.endsWith('@oricoles.co.za');
           const isPlaceholderEmail = email.includes('.placeholder@local.user');
           
-          if (!isAfripipesDomain && !isPlaceholderEmail) {
+          if (!isOricolDomain && !isPlaceholderEmail) {
             return;
           }
 
@@ -342,8 +334,8 @@ const Dashboard = () => {
             return;
           }
           
-          // Only include afripipes.co.za domain
-          if (email.endsWith('@afripipes.co.za')) {
+          // Only include oricoles.co.za domain
+          if (email.endsWith('@oricoles.co.za')) {
             allUsers.push(user);
           }
         });
