@@ -240,9 +240,21 @@ export function CSVUserImporter() {
           assignment_date: new Date().toISOString()
         }));
 
-      if (deviceAssignments.length > 0) {
+      // Deduplicate device assignments by (device_serial_number, tenant_id) combination
+      // Keep the last occurrence of each unique combination
+      const assignmentMap = new Map<string, typeof deviceAssignments[0]>();
+      deviceAssignments.forEach(assignment => {
+        const key = JSON.stringify({
+          device_serial_number: assignment.device_serial_number,
+          tenant_id: assignment.tenant_id || null
+        });
+        assignmentMap.set(key, assignment);
+      });
+      const uniqueDeviceAssignments = Array.from(assignmentMap.values());
+
+      if (uniqueDeviceAssignments.length > 0) {
         // First, mark existing assignments for these serial numbers as not current
-        const serialNumbers = deviceAssignments.map(d => d.device_serial_number);
+        const serialNumbers = uniqueDeviceAssignments.map(d => d.device_serial_number);
         let updateQuery = supabase
           .from('device_user_assignments')
           .update({ is_current: false })
@@ -262,7 +274,7 @@ export function CSVUserImporter() {
           // Only insert new assignments if update succeeded
           const { error: deviceError } = await supabase
             .from('device_user_assignments')
-            .insert(deviceAssignments);
+            .insert(uniqueDeviceAssignments);
 
           if (deviceError) {
             console.error('Error creating device assignments:', deviceError);
@@ -314,10 +326,23 @@ export function CSVUserImporter() {
         }
       });
 
-      if (credentialsToInsert.length > 0) {
+      // Deduplicate credentials by (email, service_type, tenant_id) combination
+      // Keep the last occurrence of each unique combination
+      const credentialMap = new Map<string, CredentialInsert>();
+      credentialsToInsert.forEach(cred => {
+        const key = JSON.stringify({
+          email: cred.email,
+          service_type: cred.service_type,
+          tenant_id: cred.tenant_id || null
+        });
+        credentialMap.set(key, cred);
+      });
+      const uniqueCredentials = Array.from(credentialMap.values());
+
+      if (uniqueCredentials.length > 0) {
         const { error: credError } = await supabase
           .from('vpn_rdp_credentials')
-          .insert(credentialsToInsert);
+          .insert(uniqueCredentials);
 
         if (credError) {
           console.error('Error creating credentials:', credError);
@@ -327,11 +352,11 @@ export function CSVUserImporter() {
 
       // Final success message
       let successMessage = `Successfully imported ${data?.length || 0} users`;
-      if (deviceAssignments.length > 0) {
-        successMessage += `, ${deviceAssignments.length} device assignments`;
+      if (uniqueDeviceAssignments.length > 0) {
+        successMessage += `, ${uniqueDeviceAssignments.length} device assignments`;
       }
-      if (credentialsToInsert.length > 0) {
-        successMessage += `, ${credentialsToInsert.length} credentials`;
+      if (uniqueCredentials.length > 0) {
+        successMessage += `, ${uniqueCredentials.length} credentials`;
       }
       successMessage += '!';
       toast.success(successMessage);
