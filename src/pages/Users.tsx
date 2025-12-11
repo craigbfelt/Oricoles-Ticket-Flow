@@ -145,10 +145,16 @@ const Users = () => {
       
       // Deduplicate staff users by email (primary) or username (fallback)
       // Users with both VPN and RDP credentials should appear only once
+      // Prefer users with email addresses over those without
       const staffMap = new Map<string, VpnRdpUser>();
       allData.forEach(user => {
         const key = user.email?.toLowerCase() || user.username.toLowerCase();
-        if (!staffMap.has(key)) {
+        const existing = staffMap.get(key);
+        
+        if (!existing) {
+          staffMap.set(key, user);
+        } else if (user.email && !existing.email) {
+          // Prefer user with email over user without email
           staffMap.set(key, user);
         }
       });

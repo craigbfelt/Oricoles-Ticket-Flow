@@ -295,12 +295,12 @@ const Dashboard = () => {
         masterListData.forEach(masterUser => {
           const email = masterUser.email?.toLowerCase() || '';
           
-          // Include all users except those with test/temp domains
+          // Exclude test/temp domains unless it's a placeholder email from CSV import
           // Placeholder emails have format: {name}.placeholder@local.user
           const isTestDomain = email.includes('onmicrosoft.com') || email.includes('example.com');
           const isPlaceholderEmail = email.includes('.placeholder@local.user');
           
-          // Accept all real domains and placeholder emails, exclude test domains
+          // Skip test domain emails unless they are placeholder emails (which are allowed)
           if (isTestDomain && !isPlaceholderEmail) {
             return;
           }
