@@ -281,8 +281,8 @@ const Dashboard = () => {
       if (intuneData) {
         intuneData.forEach(user => {
           const email = user.email?.toLowerCase() || '';
-          // Exclude onmicrosoft.com domain, accept oricoles.co.za users
-          if (email && !email.includes('onmicrosoft.com') && email.endsWith('@oricoles.co.za')) {
+          // Exclude onmicrosoft.com domain, accept all other valid domains
+          if (email && !email.includes('onmicrosoft.com')) {
             intuneMap.set(email, user);
           }
         });
@@ -295,12 +295,13 @@ const Dashboard = () => {
         masterListData.forEach(masterUser => {
           const email = masterUser.email?.toLowerCase() || '';
           
-          // Include users with @oricoles.co.za domain OR placeholder emails from CSV import
+          // Include all users except those with test/temp domains
           // Placeholder emails have format: {name}.placeholder@local.user
-          const isOricolDomain = email.endsWith('@oricoles.co.za');
+          const isTestDomain = email.includes('onmicrosoft.com') || email.includes('example.com');
           const isPlaceholderEmail = email.includes('.placeholder@local.user');
           
-          if (!isOricolDomain && !isPlaceholderEmail) {
+          // Accept all real domains and placeholder emails, exclude test domains
+          if (isTestDomain && !isPlaceholderEmail) {
             return;
           }
 
@@ -329,13 +330,14 @@ const Dashboard = () => {
           const email = user.email?.toLowerCase() || '';
           const upn = user.user_principal_name?.toLowerCase() || '';
           
-          // Exclude onmicrosoft.com domain
-          if (email.includes('onmicrosoft.com') || upn.includes('onmicrosoft.com')) {
+          // Exclude test/temp domains (onmicrosoft.com, example.com)
+          if (email.includes('onmicrosoft.com') || upn.includes('onmicrosoft.com') || 
+              email.includes('example.com') || upn.includes('example.com')) {
             return;
           }
           
-          // Only include oricoles.co.za domain
-          if (email.endsWith('@oricoles.co.za')) {
+          // Include all other users with valid email addresses
+          if (email && email.includes('@')) {
             allUsers.push(user);
           }
         });
