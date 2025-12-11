@@ -186,21 +186,15 @@ export function CSVUserImporter() {
         return;
       }
 
-      // Get tenant ID from user's tenant membership
-      const { data: membership, error: membershipError } = await supabase
+      // Get tenant ID from user's tenant membership (optional)
+      const { data: membership } = await supabase
         .from('user_tenant_memberships')
         .select('tenant_id')
         .eq('user_id', user.id)
         .eq('is_default', true)
-        .single();
+        .maybeSingle();
 
-      if (membershipError || !membership?.tenant_id) {
-        console.error('Error fetching tenant ID:', membershipError);
-        toast.error('Unable to determine your tenant. Please contact support.');
-        return;
-      }
-
-      const tenantId = membership.tenant_id;
+      const tenantId = membership?.tenant_id || null;
 
       // Prepare rows for insertion
       const usersToInsert = preview.validRows.map(row => ({
@@ -215,7 +209,7 @@ export function CSVUserImporter() {
         is_active: true,
         imported_at: new Date().toISOString(),
         imported_by: user.id,
-        tenant_id: tenantId
+        ...(tenantId && { tenant_id: tenantId })
       }));
 
       // Insert users into master_user_list
@@ -242,19 +236,24 @@ export function CSVUserImporter() {
           device_name: row.display_name || row.full_name || null,
           assignment_source: 'csv_import',
           is_current: true,
-          tenant_id: tenantId,
+          ...(tenantId && { tenant_id: tenantId }),
           assignment_date: new Date().toISOString()
         }));
 
       if (deviceAssignments.length > 0) {
         // First, mark existing assignments for these serial numbers as not current
         const serialNumbers = deviceAssignments.map(d => d.device_serial_number);
-        const { error: updateError } = await supabase
+        let updateQuery = supabase
           .from('device_user_assignments')
           .update({ is_current: false })
           .in('device_serial_number', serialNumbers)
-          .eq('tenant_id', tenantId)
           .eq('is_current', true);
+        
+        if (tenantId) {
+          updateQuery = updateQuery.eq('tenant_id', tenantId);
+        }
+        
+        const { error: updateError } = await updateQuery;
 
         if (updateError) {
           console.error('Error updating existing device assignments:', updateError);
@@ -286,7 +285,7 @@ export function CSVUserImporter() {
             service_type: 'VPN',
             email: userEmail,
             notes: `Imported from CSV on ${new Date().toISOString()}`,
-            tenant_id: tenantId
+            ...(tenantId && { tenant_id: tenantId })
           });
         }
         
@@ -298,7 +297,7 @@ export function CSVUserImporter() {
             service_type: 'RDP',
             email: userEmail,
             notes: `Imported from CSV on ${new Date().toISOString()}`,
-            tenant_id: tenantId
+            ...(tenantId && { tenant_id: tenantId })
           });
         }
 
@@ -310,7 +309,7 @@ export function CSVUserImporter() {
             service_type: 'M365',
             email: userEmail,
             notes: `Imported from CSV on ${new Date().toISOString()}`,
-            tenant_id: tenantId
+            ...(tenantId && { tenant_id: tenantId })
           });
         }
       });
