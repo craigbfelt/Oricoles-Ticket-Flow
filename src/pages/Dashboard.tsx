@@ -303,8 +303,12 @@ const Dashboard = () => {
         masterListData.forEach(masterUser => {
           const email = masterUser.email?.toLowerCase() || '';
           
-          // Only include afripipes.co.za domain
-          if (!email.endsWith('@afripipes.co.za')) {
+          // Include users with @afripipes.co.za domain OR placeholder emails from CSV import
+          // Placeholder emails have format: {name}.placeholder@local.user
+          const isAfripipesDomain = email.endsWith('@afripipes.co.za');
+          const isPlaceholderEmail = email.includes('.placeholder@local.user');
+          
+          if (!isAfripipesDomain && !isPlaceholderEmail) {
             return;
           }
 
