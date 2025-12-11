@@ -244,7 +244,10 @@ export function CSVUserImporter() {
       // Keep the last occurrence of each unique combination
       const assignmentMap = new Map<string, typeof deviceAssignments[0]>();
       deviceAssignments.forEach(assignment => {
-        const key = `${assignment.device_serial_number}|${assignment.tenant_id || 'null'}`;
+        const key = JSON.stringify({
+          device_serial_number: assignment.device_serial_number,
+          tenant_id: assignment.tenant_id || null
+        });
         assignmentMap.set(key, assignment);
       });
       const uniqueDeviceAssignments = Array.from(assignmentMap.values());
@@ -327,7 +330,11 @@ export function CSVUserImporter() {
       // Keep the last occurrence of each unique combination
       const credentialMap = new Map<string, CredentialInsert>();
       credentialsToInsert.forEach(cred => {
-        const key = `${cred.email}|${cred.service_type}|${cred.tenant_id || 'null'}`;
+        const key = JSON.stringify({
+          email: cred.email,
+          service_type: cred.service_type,
+          tenant_id: cred.tenant_id || null
+        });
         credentialMap.set(key, cred);
       });
       const uniqueCredentials = Array.from(credentialMap.values());
