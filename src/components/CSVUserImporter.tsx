@@ -212,10 +212,24 @@ export function CSVUserImporter() {
         ...(tenantId && { tenant_id: tenantId })
       }));
 
+      // Deduplicate users by email to avoid "ON CONFLICT DO UPDATE command cannot affect row a second time" error
+      // Keep the last occurrence of each unique email
+      const userMap = new Map<string, typeof usersToInsert[0]>();
+      usersToInsert.forEach(user => {
+        userMap.set(user.email, user);
+      });
+      const uniqueUsers = Array.from(userMap.values());
+
+      // Warn if duplicates were found
+      if (uniqueUsers.length < usersToInsert.length) {
+        const duplicateCount = usersToInsert.length - uniqueUsers.length;
+        toast.warning(`Found ${duplicateCount} duplicate email(s) in CSV. Using the last occurrence of each duplicate.`);
+      }
+
       // Insert users into master_user_list
       const { data, error } = await supabase
         .from('master_user_list')
-        .upsert(usersToInsert, {
+        .upsert(uniqueUsers, {
           onConflict: 'email',
           ignoreDuplicates: false
         })
