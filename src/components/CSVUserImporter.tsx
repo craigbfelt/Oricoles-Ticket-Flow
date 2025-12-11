@@ -44,6 +44,21 @@ interface CredentialInsert {
   tenant_id?: string;
 }
 
+interface UserInsert {
+  email: string;
+  display_name: string | null;
+  job_title: string | null;
+  department: string | null;
+  vpn_username: string | null;
+  rdp_username: string | null;
+  notes: string | null;
+  source: string;
+  is_active: boolean;
+  imported_at: string;
+  imported_by: string;
+  tenant_id?: string;
+}
+
 export function CSVUserImporter() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
@@ -197,7 +212,7 @@ export function CSVUserImporter() {
       const tenantId = membership?.tenant_id || null;
 
       // Prepare rows for insertion
-      const usersToInsert = preview.validRows.map(row => ({
+      const usersToInsert: UserInsert[] = preview.validRows.map(row => ({
         email: generateUserEmail(row),
         display_name: row.display_name || row.full_name || null,
         job_title: null,
@@ -214,7 +229,7 @@ export function CSVUserImporter() {
 
       // Deduplicate users by email to avoid "ON CONFLICT DO UPDATE command cannot affect row a second time" error
       // Keep the last occurrence of each unique email
-      const userMap = new Map<string, typeof usersToInsert[0]>();
+      const userMap = new Map<string, UserInsert>();
       usersToInsert.forEach(user => {
         userMap.set(user.email, user);
       });
