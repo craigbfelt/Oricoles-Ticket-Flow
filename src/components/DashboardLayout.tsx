@@ -231,7 +231,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Sidebar - Desktop */}
+      {/* Sidebar - Desktop - Minimal version with only logo and sign out */}
       <aside className="hidden md:flex md:flex-col md:w-64 bg-sidebar border-r border-sidebar-border">
         <div className={`${getLogoContainerClasses()} min-h-20 px-4 border-b border-sidebar-border py-3`}>
           {showPrimaryLogo && (
@@ -241,24 +241,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <img src={secondaryLogoUrl} alt="Zero Bit One" style={{ height: `${secondaryLogoSize}px`, maxHeight: '80px' }} className="w-auto object-contain" />
           )}
         </div>
+        {/* Navigation removed - use dashboard cards instead */}
         <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
-          {navigation.map((item) => {
-            const isActive = location.pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-                }`}
-              >
-                <item.icon className="w-5 h-5 mr-3" />
-                {item.name}
-              </Link>
-            );
-          })}
+          <div className="text-center text-muted-foreground text-sm p-4">
+            <p>Use the navigation cards</p>
+            <p>on the Dashboard page</p>
+            <p>to access different sections</p>
+          </div>
         </nav>
         <div className="p-4 border-t border-sidebar-border">
           <Button
@@ -296,24 +285,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </Button>
             </div>
             <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
-              {navigation.map((item) => {
-                const isActive = location.pathname === item.href;
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-                      isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-                    }`}
-                  >
-                    <item.icon className="w-5 h-5 mr-3" />
-                    {item.name}
-                  </Link>
-                );
-              })}
+              <div className="text-center text-muted-foreground text-sm p-4">
+                <p>Use the navigation cards</p>
+                <p>on the Dashboard page</p>
+                <p>to access different sections</p>
+              </div>
             </nav>
             <div className="p-4 border-t border-sidebar-border">
               <Button
