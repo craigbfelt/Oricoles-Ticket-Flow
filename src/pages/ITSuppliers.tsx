@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Building2, Phone, Mail, Globe } from "lucide-react";
+import { Plus, Edit, Trash2, Building2, Phone, Mail, Globe, ArrowLeft } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -231,6 +231,13 @@ const ITSuppliers = () => {
   return (
     <DashboardLayout>
       <div className="p-4 md:p-6 space-y-6">
+        {/* Back Navigation */}
+        <div>
+          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-[#E91E63]">IT Suppliers</h1>

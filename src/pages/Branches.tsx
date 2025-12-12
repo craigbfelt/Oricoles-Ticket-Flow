@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Building2, MapPin, Phone, Mail, Upload, Download, Users as UsersIcon, Monitor, Network } from "lucide-react";
+import { Plus, Building2, MapPin, Phone, Mail, Upload, Download, Users as UsersIcon, Monitor, Network, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -577,6 +577,13 @@ const Branches = () => {
   return (
     <DashboardLayout>
       <div className="p-6">
+        {/* Back Navigation */}
+        <div className="mb-4">
+          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-foreground">Branches</h1>
           <div className="flex gap-2 flex-wrap">
