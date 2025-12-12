@@ -241,9 +241,20 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <img src={secondaryLogoUrl} alt="Zero Bit One" style={{ height: `${secondaryLogoSize}px`, maxHeight: '80px' }} className="w-auto object-contain" />
           )}
         </div>
-        {/* Navigation removed - use dashboard cards instead */}
+        {/* Navigation with Dashboard link */}
         <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
-          <div className="text-center text-muted-foreground text-sm p-4">
+          <Link
+            to="/dashboard"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+              location.pathname === "/dashboard"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+            }`}
+          >
+            <LayoutDashboard className="w-5 h-5" />
+            <span className="font-medium">Dashboard</span>
+          </Link>
+          <div className="text-center text-muted-foreground text-sm p-4 border-t border-sidebar-border mt-4 pt-4">
             <p>Use the navigation cards</p>
             <p>on the Dashboard page</p>
             <p>to access different sections</p>
@@ -285,7 +296,19 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </Button>
             </div>
             <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
-              <div className="text-center text-muted-foreground text-sm p-4">
+              <Link
+                to="/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                  location.pathname === "/dashboard"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                }`}
+              >
+                <LayoutDashboard className="w-5 h-5" />
+                <span className="font-medium">Dashboard</span>
+              </Link>
+              <div className="text-center text-muted-foreground text-sm p-4 border-t border-sidebar-border mt-4 pt-4">
                 <p>Use the navigation cards</p>
                 <p>on the Dashboard page</p>
                 <p>to access different sections</p>

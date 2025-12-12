@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Ticket, Package, AlertCircle, CheckCircle, Monitor, User as UserIcon, Users as UsersIcon, 
   Wifi, Server, Computer, Key, Cloud, Video, Building2, Briefcase, Wrench, Truck, Network, 
-  FolderOpen, Settings, Code, FileBarChart, TrendingUp, Waves, Leaf, GitBranch, FolderTree
+  FolderOpen, Settings, Code, FileBarChart, TrendingUp, Waves, Leaf, GitBranch, FolderTree, LayoutDashboard
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -593,54 +593,7 @@ const Dashboard = () => {
   return (
     <DashboardLayout>
       <div className="p-4 md:p-6 space-y-6 w-full">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome to Oricol Helpdesk</p>
-        </div>
-
-        <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 w-full">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
-              <Ticket className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalTickets}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
-              <AlertCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.openTickets}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Assets</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalAssets}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Active Assets</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.activeAssets}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Navigation Cards Section */}
+        {/* Navigation Cards Section - Moved to top */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -653,6 +606,14 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {/* Dashboard/Home button card */}
+              <div
+                onClick={() => navigate("/dashboard")}
+                className="bg-gray-700 text-white p-4 rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-2 min-h-[100px]"
+              >
+                <LayoutDashboard className="h-8 w-8" />
+                <span className="text-sm font-medium text-center">Dashboard</span>
+              </div>
               {navigationCards.map((card) => {
                 const Icon = card.icon;
                 return (
