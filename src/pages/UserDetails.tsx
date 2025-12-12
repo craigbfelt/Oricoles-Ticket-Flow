@@ -238,6 +238,7 @@ const UserDetails = () => {
 
           // Add assigned devices to the list (avoid duplicates by serial number)
           if (assignedDevices && assignedDevices.length > 0) {
+            // Create Set once outside the loop for better performance
             const existingSerials = new Set(devicesData.map(d => d.serial_number).filter(Boolean));
             
             assignedDevices.forEach(assignment => {
@@ -257,6 +258,8 @@ const UserDetails = () => {
                   m365_user_principal_name: null,
                   assigned_to: assignment.user_email,
                 });
+                // Add to Set to track new serials
+                existingSerials.add(assignment.device_serial_number);
               }
             });
           }
