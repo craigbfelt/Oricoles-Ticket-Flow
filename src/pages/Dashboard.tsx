@@ -218,21 +218,25 @@ const Dashboard = () => {
         const userVpnCreds = vpnMap.get(email) || [];
         const userRdpCreds = rdpMap.get(email) || [];
         
-        // User is in M365 if they have a user_principal_name that is different from email
+        // User is in Intune/M365 if they have a user_principal_name that is different from email
         // This indicates they came from directory_users (Intune/M365 sync)
         // Users with only placeholder emails or CSV imports will not have a real UPN
-        const inM365 = !!user.user_principal_name && 
-                       user.user_principal_name !== user.email &&
-                       !user.email?.includes('.placeholder@local.user');
+        const inIntune = !!user.user_principal_name && 
+                         user.user_principal_name !== user.email &&
+                         !user.email?.includes('.placeholder@local.user');
         
-        // Determine device type based on M365 presence and RDP credentials
-        // Thin Client: Has RDP but NOT in M365 (CSV import only with RDP)
-        // Full PC: Has RDP AND is in M365 (both M365 account and RDP access)
+        // Determine device type based on VPN credentials
+        // Logic: If user has VPN → Full PC, if no VPN → Thin Client
+        // Extra confirmation: If no VPN AND not in Intune → definitely Thin Client
         let deviceType: 'thin_client' | 'full_pc' | 'unknown' = 'unknown';
-        if (userRdpCreds.length > 0) {
-          deviceType = inM365 ? 'full_pc' : 'thin_client';
-        } else if (inM365) {
-          // User is in M365 but no RDP credentials - likely a full PC user
+        if (userVpnCreds.length > 0) {
+          // Has VPN credentials → Full PC
+          deviceType = 'full_pc';
+        } else if (userRdpCreds.length > 0) {
+          // Has RDP but no VPN → Thin Client (confirmed if also not in Intune)
+          deviceType = 'thin_client';
+        } else if (inIntune) {
+          // In Intune but no VPN/RDP → assume Full PC
           deviceType = 'full_pc';
         }
         
@@ -245,7 +249,7 @@ const Dashboard = () => {
           devices: userDevices,
           vpnCredentials: userVpnCreds,
           rdpCredentials: userRdpCreds,
-          inM365,
+          inM365: inIntune,
           deviceType,
         };
       });
