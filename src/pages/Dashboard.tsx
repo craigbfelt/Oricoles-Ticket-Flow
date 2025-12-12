@@ -190,28 +190,19 @@ const Dashboard = () => {
         }
       });
 
-      // Deduplicate users by email local part (prefer @afripipes.co.za over other domains)
-      const usersByLocalPart = new Map<string, DirectoryUser>();
+      // Deduplicate users by full email address to prevent duplicate cards
+      const usersByEmail = new Map<string, DirectoryUser>();
       users.forEach(user => {
         const email = user.email?.toLowerCase() || '';
         if (!email || !email.includes('@')) return;
         
-        const localPart = email.split('@')[0];
-        const existing = usersByLocalPart.get(localPart);
-        if (!existing) {
-          usersByLocalPart.set(localPart, user);
-        } else {
-          // Prefer @afripipes.co.za domain over others
-          const existingDomain = existing.email?.toLowerCase().split('@')[1] || '';
-          const currentDomain = email.split('@')[1] || '';
-          
-          if (currentDomain === 'afripipes.co.za' && existingDomain !== 'afripipes.co.za') {
-            usersByLocalPart.set(localPart, user);
-          }
+        // Use full email as the key to ensure uniqueness
+        if (!usersByEmail.has(email)) {
+          usersByEmail.set(email, user);
         }
       });
       
-      const deduplicatedUsers = Array.from(usersByLocalPart.values());
+      const deduplicatedUsers = Array.from(usersByEmail.values());
       
       // Enrich users with counts and arrays of device/credential details
       const enrichedUsers: UserWithStats[] = deduplicatedUsers.map(user => {
@@ -290,7 +281,8 @@ const Dashboard = () => {
       if (intuneData) {
         intuneData.forEach(user => {
           const email = user.email?.toLowerCase() || '';
-          if (email && !email.includes('onmicrosoft.com') && email.endsWith('@afripipes.co.za')) {
+          // Exclude onmicrosoft.com domain, accept all other valid domains
+          if (email && !email.includes('onmicrosoft.com')) {
             intuneMap.set(email, user);
           }
         });
@@ -303,12 +295,13 @@ const Dashboard = () => {
         masterListData.forEach(masterUser => {
           const email = masterUser.email?.toLowerCase() || '';
           
-          // Include users with @afripipes.co.za domain OR placeholder emails from CSV import
+          // Exclude test/temp domains unless it's a placeholder email from CSV import
           // Placeholder emails have format: {name}.placeholder@local.user
-          const isAfripipesDomain = email.endsWith('@afripipes.co.za');
+          const isTestDomain = email.includes('onmicrosoft.com') || email.includes('example.com');
           const isPlaceholderEmail = email.includes('.placeholder@local.user');
           
-          if (!isAfripipesDomain && !isPlaceholderEmail) {
+          // Skip test domain emails unless they are placeholder emails (which are allowed)
+          if (isTestDomain && !isPlaceholderEmail) {
             return;
           }
 
@@ -337,13 +330,14 @@ const Dashboard = () => {
           const email = user.email?.toLowerCase() || '';
           const upn = user.user_principal_name?.toLowerCase() || '';
           
-          // Exclude onmicrosoft.com domain
-          if (email.includes('onmicrosoft.com') || upn.includes('onmicrosoft.com')) {
+          // Exclude test/temp domains (onmicrosoft.com, example.com)
+          if (email.includes('onmicrosoft.com') || upn.includes('onmicrosoft.com') || 
+              email.includes('example.com') || upn.includes('example.com')) {
             return;
           }
           
-          // Only include afripipes.co.za domain
-          if (email.endsWith('@afripipes.co.za')) {
+          // Include all other users with valid email addresses
+          if (email && email.includes('@')) {
             allUsers.push(user);
           }
         });
