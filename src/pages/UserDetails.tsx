@@ -165,20 +165,60 @@ const UserDetails = () => {
     try {
       setLoading(true);
 
-      // Fetch directory user
-      const { data: userData, error: userError } = await supabase
-        .from("directory_users")
+      // Try to fetch from master_user_list first (Dashboard uses this)
+      const { data: masterUser, error: masterError } = await supabase
+        .from("master_user_list")
         .select("*")
         .eq("id", userId)
         .maybeSingle();
 
-      if (userError) throw userError;
+      let userData: DirectoryUser | null = null;
+
+      if (masterUser) {
+        // Found in master_user_list - convert to DirectoryUser format
+        // Try to enrich with directory_users data if available
+        let directoryData = null;
+        if (masterUser.email) {
+          const { data: dirData } = await supabase
+            .from("directory_users")
+            .select("*")
+            .eq("email", masterUser.email)
+            .maybeSingle();
+          directoryData = dirData;
+        }
+
+        // Combine master_user_list data with directory_users data
+        userData = {
+          id: masterUser.id,
+          aad_id: directoryData?.aad_id || null,
+          display_name: masterUser.display_name || directoryData?.display_name || null,
+          email: masterUser.email,
+          user_principal_name: directoryData?.user_principal_name || masterUser.email || null,
+          job_title: masterUser.job_title || directoryData?.job_title || null,
+          department: masterUser.department || directoryData?.department || null,
+          account_enabled: directoryData?.account_enabled ?? masterUser.is_active ?? true,
+          created_at: masterUser.created_at,
+          updated_at: masterUser.updated_at,
+        };
+      } else {
+        // Not in master_user_list, try directory_users (backward compatibility)
+        const { data: dirUser, error: userError } = await supabase
+          .from("directory_users")
+          .select("*")
+          .eq("id", userId)
+          .maybeSingle();
+
+        if (userError && userError.code !== 'PGRST116') throw userError;
+        userData = dirUser;
+      }
+
       setUser(userData);
 
       if (userData) {
         // Fetch devices associated with this user using parameterized queries
         let devicesData: Device[] = [];
         
+        // Try to fetch by UPN first (for M365 users)
         if (userData.user_principal_name) {
           const { data } = await supabase
             .from("hardware_inventory")
@@ -186,6 +226,43 @@ const UserDetails = () => {
             .eq("m365_user_principal_name", userData.user_principal_name)
             .order("device_name");
           devicesData = data || [];
+        }
+
+        // Also fetch from device_user_assignments (for CSV-imported users)
+        if (userData.email) {
+          const { data: assignedDevices } = await supabase
+            .from("device_user_assignments")
+            .select("*")
+            .eq("user_email", userData.email)
+            .eq("is_current", true);
+
+          // Add assigned devices to the list (avoid duplicates by serial number)
+          if (assignedDevices && assignedDevices.length > 0) {
+            // Create Set once outside the loop for better performance
+            const existingSerials = new Set(devicesData.map(d => d.serial_number).filter(Boolean));
+            
+            assignedDevices.forEach(assignment => {
+              if (assignment.device_serial_number && !existingSerials.has(assignment.device_serial_number)) {
+                // Convert device assignment to Device format
+                devicesData.push({
+                  id: assignment.id,
+                  device_name: assignment.device_name,
+                  device_type: null,
+                  manufacturer: null,
+                  model: assignment.device_model,
+                  serial_number: assignment.device_serial_number,
+                  os: null,
+                  os_version: null,
+                  status: 'active',
+                  branch: null,
+                  m365_user_principal_name: null,
+                  assigned_to: assignment.user_email,
+                });
+                // Add to Set to track new serials as we process them
+                existingSerials.add(assignment.device_serial_number);
+              }
+            });
+          }
         }
 
         setDevices(devicesData);

@@ -2,14 +2,16 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchCredentials } from "@/lib/credentialUtils";
+import { consolidateUsersByEmail, type ConsolidatedUser, getCredentialsSummary } from "@/lib/userConsolidationUtils";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
-import { Monitor, Upload, Plus, Trash2, ArrowLeftRight, Filter } from "lucide-react";
+import { Monitor, Upload, Plus, Trash2, ArrowLeftRight, Filter, Wifi, Server } from "lucide-react";
 import { DataTable, type Column } from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Sheet,
   SheetContent,
@@ -51,6 +53,8 @@ const Rdp = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [credentials, setCredentials] = useState<RdpCredential[]>([]);
+  const [consolidatedUsers, setConsolidatedUsers] = useState<ConsolidatedUser[]>([]);
+  const [showConsolidated, setShowConsolidated] = useState(true); // Default to consolidated view
   const [loading, setLoading] = useState(true);
   const [selectedCredential, setSelectedCredential] = useState<RdpCredential | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -95,8 +99,9 @@ const Rdp = () => {
   const fetchRdpCredentials = async () => {
     setLoading(true);
     
-    // Use the utility function that handles RPC vs direct query gracefully
-    const { data, error } = await fetchCredentials('RDP');
+    // Fetch ALL credentials (both VPN and RDP) for consolidation
+    // When no service_type parameter is passed, fetchCredentials() returns all credentials
+    const { data, error } = await fetchCredentials();
     
     if (error) {
       toast({
@@ -105,8 +110,16 @@ const Rdp = () => {
         variant: "destructive",
       });
       setCredentials([]);
+      setConsolidatedUsers([]);
     } else {
-      setCredentials((data || []) as RdpCredential[]);
+      const allCredentials = (data || []) as RdpCredential[];
+      
+      // Store RDP-only credentials for legacy view
+      setCredentials(allCredentials.filter(c => c.service_type === 'RDP'));
+      
+      // Create consolidated view (one user per email with both VPN & RDP credentials)
+      const consolidated = consolidateUsersByEmail(allCredentials);
+      setConsolidatedUsers(consolidated);
     }
     setLoading(false);
   };
@@ -121,6 +134,33 @@ const Rdp = () => {
     });
     setIsEditing(true);
     setSheetOpen(true);
+  };
+
+  const handleConsolidatedRowClick = (user: ConsolidatedUser) => {
+    // For consolidated view, we show all credentials for this user
+    // Open sheet with the first RDP credential if available, otherwise first credential
+    const firstCred = user.rdpCredentials[0] || user.allCredentials[0];
+    if (firstCred) {
+      const credential: RdpCredential = {
+        id: firstCred.id,
+        username: firstCred.username,
+        password: firstCred.password,
+        service_type: firstCred.service_type,
+        email: user.email,
+        notes: firstCred.notes,
+        created_at: firstCred.created_at,
+        updated_at: firstCred.updated_at,
+      };
+      setSelectedCredential(credential);
+      setFormData({
+        username: credential.username,
+        password: credential.password,
+        email: credential.email || "",
+        notes: credential.notes || "",
+      });
+      setIsEditing(true);
+      setSheetOpen(true);
+    }
   };
 
   const handleAddNew = () => {
@@ -460,6 +500,69 @@ rdpuser3,Pass789word,user3@example.com,Guest RDP user`;
     },
   ];
 
+  const consolidatedColumns: Column<ConsolidatedUser>[] = [
+    {
+      key: "email",
+      label: "Email",
+      sortable: true,
+      filterPlaceholder: "Filter by email...",
+    },
+    {
+      key: "vpnCredentials",
+      label: "VPN Credentials",
+      sortable: false,
+      render: (_value, user) => (
+        <div className="flex items-center gap-2">
+          {user.hasVpn ? (
+            <>
+              <Badge variant="outline" className="gap-1">
+                <Wifi className="h-3 w-3" />
+                {user.vpnCredentials.length}
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                {user.vpnCredentials.map(c => c.username).join(", ")}
+              </span>
+            </>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "rdpCredentials",
+      label: "RDP Credentials",
+      sortable: false,
+      render: (_value, user) => (
+        <div className="flex items-center gap-2">
+          {user.hasRdp ? (
+            <>
+              <Badge variant="outline" className="gap-1">
+                <Server className="h-3 w-3" />
+                {user.rdpCredentials.length}
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                {user.rdpCredentials.map(c => c.username).join(", ")}
+              </span>
+            </>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "allCredentials",
+      label: "Total",
+      sortable: false,
+      render: (_value, user) => (
+        <Badge variant="secondary">
+          {user.allCredentials.length} credentials
+        </Badge>
+      ),
+    },
+  ];
+
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
@@ -467,10 +570,20 @@ rdpuser3,Pass789word,user3@example.com,Guest RDP user`;
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Monitor className="w-8 h-8" />
-              RDP Credentials
+              RDP & VPN Users
             </h1>
-            <p className="text-muted-foreground">Manage Remote Desktop Protocol login credentials</p>
+            <p className="text-muted-foreground">
+              {showConsolidated 
+                ? "One user per email with all their credentials (VPN + RDP)" 
+                : "Individual RDP credentials (may show duplicates)"}
+            </p>
           </div>
+          <Button
+            variant="outline"
+            onClick={() => setShowConsolidated(!showConsolidated)}
+          >
+            {showConsolidated ? "Show Individual Credentials" : "Show Consolidated Users"}
+          </Button>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -664,7 +777,15 @@ rdpuser3,Pass789word,user3@example.com,Guest RDP user`;
         </div>
 
         {loading ? (
-          <p>Loading RDP credentials...</p>
+          <p>Loading credentials...</p>
+        ) : showConsolidated ? (
+          <DataTable
+            data={consolidatedUsers}
+            columns={consolidatedColumns}
+            onRowClick={handleConsolidatedRowClick}
+            searchKeys={["email"]}
+            selectable={false}
+          />
         ) : (
           <DataTable
             data={getFilteredCredentials()}
