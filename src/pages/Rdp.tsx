@@ -527,6 +527,72 @@ rdpuser3,Pass789word,user3@example.com,Guest RDP user`;
       filterPlaceholder: "Filter by email...",
     },
     {
+      key: "vpnCredentials",
+      label: "VPN Username",
+      sortable: false,
+      render: (_value, user) => (
+        <div className="flex flex-col gap-1">
+          {user.hasVpn ? (
+            user.vpnCredentials.map((cred, idx) => (
+              <div key={`vpn-user-${idx}`} className="flex items-center gap-2">
+                <span className="text-sm">{cred.username}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    copyToClipboard(cred.username, `vpn-user-${user.email}-${idx}`);
+                  }}
+                >
+                  {copiedField === `vpn-user-${user.email}-${idx}` ? (
+                    <Check className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <Copy className="h-3 w-3" />
+                  )}
+                </Button>
+              </div>
+            ))
+          ) : (
+            <span className="text-muted-foreground">NA</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "vpnPassword",
+      label: "VPN Password",
+      sortable: false,
+      render: (_value, user) => (
+        <div className="flex flex-col gap-1">
+          {user.hasVpn ? (
+            user.vpnCredentials.map((cred, idx) => (
+              <div key={`vpn-pass-${idx}`} className="flex items-center gap-2">
+                <span className="text-sm font-mono">{cred.password}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    copyToClipboard(cred.password, `vpn-pass-${user.email}-${idx}`);
+                  }}
+                >
+                  {copiedField === `vpn-pass-${user.email}-${idx}` ? (
+                    <Check className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <Copy className="h-3 w-3" />
+                  )}
+                </Button>
+              </div>
+            ))
+          ) : (
+            <span className="text-muted-foreground">NA</span>
+          )}
+        </div>
+      ),
+    },
+    {
       key: "rdpCredentials",
       label: "RDP Username",
       sortable: false,

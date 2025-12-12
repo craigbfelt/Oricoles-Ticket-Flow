@@ -554,7 +554,7 @@ vpnuser3,Pass789word,user3@example.com,Guest VPN user`;
               </div>
             ))
           ) : (
-            <span className="text-muted-foreground">—</span>
+            <span className="text-muted-foreground">NA</span>
           )}
         </div>
       ),
@@ -587,7 +587,7 @@ vpnuser3,Pass789word,user3@example.com,Guest VPN user`;
               </div>
             ))
           ) : (
-            <span className="text-muted-foreground">—</span>
+            <span className="text-muted-foreground">NA</span>
           )}
         </div>
       ),
