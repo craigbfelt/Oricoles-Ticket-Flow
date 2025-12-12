@@ -4,7 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { CopilotPrompt } from "@/components/CopilotPrompt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Ticket, Package, AlertCircle, CheckCircle, Monitor, User as UserIcon, Users as UsersIcon, Wifi, Server, Computer } from "lucide-react";
+import { 
+  Ticket, Package, AlertCircle, CheckCircle, Monitor, User as UserIcon, Users as UsersIcon, 
+  Wifi, Server, Computer, Key, Cloud, Video, Building2, Briefcase, Wrench, Truck, Network, 
+  FolderOpen, Settings, Code, FileBarChart, TrendingUp, Waves, Leaf, GitBranch, FolderTree
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -59,6 +63,7 @@ const Dashboard = () => {
   
   const [recentTickets, setRecentTickets] = useState<Ticket[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSupportStaff, setIsSupportStaff] = useState(false);
   const [directoryUsers, setDirectoryUsers] = useState<DirectoryUser[]>([]);
   const [usersWithStats, setUsersWithStats] = useState<UserWithStats[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -213,12 +218,16 @@ const Dashboard = () => {
         const userVpnCreds = vpnMap.get(email) || [];
         const userRdpCreds = rdpMap.get(email) || [];
         
-        // User is in M365 if they came from directory_users table (have user_principal_name or id)
-        const inM365 = !!user.user_principal_name || !!user.id;
+        // User is in M365 if they have a user_principal_name that is different from email
+        // This indicates they came from directory_users (Intune/M365 sync)
+        // Users with only placeholder emails or CSV imports will not have a real UPN
+        const inM365 = !!user.user_principal_name && 
+                       user.user_principal_name !== user.email &&
+                       !user.email?.includes('.placeholder@local.user');
         
         // Determine device type based on M365 presence and RDP credentials
-        // Thin Client: Has RDP but NOT in M365
-        // Full PC: Has RDP AND is in M365
+        // Thin Client: Has RDP but NOT in M365 (CSV import only with RDP)
+        // Full PC: Has RDP AND is in M365 (both M365 account and RDP access)
         let deviceType: 'thin_client' | 'full_pc' | 'unknown' = 'unknown';
         if (userRdpCreds.length > 0) {
           deviceType = inM365 ? 'full_pc' : 'thin_client';
@@ -392,16 +401,19 @@ const Dashboard = () => {
         .from("user_roles")
         .select("role")
         .eq("user_id", userId)
-        .eq("role", "admin")
-        .maybeSingle();
+        .in("role", ["admin", "support_staff"]);
 
       if (error) {
-        console.error("Error checking admin role:", error);
+        console.error("Error checking user roles:", error);
         return;
       }
 
-      const adminStatus = !!roles;
+      const userRoles = roles?.map(r => r.role) || [];
+      const adminStatus = userRoles.includes("admin");
+      const supportStaffStatus = userRoles.includes("support_staff");
+      
       setIsAdmin(adminStatus);
+      setIsSupportStaff(supportStaffStatus);
       
       // Set the active tab based on admin status
       setActiveTab(adminStatus ? "users" : "profile");
@@ -537,6 +549,43 @@ const Dashboard = () => {
     );
   };
 
+  // Navigation cards configuration
+  const getNavigationCards = () => {
+    const allCards = [
+      { name: "Tickets", href: "/tickets", icon: Ticket, requiredRoles: ['admin'], color: "bg-blue-500" },
+      { name: "IT Suppliers", href: "/it-suppliers", icon: Building2, requiredRoles: [], color: "bg-purple-500" },
+      { name: "Remote Support", href: "/remote-support", icon: Video, requiredRoles: [], color: "bg-green-500" },
+      { name: "Assets", href: "/assets", icon: Package, requiredRoles: ['admin', 'support_staff'], color: "bg-orange-500" },
+      { name: "Users", href: "/users", icon: UsersIcon, requiredRoles: ['admin'], color: "bg-indigo-500" },
+      { name: "User Management", href: "/user-management", icon: UsersIcon, requiredRoles: ['admin'], color: "bg-pink-500" },
+      { name: "VPN", href: "/vpn", icon: Wifi, requiredRoles: ['admin', 'support_staff'], color: "bg-cyan-500" },
+      { name: "RDP", href: "/rdp", icon: Server, requiredRoles: ['admin', 'support_staff'], color: "bg-teal-500" },
+      { name: "Computers", href: "/hardware", icon: Monitor, requiredRoles: ['admin', 'support_staff'], color: "bg-slate-500" },
+      { name: "Microsoft 365", href: "/microsoft-365", icon: Cloud, requiredRoles: ['admin', 'support_staff'], color: "bg-sky-500" },
+      { name: "Software", href: "/software", icon: Code, requiredRoles: ['admin', 'support_staff'], color: "bg-violet-500" },
+      { name: "Licenses", href: "/licenses", icon: Key, requiredRoles: ['admin', 'support_staff'], color: "bg-amber-500" },
+      { name: "Branches", href: "/branches", icon: Building2, requiredRoles: ['admin', 'support_staff'], color: "bg-rose-500" },
+      { name: "Jobs", href: "/jobs", icon: Briefcase, requiredRoles: ['admin', 'support_staff'], color: "bg-lime-500" },
+      { name: "Maintenance", href: "/maintenance", icon: Wrench, requiredRoles: ['admin', 'support_staff'], color: "bg-emerald-500" },
+      { name: "Logistics", href: "/logistics", icon: Truck, requiredRoles: ['admin', 'support_staff'], color: "bg-fuchsia-500" },
+      { name: "Document Hub", href: "/document-hub", icon: FolderOpen, requiredRoles: ['admin'], color: "bg-yellow-500" },
+      { name: "Shared Files", href: "/shared-files", icon: FolderTree, requiredRoles: ['admin'], color: "bg-red-500" },
+      { name: "Reports", href: "/reports", icon: FileBarChart, requiredRoles: ['admin', 'support_staff'], color: "bg-blue-600" },
+      { name: "Company Network", href: "/company-network", icon: Network, requiredRoles: ['admin', 'support_staff'], color: "bg-gray-600" },
+      { name: "Settings", href: "/settings", icon: Settings, requiredRoles: [], color: "bg-stone-500" },
+    ];
+
+    // Filter cards based on user roles
+    return allCards.filter(card => {
+      if (card.requiredRoles.length === 0) return true;
+      if (card.requiredRoles.includes('admin') && isAdmin) return true;
+      if (card.requiredRoles.includes('support_staff') && isSupportStaff) return true;
+      return false;
+    });
+  };
+
+  const navigationCards = getNavigationCards();
+
   return (
     <DashboardLayout>
       <div className="p-4 md:p-6 space-y-6 w-full">
@@ -586,6 +635,36 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Navigation Cards Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Quick Navigation
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Click on any card to navigate to that section
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {navigationCards.map((card) => {
+                const Icon = card.icon;
+                return (
+                  <div
+                    key={card.href}
+                    onClick={() => navigate(card.href)}
+                    className={`${card.color} text-white p-4 rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-2 min-h-[100px]`}
+                  >
+                    <Icon className="h-8 w-8" />
+                    <span className="text-sm font-medium text-center">{card.name}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList>

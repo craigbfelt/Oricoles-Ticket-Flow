@@ -5,7 +5,7 @@ import { fetchCredentials } from "@/lib/credentialUtils";
 import { consolidateUsersByEmail, type ConsolidatedUser, getCredentialsSummary } from "@/lib/userConsolidationUtils";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
-import { Monitor, Upload, Plus, Trash2, ArrowLeftRight, Filter, Wifi, Server } from "lucide-react";
+import { Monitor, Upload, Plus, Trash2, ArrowLeftRight, Filter, Wifi, Server, Copy, Check } from "lucide-react";
 import { DataTable, type Column } from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,6 +75,7 @@ const Rdp = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [hasEmailFilter, setHasEmailFilter] = useState(false);
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     username: "",
@@ -469,6 +470,24 @@ rdpuser3,Pass789word,user3@example.com,Guest RDP user`;
     setDateFilter("all");
   };
 
+  const copyToClipboard = async (text: string, fieldId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(fieldId);
+      setTimeout(() => setCopiedField(null), 2000);
+      toast({
+        title: "Copied",
+        description: "Copied to clipboard",
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
+
   const activeFilterCount = (hasEmailFilter ? 1 : 0) + (dateFilter !== "all" ? 1 : 0);
 
   const columns: Column<RdpCredential>[] = [
@@ -508,43 +527,32 @@ rdpuser3,Pass789word,user3@example.com,Guest RDP user`;
       filterPlaceholder: "Filter by email...",
     },
     {
-      key: "vpnCredentials",
-      label: "VPN Credentials",
-      sortable: false,
-      render: (_value, user) => (
-        <div className="flex items-center gap-2">
-          {user.hasVpn ? (
-            <>
-              <Badge variant="outline" className="gap-1">
-                <Wifi className="h-3 w-3" />
-                {user.vpnCredentials.length}
-              </Badge>
-              <span className="text-xs text-muted-foreground">
-                {user.vpnCredentials.map(c => c.username).join(", ")}
-              </span>
-            </>
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          )}
-        </div>
-      ),
-    },
-    {
       key: "rdpCredentials",
-      label: "RDP Credentials",
+      label: "RDP Username",
       sortable: false,
       render: (_value, user) => (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-1">
           {user.hasRdp ? (
-            <>
-              <Badge variant="outline" className="gap-1">
-                <Server className="h-3 w-3" />
-                {user.rdpCredentials.length}
-              </Badge>
-              <span className="text-xs text-muted-foreground">
-                {user.rdpCredentials.map(c => c.username).join(", ")}
-              </span>
-            </>
+            user.rdpCredentials.map((cred, idx) => (
+              <div key={`rdp-user-${idx}`} className="flex items-center gap-2">
+                <span className="text-sm">{cred.username}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    copyToClipboard(cred.username, `rdp-user-${user.email}-${idx}`);
+                  }}
+                >
+                  {copiedField === `rdp-user-${user.email}-${idx}` ? (
+                    <Check className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <Copy className="h-3 w-3" />
+                  )}
+                </Button>
+              </div>
+            ))
           ) : (
             <span className="text-muted-foreground">—</span>
           )}
@@ -552,13 +560,36 @@ rdpuser3,Pass789word,user3@example.com,Guest RDP user`;
       ),
     },
     {
-      key: "allCredentials",
-      label: "Total",
+      key: "rdpPassword",
+      label: "RDP Password",
       sortable: false,
       render: (_value, user) => (
-        <Badge variant="secondary">
-          {user.allCredentials.length} credentials
-        </Badge>
+        <div className="flex flex-col gap-1">
+          {user.hasRdp ? (
+            user.rdpCredentials.map((cred, idx) => (
+              <div key={`rdp-pass-${idx}`} className="flex items-center gap-2">
+                <span className="text-sm font-mono">{cred.password}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    copyToClipboard(cred.password, `rdp-pass-${user.email}-${idx}`);
+                  }}
+                >
+                  {copiedField === `rdp-pass-${user.email}-${idx}` ? (
+                    <Check className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <Copy className="h-3 w-3" />
+                  )}
+                </Button>
+              </div>
+            ))
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
+        </div>
       ),
     },
   ];
