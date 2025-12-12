@@ -4,7 +4,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Truck, List, MapPin , ArrowLeft} from "lucide-react";
+import { Plus, Truck, List, MapPin, Info, ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DataTable } from "@/components/DataTable";
@@ -29,9 +29,9 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info , ArrowLeft} from "lucide-react";
 
 const Logistics = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("courier");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();

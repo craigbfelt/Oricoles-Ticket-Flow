@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,7 @@ import { DataTable } from "@/components/DataTable";
 import { hardwareSchema } from "@/lib/validations";
 
 const HardwareInventory = () => {
+  const navigate = useNavigate();
   const [devices, setDevices] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -305,7 +307,7 @@ const HardwareInventory = () => {
       <div className="p-8">
         {/* Back Navigation */}
         <div className="mb-4">
-          <Button variant="ghost" onClick={() => window.history.back()}>
+          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>

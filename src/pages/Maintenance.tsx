@@ -4,7 +4,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, ArrowRightLeft, Trash2, List , ArrowLeft} from "lucide-react";
+import { Plus, ArrowRightLeft, Trash2, List, Info, ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DataTable } from "@/components/DataTable";
@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info , ArrowLeft} from "lucide-react";
 
 const Maintenance = () => {
   const navigate = useNavigate();

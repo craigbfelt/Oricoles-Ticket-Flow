@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Trash2, Edit, Loader2, Upload, Download , ArrowLeft} from "lucide-react";
+import { Trash2, Edit, Loader2, Upload, Download, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
 import { DataTable } from "@/components/DataTable";
