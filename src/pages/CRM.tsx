@@ -18,7 +18,8 @@ import {
   MapPin,
   DollarSign,
   Activity,
-  AlertTriangle
+  AlertTriangle,
+  ArrowLeft
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -463,6 +464,13 @@ const CRM = () => {
   return (
     <DashboardLayout>
       <div className="p-4 md:p-6 space-y-6 w-full relative">
+        {/* Back Navigation */}
+        <div className="relative z-10">
+          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
         {/* Oricol Logo Watermark */}
         <div className="fixed top-20 right-8 pointer-events-none z-0 hidden lg:block">
           <img 

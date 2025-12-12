@@ -4,7 +4,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, ArrowRightLeft, Trash2, List } from "lucide-react";
+import { Plus, ArrowRightLeft, Trash2, List, Info, ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DataTable } from "@/components/DataTable";
@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info } from "lucide-react";
 
 const Maintenance = () => {
   const navigate = useNavigate();
@@ -148,6 +147,13 @@ const Maintenance = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6 p-6">
+        {/* Back Navigation */}
+        <div>
+          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">Device Maintenance</h1>

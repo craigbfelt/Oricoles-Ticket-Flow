@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { FileBarChart, TrendingUp, Package, Shield, Cpu, Users } from "lucide-react";
+import { FileBarChart, TrendingUp, Package, Shield, Cpu, Users, ArrowLeft } from "lucide-react";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82CA9D"];
 
@@ -196,6 +196,13 @@ const Reports = () => {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
+        {/* Back Navigation */}
+        <div>
+          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">

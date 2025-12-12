@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fetchCredentials } from "@/lib/credentialUtils";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
-import { Users as UsersIcon, Search, Upload, Download, Save, Key } from "lucide-react";
+import { Users as UsersIcon, Search, Upload, Download, Save, Key, ArrowLeft } from "lucide-react";
 import { DataTable, type Column } from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import {
@@ -504,6 +504,13 @@ const Users = () => {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
+        {/* Back Navigation */}
+        <div>
+          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">

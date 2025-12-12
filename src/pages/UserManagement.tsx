@@ -8,7 +8,7 @@ import { DeviceChangeHistory } from "@/components/DeviceChangeHistory";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Users, Upload, History, Settings, Activity } from "lucide-react";
+import { Users, Upload, History, Settings, Activity, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 interface MasterUser {
@@ -147,6 +147,13 @@ const UserManagement = () => {
   return (
     <DashboardLayout>
       <div className="p-4 md:p-6 space-y-6 w-full">
+        {/* Back Navigation */}
+        <div>
+          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Users className="h-8 w-8" />

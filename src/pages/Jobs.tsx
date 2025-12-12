@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Briefcase, CheckCircle2, FolderKanban, AlertCircle } from "lucide-react";
+import { Briefcase, CheckCircle2, FolderKanban, AlertCircle, ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DataTable } from "@/components/DataTable";
@@ -139,6 +139,13 @@ const Jobs = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Back Navigation */}
+        <div>
+          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">Jobs & Projects</h1>

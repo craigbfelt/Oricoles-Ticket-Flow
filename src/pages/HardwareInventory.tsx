@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Edit, Loader2 } from "lucide-react";
+import { Plus, Edit, Loader2, ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -16,6 +17,7 @@ import { DataTable } from "@/components/DataTable";
 import { hardwareSchema } from "@/lib/validations";
 
 const HardwareInventory = () => {
+  const navigate = useNavigate();
   const [devices, setDevices] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -303,6 +305,13 @@ const HardwareInventory = () => {
   return (
     <DashboardLayout>
       <div className="p-8">
+        {/* Back Navigation */}
+        <div className="mb-4">
+          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold">Hardware Inventory</h1>
