@@ -258,7 +258,7 @@ const UserDetails = () => {
                   m365_user_principal_name: null,
                   assigned_to: assignment.user_email,
                 });
-                // Add to Set to track new serials
+                // Add to Set to track new serials as we process them
                 existingSerials.add(assignment.device_serial_number);
               }
             });
