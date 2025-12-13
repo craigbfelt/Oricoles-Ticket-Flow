@@ -378,6 +378,7 @@ const HardwareInventory = () => {
                     <SelectContent>
                       <SelectItem value="Desktop">Desktop</SelectItem>
                       <SelectItem value="Laptop">Laptop</SelectItem>
+                      <SelectItem value="Thin Client">Thin Client</SelectItem>
                       <SelectItem value="Server">Server</SelectItem>
                       <SelectItem value="Tablet">Tablet</SelectItem>
                       <SelectItem value="Phone">Phone</SelectItem>

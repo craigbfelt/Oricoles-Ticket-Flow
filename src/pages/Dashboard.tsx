@@ -4,7 +4,35 @@ import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { CopilotPrompt } from "@/components/CopilotPrompt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Ticket, Package, AlertCircle, CheckCircle, Monitor, User as UserIcon, Users as UsersIcon, Wifi, Server, Computer } from "lucide-react";
+import { 
+  Ticket, 
+  Package, 
+  AlertCircle, 
+  CheckCircle, 
+  Monitor, 
+  User as UserIcon, 
+  Users as UsersIcon, 
+  Wifi, 
+  Server, 
+  Computer,
+  Building2,
+  FileBarChart,
+  Code,
+  Key,
+  Cloud,
+  Video,
+  Briefcase,
+  Wrench,
+  Truck,
+  Network,
+  FolderOpen,
+  Settings,
+  FolderTree,
+  TrendingUp,
+  Waves,
+  Leaf,
+  GitBranch
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -56,6 +84,7 @@ const Dashboard = () => {
   
   const [recentTickets, setRecentTickets] = useState<Ticket[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSupportStaff, setIsSupportStaff] = useState(false);
   const [directoryUsers, setDirectoryUsers] = useState<DirectoryUser[]>([]);
   const [usersWithStats, setUsersWithStats] = useState<UserWithStats[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -247,16 +276,19 @@ const Dashboard = () => {
         .from("user_roles")
         .select("role")
         .eq("user_id", userId)
-        .eq("role", "admin")
-        .maybeSingle();
+        .in("role", ["admin", "support_staff"]);
 
       if (error) {
         console.error("Error checking admin role:", error);
         return;
       }
 
-      const adminStatus = !!roles;
+      const rolesList = roles?.map(r => r.role) || [];
+      const adminStatus = rolesList.includes("admin");
+      const supportStatus = rolesList.includes("support_staff");
+      
       setIsAdmin(adminStatus);
+      setIsSupportStaff(supportStatus);
       
       // Set the active tab based on admin status
       setActiveTab(adminStatus ? "users" : "profile");
@@ -365,51 +397,275 @@ const Dashboard = () => {
   return (
     <DashboardLayout>
       <div className="p-4 md:p-6 space-y-6 w-full">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome to Oricol Helpdesk</p>
-        </div>
-
-        <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 w-full">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
-              <Ticket className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalTickets}</div>
+        {/* Navigation Cards with Different Colors */}
+        <div className="grid gap-4 md:gap-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          {/* Tickets - Blue */}
+          <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-blue-200" onClick={() => navigate("/tickets")}>
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+              <div className="p-3 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg">
+                <Ticket className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="font-semibold text-blue-700">Tickets</h3>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
-              <AlertCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.openTickets}</div>
+          {/* IT Suppliers - Purple */}
+          <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-purple-200" onClick={() => navigate("/it-suppliers")}>
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+              <div className="p-3 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 shadow-lg">
+                <Building2 className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="font-semibold text-purple-700">IT Suppliers</h3>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Assets</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalAssets}</div>
+          {/* Remote Support - Red */}
+          <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-red-200" onClick={() => navigate("/remote-support")}>
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+              <div className="p-3 rounded-lg bg-gradient-to-br from-red-500 to-red-600 shadow-lg">
+                <Video className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="font-semibold text-red-700">Remote Support</h3>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Active Assets</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.activeAssets}</div>
+          {/* Settings - Emerald */}
+          <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-emerald-200" onClick={() => navigate("/settings")}>
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+              <div className="p-3 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg">
+                <Settings className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="font-semibold text-emerald-700">Settings</h3>
             </CardContent>
           </Card>
+
+          {isAdmin && (
+            <>
+              {/* Oricol CRM - Green */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-green-200" onClick={() => navigate("/crm")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-green-500 to-green-600 shadow-lg">
+                    <TrendingUp className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-green-700">Oricol CRM</h3>
+                </CardContent>
+              </Card>
+
+              {/* Bluewave CRM - Cyan */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-cyan-200" onClick={() => navigate("/bluewave-crm")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-lg">
+                    <Waves className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-cyan-700">Bluewave CRM</h3>
+                </CardContent>
+              </Card>
+
+              {/* Sage - Teal */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-teal-200" onClick={() => navigate("/sage")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg">
+                    <Leaf className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-teal-700">Sage</h3>
+                </CardContent>
+              </Card>
+
+              {/* Document Hub - Amber */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-amber-200" onClick={() => navigate("/document-hub")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg">
+                    <FolderOpen className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-amber-700">Document Hub</h3>
+                </CardContent>
+              </Card>
+
+              {/* Shared Files - Orange */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-orange-200" onClick={() => navigate("/shared-files")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg">
+                    <FolderTree className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-orange-700">Shared Files</h3>
+                </CardContent>
+              </Card>
+
+              {/* Migrations - Indigo */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-indigo-200" onClick={() => navigate("/migrations")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg">
+                    <Code className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-indigo-700">Migrations</h3>
+                </CardContent>
+              </Card>
+
+              {/* Migration Tracker - Violet */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-violet-200" onClick={() => navigate("/migration-tracker")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 shadow-lg">
+                    <GitBranch className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-violet-700">Migration Tracker</h3>
+                </CardContent>
+              </Card>
+
+              {/* Users - Purple Dark */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-purple-300" onClick={() => navigate("/users")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-purple-600 to-purple-700 shadow-lg">
+                    <UsersIcon className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-purple-800">Users</h3>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {(isAdmin || isSupportStaff) && (
+            <>
+              {/* Jobs - Pink */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-pink-200" onClick={() => navigate("/jobs")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-pink-500 to-pink-600 shadow-lg">
+                    <Briefcase className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-pink-700">Jobs</h3>
+                </CardContent>
+              </Card>
+
+              {/* Maintenance - Rose */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-rose-200" onClick={() => navigate("/maintenance")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-rose-500 to-rose-600 shadow-lg">
+                    <Wrench className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-rose-700">Maintenance</h3>
+                </CardContent>
+              </Card>
+
+              {/* Logistics - Fuchsia */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-fuchsia-200" onClick={() => navigate("/logistics")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-fuchsia-500 to-fuchsia-600 shadow-lg">
+                    <Truck className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-fuchsia-700">Logistics</h3>
+                </CardContent>
+              </Card>
+
+              {/* Assets - Sky */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-sky-200" onClick={() => navigate("/assets")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-sky-500 to-sky-600 shadow-lg">
+                    <Package className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-sky-700">Assets</h3>
+                </CardContent>
+              </Card>
+
+              {/* Branches - Lime */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-lime-200" onClick={() => navigate("/branches")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-lime-500 to-lime-600 shadow-lg">
+                    <Building2 className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-lime-700">Branches</h3>
+                </CardContent>
+              </Card>
+
+              {/* Microsoft 365 - Blue Light */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-blue-300" onClick={() => navigate("/microsoft-365")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-blue-400 to-blue-500 shadow-lg">
+                    <Cloud className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-blue-800">Microsoft 365</h3>
+                </CardContent>
+              </Card>
+
+              {/* Computers - Slate */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-slate-200" onClick={() => navigate("/hardware")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-slate-500 to-slate-600 shadow-lg">
+                    <Monitor className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-slate-700">Computers</h3>
+                </CardContent>
+              </Card>
+
+              {/* Software - Gray */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-gray-300" onClick={() => navigate("/software")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-gray-500 to-gray-600 shadow-lg">
+                    <Code className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-gray-700">Software</h3>
+                </CardContent>
+              </Card>
+
+              {/* Licenses - Yellow */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-yellow-200" onClick={() => navigate("/licenses")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-yellow-500 to-yellow-600 shadow-lg">
+                    <Key className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-yellow-700">Licenses</h3>
+                </CardContent>
+              </Card>
+
+              {/* Provider Emails - Stone */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-stone-200" onClick={() => navigate("/provider-emails")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-stone-500 to-stone-600 shadow-lg">
+                    <FileBarChart className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-stone-700">Provider Emails</h3>
+                </CardContent>
+              </Card>
+
+              {/* Nymbis RDP Cloud - Cyan Dark */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-cyan-300" onClick={() => navigate("/nymbis-rdp-cloud")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-cyan-600 to-cyan-700 shadow-lg">
+                    <Cloud className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-cyan-800">Nymbis RDP</h3>
+                </CardContent>
+              </Card>
+
+              {/* Company Network - Zinc */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-zinc-200" onClick={() => navigate("/company-network")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-zinc-500 to-zinc-600 shadow-lg">
+                    <Network className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-zinc-700">Company Network</h3>
+                </CardContent>
+              </Card>
+
+              {/* Network Diagram - Neutral */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-neutral-200" onClick={() => navigate("/network-diagram-overview")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-neutral-500 to-neutral-600 shadow-lg">
+                    <Network className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-neutral-700">Network Diagram</h3>
+                </CardContent>
+              </Card>
+
+              {/* Reports - Red Dark */}
+              <Card className="hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-red-300" onClick={() => navigate("/reports")}>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-red-600 to-red-700 shadow-lg">
+                    <FileBarChart className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-red-800">Reports</h3>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

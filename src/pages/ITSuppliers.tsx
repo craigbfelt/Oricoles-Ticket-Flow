@@ -233,13 +233,13 @@ const ITSuppliers = () => {
       <div className="p-4 md:p-6 space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-[#E91E63]">IT Suppliers</h1>
+            <h1 className="text-3xl font-bold">IT Suppliers</h1>
             <p className="text-muted-foreground mt-1">Manage your IT service providers and suppliers</p>
           </div>
           {isAdmin && (
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={() => handleOpenDialog()} className="bg-[#E91E63] hover:bg-[#C2185B]">
+                <Button onClick={() => handleOpenDialog()}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add Supplier
                 </Button>
@@ -327,7 +327,7 @@ const ITSuppliers = () => {
                     <Button type="button" variant="outline" onClick={handleCloseDialog}>
                       Cancel
                     </Button>
-                    <Button type="submit" className="bg-[#E91E63] hover:bg-[#C2185B]">
+                    <Button type="submit">
                       {editingSupplier ? "Update" : "Create"} Supplier
                     </Button>
                   </div>
@@ -350,8 +350,8 @@ const ITSuppliers = () => {
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex items-center space-x-2">
-                      <Building2 className="h-5 w-5 text-[#E91E63]" />
-                      <CardTitle className="text-lg text-[#E91E63]">{supplier.name}</CardTitle>
+                      <Building2 className="h-5 w-5 text-primary" />
+                      <CardTitle className="text-lg">{supplier.name}</CardTitle>
                     </div>
                     {isAdmin && (
                       <div className="flex space-x-1" onClick={(e) => e.stopPropagation()}>
@@ -390,7 +390,7 @@ const ITSuppliers = () => {
                   {supplier.contact_email && (
                     <div className="flex items-center space-x-2 text-sm">
                       <Mail className="h-4 w-4 text-muted-foreground" />
-                      <a href={`mailto:${supplier.contact_email}`} className="text-[#E91E63] hover:underline">
+                      <a href={`mailto:${supplier.contact_email}`} className="text-primary hover:underline">
                         {supplier.contact_email}
                       </a>
                     </div>
@@ -410,7 +410,7 @@ const ITSuppliers = () => {
                         href={supplier.website}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[#E91E63] hover:underline"
+                        className="text-primary hover:underline"
                       >
                         Visit Website
                       </a>
