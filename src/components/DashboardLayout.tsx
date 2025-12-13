@@ -159,8 +159,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Software", href: "/software", icon: Code, requiredRoles: ['admin', 'support_staff'] },
     { name: "Licenses", href: "/licenses", icon: Key, requiredRoles: ['admin', 'support_staff'] },
     { name: "Provider Emails", href: "/provider-emails", icon: FileBarChart, requiredRoles: ['admin', 'support_staff'] },
-    { name: "VPN", href: "/vpn", icon: Key, requiredRoles: ['admin', 'support_staff'] },
-    { name: "RDP", href: "/rdp", icon: Monitor, requiredRoles: ['admin', 'support_staff'] },
     { name: "Nymbis RDP Cloud", href: "/nymbis-rdp-cloud", icon: Cloud, requiredRoles: ['admin', 'support_staff'] },
     { name: "Company Network", href: "/company-network", icon: Network, requiredRoles: ['admin', 'support_staff'] },
     { name: "Network Diagram Overview", href: "/network-diagram-overview", icon: Network, requiredRoles: ['admin', 'support_staff'] },

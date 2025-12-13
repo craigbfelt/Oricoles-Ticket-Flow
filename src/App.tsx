@@ -19,8 +19,6 @@ import HardwareInventory from "./pages/HardwareInventory";
 import SoftwareInventory from "./pages/SoftwareInventory";
 import Licenses from "./pages/Licenses";
 import Microsoft365Dashboard from "./pages/Microsoft365Dashboard";
-import Vpn from "./pages/Vpn";
-import Rdp from "./pages/Rdp";
 import RemoteSupport from "./pages/RemoteSupport";
 import RemoteClient from "./pages/RemoteClient";
 import RemoteClientSetup from "./pages/RemoteClientSetup";
@@ -77,8 +75,6 @@ const App = () => {
           <Route path="/software" element={<SoftwareInventory />} />
           <Route path="/licenses" element={<Licenses />} />
           <Route path="/microsoft-365" element={<Microsoft365Dashboard />} />
-          <Route path="/vpn" element={<Vpn />} />
-          <Route path="/rdp" element={<Rdp />} />
           <Route path="/remote-support" element={<RemoteSupport />} />
           <Route path="/remote-client" element={<RemoteClient />} />
           <Route path="/remote-client-setup" element={<RemoteClientSetup />} />
