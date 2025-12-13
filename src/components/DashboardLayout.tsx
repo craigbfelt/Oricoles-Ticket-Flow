@@ -241,6 +241,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
+            // Hide Dashboard link when on the Dashboard page
+            if (item.href === "/dashboard" && location.pathname === "/dashboard") {
+              return null;
+            }
             return (
               <Link
                 key={item.name}
@@ -295,6 +299,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href;
+                // Hide Dashboard link when on the Dashboard page
+                if (item.href === "/dashboard" && location.pathname === "/dashboard") {
+                  return null;
+                }
                 return (
                   <Link
                     key={item.name}
