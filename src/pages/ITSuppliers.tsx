@@ -34,6 +34,16 @@ interface ITSupplier {
   updated_at: string;
 }
 
+// Define color schemes outside component for performance
+const SUPPLIER_COLOR_SCHEMES = [
+  { border: "border-blue-200", bg: "bg-blue-50", icon: "bg-blue-500", text: "text-blue-700" },
+  { border: "border-purple-200", bg: "bg-purple-50", icon: "bg-purple-500", text: "text-purple-700" },
+  { border: "border-green-200", bg: "bg-green-50", icon: "bg-green-500", text: "text-green-700" },
+  { border: "border-orange-200", bg: "bg-orange-50", icon: "bg-orange-500", text: "text-orange-700" },
+  { border: "border-pink-200", bg: "bg-pink-50", icon: "bg-pink-500", text: "text-pink-700" },
+  { border: "border-cyan-200", bg: "bg-cyan-50", icon: "bg-cyan-500", text: "text-cyan-700" },
+];
+
 const ITSuppliers = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -341,18 +351,24 @@ const ITSuppliers = () => {
           <div className="text-center py-8">Loading suppliers...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {suppliers.map((supplier) => (
-              <Card 
-                key={supplier.id} 
-                className="hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => navigate(`/it-suppliers/${supplier.id}`)}
-              >
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center space-x-2">
-                      <Building2 className="h-5 w-5 text-primary" />
-                      <CardTitle className="text-lg">{supplier.name}</CardTitle>
-                    </div>
+            {suppliers.map((supplier, index) => {
+              // Assign different colors to each card
+              const colorScheme = SUPPLIER_COLOR_SCHEMES[index % SUPPLIER_COLOR_SCHEMES.length];
+              
+              return (
+                <Card 
+                  key={supplier.id} 
+                  className={`hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer border-2 ${colorScheme.border} ${colorScheme.bg}`}
+                  onClick={() => navigate(`/it-suppliers/${supplier.id}`)}
+                >
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center space-x-2">
+                        <div className={`p-2 rounded-lg ${colorScheme.icon} shadow-md`}>
+                          <Building2 className="h-5 w-5 text-white" />
+                        </div>
+                        <CardTitle className={`text-lg ${colorScheme.text}`}>{supplier.name}</CardTitle>
+                      </div>
                     {isAdmin && (
                       <div className="flex space-x-1" onClick={(e) => e.stopPropagation()}>
                         <Button
@@ -379,52 +395,79 @@ const ITSuppliers = () => {
                         </Button>
                       </div>
                     )}
-                  </div>
-                  <CardDescription className="font-semibold text-foreground">{supplier.role}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Services:</p>
-                    <p className="text-sm">{supplier.services}</p>
-                  </div>
-                  {supplier.contact_email && (
-                    <div className="flex items-center space-x-2 text-sm">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <a href={`mailto:${supplier.contact_email}`} className="text-primary hover:underline">
-                        {supplier.contact_email}
-                      </a>
                     </div>
-                  )}
-                  {supplier.contact_phone && (
-                    <div className="flex items-center space-x-2 text-sm">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <a href={`tel:${supplier.contact_phone}`} className="hover:underline">
-                        {supplier.contact_phone}
-                      </a>
-                    </div>
-                  )}
-                  {supplier.website && (
-                    <div className="flex items-center space-x-2 text-sm">
-                      <Globe className="h-4 w-4 text-muted-foreground" />
-                      <a
-                        href={supplier.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        Visit Website
-                      </a>
-                    </div>
-                  )}
-                  {supplier.notes && (
+                    <CardDescription className="font-semibold text-foreground mt-2">{supplier.role}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Notes:</p>
-                      <p className="text-sm text-muted-foreground">{supplier.notes}</p>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Services:</p>
+                      <p className="text-sm">{supplier.services}</p>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                    
+                    {/* Contact Options - More Prominent */}
+                    {(supplier.contact_email || supplier.contact_phone || supplier.website) && (
+                      <div className="pt-3 border-t border-border/50 space-y-2">
+                        <p className="text-sm font-semibold text-foreground mb-2">Contact Options:</p>
+                        
+                        {supplier.contact_email && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full justify-start gap-2 hover:bg-primary/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.location.href = `mailto:${supplier.contact_email}`;
+                            }}
+                          >
+                            <Mail className="h-4 w-4" />
+                            <span className="truncate">{supplier.contact_email}</span>
+                          </Button>
+                        )}
+                        
+                        {supplier.contact_phone && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full justify-start gap-2 hover:bg-primary/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.location.href = `tel:${supplier.contact_phone}`;
+                            }}
+                          >
+                            <Phone className="h-4 w-4" />
+                            {supplier.contact_phone}
+                          </Button>
+                        )}
+                        
+                        {supplier.website && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full justify-start gap-2 hover:bg-primary/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (supplier.website) {
+                                window.open(supplier.website, '_blank', 'noopener,noreferrer');
+                              }
+                            }}
+                          >
+                            <Globe className="h-4 w-4" />
+                            Visit Website
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    
+                    {supplier.notes && (
+                      <div className="pt-2 border-t border-border/50">
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Notes:</p>
+                        <p className="text-sm text-muted-foreground">{supplier.notes}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
 
