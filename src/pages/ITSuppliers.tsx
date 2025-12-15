@@ -34,6 +34,16 @@ interface ITSupplier {
   updated_at: string;
 }
 
+// Define gradient colors for supplier cards (constant to avoid re-creation)
+const CARD_GRADIENTS = [
+  'bg-gradient-to-br from-pink-500/10 to-rose-500/10 hover:from-pink-500/20 hover:to-rose-500/20',
+  'bg-gradient-to-br from-purple-500/10 to-indigo-500/10 hover:from-purple-500/20 hover:to-indigo-500/20',
+  'bg-gradient-to-br from-blue-500/10 to-cyan-500/10 hover:from-blue-500/20 hover:to-cyan-500/20',
+  'bg-gradient-to-br from-green-500/10 to-emerald-500/10 hover:from-green-500/20 hover:to-emerald-500/20',
+  'bg-gradient-to-br from-orange-500/10 to-amber-500/10 hover:from-orange-500/20 hover:to-amber-500/20',
+  'bg-gradient-to-br from-red-500/10 to-pink-500/10 hover:from-red-500/20 hover:to-pink-500/20',
+];
+
 const ITSuppliers = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -349,16 +359,7 @@ const ITSuppliers = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {suppliers.map((supplier, index) => {
-              // Define an array of gradient colors for the cards
-              const gradients = [
-                'bg-gradient-to-br from-pink-500/10 to-rose-500/10 hover:from-pink-500/20 hover:to-rose-500/20',
-                'bg-gradient-to-br from-purple-500/10 to-indigo-500/10 hover:from-purple-500/20 hover:to-indigo-500/20',
-                'bg-gradient-to-br from-blue-500/10 to-cyan-500/10 hover:from-blue-500/20 hover:to-cyan-500/20',
-                'bg-gradient-to-br from-green-500/10 to-emerald-500/10 hover:from-green-500/20 hover:to-emerald-500/20',
-                'bg-gradient-to-br from-orange-500/10 to-amber-500/10 hover:from-orange-500/20 hover:to-amber-500/20',
-                'bg-gradient-to-br from-red-500/10 to-pink-500/10 hover:from-red-500/20 hover:to-pink-500/20',
-              ];
-              const gradientClass = gradients[index % gradients.length];
+              const gradientClass = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
               
               return (
                 <Card 
