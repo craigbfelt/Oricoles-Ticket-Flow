@@ -750,15 +750,16 @@ const Dashboard = () => {
                           return true;
                         })
                         .map((user: UserWithStats) => {
-                          // At this point, all users have stats (either real or default values)
+                          // Simplified card showing only user name and minimal info
+                          // All detailed data (devices, VPN, RDP, serial numbers) shown on UserDetails page only
                           return (
                             <div
                               key={user.id}
-                              className="flex flex-col p-4 rounded-lg border border-border hover:bg-muted/50 hover:shadow-md transition-all cursor-pointer"
+                              className="flex flex-col p-4 rounded-lg border border-border hover:bg-muted/50 hover:shadow-md transition-all cursor-pointer h-full"
                               onClick={() => navigate(`/user-details/${user.id}`)}
                             >
-                              <div className="flex flex-col items-center mb-3">
-                                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-2 relative">
+                              <div className="flex flex-col items-center flex-1">
+                                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 relative">
                                   <UserIcon className="h-8 w-8 text-primary" />
                                   {user.staffUser && (
                                     <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center" title="Staff User">
@@ -766,11 +767,11 @@ const Dashboard = () => {
                                     </div>
                                   )}
                                 </div>
-                                <div className="text-center w-full">
-                                  <h3 className="font-semibold text-sm line-clamp-1">
+                                <div className="text-center w-full mb-3">
+                                  <h3 className="font-semibold text-sm line-clamp-1 mb-1">
                                     {user.display_name || "Unknown"}
                                   </h3>
-                                  <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
+                                  <p className="text-xs text-muted-foreground line-clamp-1">
                                     {user.email || "No email"}
                                   </p>
                                   {user.job_title && (
@@ -778,112 +779,22 @@ const Dashboard = () => {
                                       {user.job_title}
                                     </p>
                                   )}
-                                  {/* Device Type Badge */}
-                                  {getDeviceTypeBadge(user.deviceType)}
                                 </div>
                               </div>
 
-                              {/* Stats section */}
-                              {(user.deviceCount > 0 || user.vpnCount > 0 || user.rdpCount > 0) && (
-                                <div className="flex flex-wrap gap-1 justify-center mb-2">
-                                  {user.deviceCount > 0 && (
-                                    <Badge variant="outline" className="text-xs gap-1">
-                                      <Computer className="h-3 w-3" />
-                                      {user.deviceCount}
-                                    </Badge>
-                                  )}
-                                  {user.vpnCount > 0 && (
-                                    <Badge variant="outline" className="text-xs gap-1">
-                                      <Wifi className="h-3 w-3" />
-                                      {user.vpnCount}
-                                    </Badge>
-                                  )}
-                                  {user.rdpCount > 0 && (
-                                    <Badge variant="outline" className="text-xs gap-1">
-                                      <Server className="h-3 w-3" />
-                                      {user.rdpCount}
-                                    </Badge>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* Device Details */}
-                              {user.devices.length > 0 && (
-                                <div className="text-xs space-y-1 mb-2 text-left w-full">
-                                  {user.devices.slice(0, 2).map((device, idx) => (
-                                    <div key={device.serial_number || device.device_name || idx} className="border-t pt-1 border-border/50">
-                                      {device.device_name && (
-                                        <div className="font-medium text-muted-foreground truncate">
-                                          {device.device_name}
-                                        </div>
-                                      )}
-                                      {device.serial_number && (
-                                        <div className="text-muted-foreground">
-                                          <span className="font-semibold">SN:</span> {device.serial_number}
-                                        </div>
-                                      )}
-                                      {device.model && (
-                                        <div className="text-muted-foreground truncate">
-                                          <span className="font-semibold">Model:</span> {device.model}
-                                        </div>
-                                      )}
-                                    </div>
-                                  ))}
-                                  {user.devices.length > 2 && (
-                                    <div className="text-center text-muted-foreground">
-                                      +{user.devices.length - 2} more
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* VPN Credentials */}
-                              {user.vpnCredentials.length > 0 && (
-                                <div className="text-xs space-y-1 mb-2 text-left w-full border-t pt-1 border-border/50">
-                                  <div className="font-semibold text-muted-foreground flex items-center gap-1">
-                                    <Wifi className="h-3 w-3" /> VPN:
-                                  </div>
-                                  {user.vpnCredentials.slice(0, 2).map((cred, idx) => (
-                                    <div key={`vpn-${cred.username}-${idx}`} className="text-muted-foreground truncate pl-4">
-                                      {cred.username}
-                                    </div>
-                                  ))}
-                                  {user.vpnCredentials.length > 2 && (
-                                    <div className="text-center text-muted-foreground">
-                                      +{user.vpnCredentials.length - 2} more
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* RDP Credentials */}
-                              {user.rdpCredentials.length > 0 && (
-                                <div className="text-xs space-y-1 mb-2 text-left w-full border-t pt-1 border-border/50">
-                                  <div className="font-semibold text-muted-foreground flex items-center gap-1">
-                                    <Server className="h-3 w-3" /> RDP:
-                                  </div>
-                                  {user.rdpCredentials.slice(0, 2).map((cred, idx) => (
-                                    <div key={`rdp-${cred.username}-${idx}`} className="text-muted-foreground truncate pl-4">
-                                      {cred.username}
-                                    </div>
-                                  ))}
-                                  {user.rdpCredentials.length > 2 && (
-                                    <div className="text-center text-muted-foreground">
-                                      +{user.rdpCredentials.length - 2} more
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-
-                              {user.account_enabled !== null && (
-                                <Badge
-                                  className={`text-xs w-full justify-center ${
-                                    user.account_enabled ? "bg-green-500" : "bg-gray-500"
-                                  }`}
-                                >
-                                  {user.account_enabled ? "Active" : "Disabled"}
-                                </Badge>
-                              )}
+                              {/* Device Type Badge - consistent positioning at bottom */}
+                              <div className="flex flex-col gap-2 mt-auto">
+                                {getDeviceTypeBadge(user.deviceType)}
+                                {user.account_enabled !== null && (
+                                  <Badge
+                                    className={`text-xs w-full justify-center ${
+                                      user.account_enabled ? "bg-green-500" : "bg-gray-500"
+                                    }`}
+                                  >
+                                    {user.account_enabled ? "Active" : "Disabled"}
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
                           );
                         })}
