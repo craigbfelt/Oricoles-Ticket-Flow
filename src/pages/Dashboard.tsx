@@ -656,8 +656,7 @@ const Dashboard = () => {
                     {recentTickets.map((ticket) => (
                       <div
                         key={ticket.id}
-                        className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer"
-                        onClick={() => navigate("/tickets")}
+                        className="flex items-center justify-between p-4 rounded-lg border border-border"
                       >
                         <div className="flex-1">
                           <h3 className="font-medium">{ticket.title}</h3>
