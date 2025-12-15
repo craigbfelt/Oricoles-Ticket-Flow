@@ -34,14 +34,16 @@ interface ITSupplier {
   updated_at: string;
 }
 
-// Define gradient colors for supplier cards (constant to avoid re-creation)
+// Define gradient colors for supplier cards with brighter, more distinct colors
 const CARD_GRADIENTS = [
-  'bg-gradient-to-br from-pink-500/10 to-rose-500/10 hover:from-pink-500/20 hover:to-rose-500/20',
-  'bg-gradient-to-br from-purple-500/10 to-indigo-500/10 hover:from-purple-500/20 hover:to-indigo-500/20',
-  'bg-gradient-to-br from-blue-500/10 to-cyan-500/10 hover:from-blue-500/20 hover:to-cyan-500/20',
-  'bg-gradient-to-br from-green-500/10 to-emerald-500/10 hover:from-green-500/20 hover:to-emerald-500/20',
-  'bg-gradient-to-br from-orange-500/10 to-amber-500/10 hover:from-orange-500/20 hover:to-amber-500/20',
-  'bg-gradient-to-br from-red-500/10 to-pink-500/10 hover:from-red-500/20 hover:to-pink-500/20',
+  'bg-gradient-to-br from-pink-400/20 to-rose-500/20 hover:from-pink-400/35 hover:to-rose-500/35 border-pink-300',
+  'bg-gradient-to-br from-purple-400/20 to-indigo-500/20 hover:from-purple-400/35 hover:to-indigo-500/35 border-purple-300',
+  'bg-gradient-to-br from-blue-400/20 to-cyan-500/20 hover:from-blue-400/35 hover:to-cyan-500/35 border-blue-300',
+  'bg-gradient-to-br from-green-400/20 to-emerald-500/20 hover:from-green-400/35 hover:to-emerald-500/35 border-green-300',
+  'bg-gradient-to-br from-orange-400/20 to-amber-500/20 hover:from-orange-400/35 hover:to-amber-500/35 border-orange-300',
+  'bg-gradient-to-br from-red-400/20 to-pink-600/20 hover:from-red-400/35 hover:to-pink-600/35 border-red-300',
+  'bg-gradient-to-br from-teal-400/20 to-cyan-600/20 hover:from-teal-400/35 hover:to-cyan-600/35 border-teal-300',
+  'bg-gradient-to-br from-violet-400/20 to-fuchsia-500/20 hover:from-violet-400/35 hover:to-fuchsia-500/35 border-violet-300',
 ];
 
 const ITSuppliers = () => {
