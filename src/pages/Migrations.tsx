@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Database, CheckCircle2, AlertCircle, Loader2, RefreshCw, Eye, FileCode, Clock, Copy, CheckCheck } from "lucide-react";
+import { Database, CheckCircle2, AlertCircle, Loader2, RefreshCw, Eye, FileCode, Clock, Copy, CheckCheck, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -102,6 +103,7 @@ interface MigrationStatus {
 }
 
 const Migrations = () => {
+  const navigate = useNavigate();
   const [migrations, setMigrations] = useState<MigrationStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMigration, setSelectedMigration] = useState<string | null>(null);
@@ -356,6 +358,13 @@ const Migrations = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Back Navigation */}
+        <div>
+          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">

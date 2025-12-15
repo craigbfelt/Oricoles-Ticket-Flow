@@ -18,7 +18,8 @@ import {
   RefreshCw,
   Link2,
   CheckCircle,
-  XCircle
+  XCircle,
+  ArrowLeft
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -172,6 +173,13 @@ const BluewaveCRM = () => {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
+        {/* Back Navigation */}
+        <div>
+          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>

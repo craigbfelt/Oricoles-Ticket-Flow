@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Network, Download, Upload, Plus, Save, Image as ImageIcon, Trash2, Wand2, Eye, X } from "lucide-react";
+import { Network, Download, Upload, Plus, Save, Image as ImageIcon, Trash2, Wand2, Eye, X, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ImportHistory } from "@/components/ImportHistory";
 import { Tables } from "@/integrations/supabase/types";
@@ -445,6 +445,13 @@ const CompanyNetworkDiagram = () => {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
+        {/* Back Navigation */}
+        <div>
+          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">

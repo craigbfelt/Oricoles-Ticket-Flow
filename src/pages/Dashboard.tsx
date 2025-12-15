@@ -68,7 +68,7 @@ const Dashboard = () => {
   const [usersWithStats, setUsersWithStats] = useState<UserWithStats[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [deviceTypeFilter, setDeviceTypeFilter] = useState<'all' | 'thin_client' | 'full_pc'>('all');
-  const [activeTab, setActiveTab] = useState<string | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState<string>("overview");
   const [currentUserProfile, setCurrentUserProfile] = useState<UserWithStats | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -604,14 +604,14 @@ const Dashboard = () => {
               Click on any card to navigate to that section
             </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pb-6">
             <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {/* Dashboard/Home button card */}
               <div
                 onClick={() => navigate("/dashboard")}
-                className="bg-gray-700 text-white p-4 rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-2 min-h-[100px]"
+                className="bg-gray-700 text-white p-6 rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-3 h-full min-h-[120px]"
               >
-                <LayoutDashboard className="h-8 w-8" />
+                <LayoutDashboard className="h-10 w-10" />
                 <span className="text-sm font-medium text-center">Dashboard</span>
               </div>
               {navigationCards.map((card) => {
@@ -620,9 +620,9 @@ const Dashboard = () => {
                   <div
                     key={card.href}
                     onClick={() => navigate(card.href)}
-                    className={`${card.color} text-white p-4 rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-2 min-h-[100px]`}
+                    className={`${card.color} text-white p-6 rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-3 h-full min-h-[120px]`}
                   >
-                    <Icon className="h-8 w-8" />
+                    <Icon className="h-10 w-10" />
                     <span className="text-sm font-medium text-center">{card.name}</span>
                   </div>
                 );
@@ -656,8 +656,7 @@ const Dashboard = () => {
                     {recentTickets.map((ticket) => (
                       <div
                         key={ticket.id}
-                        className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer"
-                        onClick={() => navigate("/tickets")}
+                        className="flex items-center justify-between p-4 rounded-lg border border-border"
                       >
                         <div className="flex-1">
                           <h3 className="font-medium">{ticket.title}</h3>

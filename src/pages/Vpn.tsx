@@ -5,7 +5,7 @@ import { fetchCredentials } from "@/lib/credentialUtils";
 import { consolidateUsersByEmail, type ConsolidatedUser, getCredentialsSummary } from "@/lib/userConsolidationUtils";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
-import { KeyRound, Upload, Plus, Trash2, ArrowLeftRight, Filter, Wifi, Server, Copy, Check } from "lucide-react";
+import { KeyRound, Upload, Plus, Trash2, ArrowLeftRight, Filter, Wifi, Server, Copy, Check, ArrowLeft } from "lucide-react";
 import { DataTable, type Column } from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -597,6 +597,13 @@ vpnuser3,Pass789word,user3@example.com,Guest VPN user`;
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
+        {/* Back Navigation */}
+        <div>
+          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
