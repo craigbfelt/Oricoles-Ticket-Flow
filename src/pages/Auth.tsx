@@ -21,12 +21,9 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Show configuration error if Supabase is not properly configured
-  if (!isSupabaseConfigured) {
-    return <ConfigurationError />;
-  }
-
   useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         // User clicked the reset password link from email
@@ -51,6 +48,11 @@ const Auth = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate, toast]);
+
+  // Show configuration error if Supabase is not properly configured
+  if (!isSupabaseConfigured) {
+    return <ConfigurationError />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

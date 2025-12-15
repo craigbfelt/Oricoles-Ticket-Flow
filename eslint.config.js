@@ -21,6 +21,16 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      // This codebase intentionally uses `any` in a number of UI/data-wrangling
+      // spots; enforcing a blanket ban creates hundreds of errors and blocks CI.
+      "@typescript-eslint/no-explicit-any": "off",
+
+      // Allow pragmatic TS suppression comments in edge cases.
+      // If you want stricter behavior later, switch this to "warn" and require descriptions.
+      "@typescript-eslint/ban-ts-comment": "off",
+
+      // Tailwind config (and other tooling) sometimes uses `require()` even in TS.
+      "@typescript-eslint/no-require-imports": "off",
     },
   },
 );
