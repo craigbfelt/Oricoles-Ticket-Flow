@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -102,6 +103,7 @@ interface MigrationStatus {
 }
 
 const Migrations = () => {
+  const navigate = useNavigate();
   const [migrations, setMigrations] = useState<MigrationStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMigration, setSelectedMigration] = useState<string | null>(null);
@@ -358,7 +360,7 @@ const Migrations = () => {
       <div className="space-y-6">
         {/* Back Navigation */}
         <div>
-          <Button variant="ghost" onClick={() => window.location.href = "/dashboard"}>
+          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
