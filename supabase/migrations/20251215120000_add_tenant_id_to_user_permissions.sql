@@ -10,7 +10,8 @@
 -- This migration ensures the column exists and is properly indexed.
 
 -- Add tenant_id column if it doesn't exist
-ALTER TABLE public.user_permissions ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES public.tenants(id);
+-- Use ON DELETE SET NULL to gracefully handle tenant deletion
+ALTER TABLE public.user_permissions ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES public.tenants(id) ON DELETE SET NULL;
 
 -- Create index for tenant_id if it doesn't exist
 CREATE INDEX IF NOT EXISTS idx_user_permissions_tenant ON public.user_permissions(tenant_id);
