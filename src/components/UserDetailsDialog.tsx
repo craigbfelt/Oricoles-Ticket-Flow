@@ -9,6 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Save, Edit, Eye, EyeOff, Shield, Monitor, Key } from "lucide-react";
 
+// Antivirus status constants
+const ANTIVIRUS_STATUS = {
+  PROTECTED: 'protected',
+  AT_RISK: 'at_risk',
+  NOT_INSTALLED: 'not_installed',
+  UNKNOWN: 'unknown'
+} as const;
+
 interface UserDetailsDialogProps {
   userId: string;
   open: boolean;
@@ -154,7 +162,8 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
       const details: UserDetails = {
         email: masterUser.email,
         display_name: masterUser.display_name,
-        full_name: masterUser.display_name, // Use display_name as full_name
+        // For CSV imports, job_title may contain the full_name
+        full_name: masterUser.job_title || masterUser.display_name,
         job_title: masterUser.job_title,
         department: masterUser.department,
         branch: branchName,
@@ -194,11 +203,13 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
     setSaving(true);
     try {
       // Update master_user_list
+      // If full_name changed, update display_name as well
+      const displayNameToUse = editedDetails.full_name || editedDetails.display_name;
       const { error: masterError } = await supabase
         .from("master_user_list")
         .update({
-          display_name: editedDetails.display_name,
-          job_title: editedDetails.job_title,
+          display_name: displayNameToUse,
+          job_title: editedDetails.full_name, // Store full_name in job_title for reference
           department: editedDetails.department,
           vpn_username: editedDetails.vpn_username,
           rdp_username: editedDetails.rdp_username,
@@ -375,9 +386,12 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
               <Label>Full Name</Label>
               <Input
                 value={editing ? (editedDetails?.full_name || "") : (userDetails.full_name || "N/A")}
-                onChange={(e) => editing && setEditedDetails(prev => prev ? { ...prev, full_name: e.target.value, display_name: e.target.value } : null)}
+                onChange={(e) => editing && setEditedDetails(prev => prev ? { ...prev, full_name: e.target.value } : null)}
                 disabled={!editing}
               />
+              <p className="text-xs text-muted-foreground">
+                Note: Changes to full name will also update display name
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -521,9 +535,9 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
                       <Label>Status</Label>
                       <div className="flex items-center gap-2">
                         <Badge 
-                          variant={userDetails.antivirus_status === 'protected' ? 'default' : 'destructive'}
+                          variant={userDetails.antivirus_status === ANTIVIRUS_STATUS.PROTECTED ? 'default' : 'destructive'}
                         >
-                          {userDetails.antivirus_status || "Unknown"}
+                          {userDetails.antivirus_status || ANTIVIRUS_STATUS.UNKNOWN}
                         </Badge>
                       </div>
                     </div>
