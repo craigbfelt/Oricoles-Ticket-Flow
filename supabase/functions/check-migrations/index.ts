@@ -142,6 +142,18 @@ Deno.serve(async (req) => {
       "20251203134210_fix_user_roles_rls_recursion",
       "20251204151925_add_m365_columns_to_hardware_inventory",
       "20251205000000_secure_credential_storage",
+      "20251206061051_fix_m365_sync_unique_constraints",
+      "20251207071828_create_it_suppliers_table",
+      "20251207071829_add_branch_to_profiles",
+      "20251208110600_fix_network_diagrams_schema",
+      "20251209094500_create_user_permissions_system",
+      "20251209102000_fix_directory_users_rls_for_own_profile",
+      "20251209103000_create_csv_user_management_schema",
+      "20251209111500_add_ceo_cfo_roles_to_enum",
+      "20251209111600_create_device_sync_functions",
+      "20251210081200_add_m365_service_type_to_credentials",
+      "20251210130000_fix_handle_new_user_tenant_assignment",
+      "20251211140000_remove_ceo_cfo_requirements",
     ];
 
     const migrations = allMigrationFiles.map((version) => ({

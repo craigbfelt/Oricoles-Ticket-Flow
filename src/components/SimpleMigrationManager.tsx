@@ -36,13 +36,14 @@ const ALL_MIGRATION_FILES = [
   "20251112064207_553f2a8d-2fd8-45f6-8f5b-3c7bf3f97c00.sql",
   "20251112065350_76d95c8d-1109-46fa-8b90-e18e53a62df7.sql",
   "20251112065604_0346015b-e2b3-4bfe-a6b5-764f8ae93e59.sql",
-
+  "20251112124800_add_ceo_role.sql",
   "20251112135110_restore_admin_role_for_craig.sql",
   "20251112151903_auto_assign_admin_role.sql",
-
+  "20251112160000_allow_ceo_view_all_profiles.sql",
+  "20251112161521_restore_admin_and_ceo_roles.sql",
   "20251112170113_create_new_admin_account.sql",
   "20251112172925_add_admin_zerobitone_to_auto_admin.sql",
-
+  "20251112184500_fix_ceo_permissions.sql",
   "20251112185000_ensure_admin_roles.sql",
   "20251112190000_verify_permissions.sql",
   "20251112200000_ensure_craig_has_admin_role.sql",
@@ -77,7 +78,32 @@ const ALL_MIGRATION_FILES = [
   "20251119052800_fix_security_definer_search_path.sql",
   "20251119055823_backfill_missing_profiles.sql",
   "20251119080900_create_crm_system.sql",
-  "verify_admin_roles.sql",
+  "20251120034137_82d09dde-5c06-48eb-a16f-a8f05a77a665.sql",
+  "20251121135608_b4742fd0-0997-4eca-92bc-6f7359088a9a.sql",
+  "20251125043624_3832ff4e-7cb0-41c5-bbd8-139612b4630d.sql",
+  "20251125120719_4669bb48-a07d-4bdd-a3af-a70878479126.sql",
+  "20251125120804_3dead9ea-ccb9-45d6-82fe-f90dc4b16f54.sql",
+  "20251127042925_d8b9922d-4a30-4dcb-a069-78326baa759c.sql",
+  "20251127135451_970a01d1-c7c5-4c47-851d-9895086ca558.sql",
+  "20251128065421_b64e7524-58c6-4032-90cc-0a004006bace.sql",
+  "20251128065444_2a75dd14-4c09-4ce6-9420-4896e78cbb12.sql",
+  "20251128065528_ffe2c720-4724-40cf-9485-b3b9b99406a7.sql",
+  "20251201084705_b6db468f-889d-4cc5-8003-1dd21b582e43.sql",
+  "20251203134210_fix_user_roles_rls_recursion.sql",
+  "20251204151925_add_m365_columns_to_hardware_inventory.sql",
+  "20251205000000_secure_credential_storage.sql",
+  "20251206061051_fix_m365_sync_unique_constraints.sql",
+  "20251207071828_create_it_suppliers_table.sql",
+  "20251207071829_add_branch_to_profiles.sql",
+  "20251208110600_fix_network_diagrams_schema.sql",
+  "20251209094500_create_user_permissions_system.sql",
+  "20251209102000_fix_directory_users_rls_for_own_profile.sql",
+  "20251209103000_create_csv_user_management_schema.sql",
+  "20251209111500_add_ceo_cfo_roles_to_enum.sql",
+  "20251209111600_create_device_sync_functions.sql",
+  "20251210081200_add_m365_service_type_to_credentials.sql",
+  "20251210130000_fix_handle_new_user_tenant_assignment.sql",
+  "20251211140000_remove_ceo_cfo_requirements.sql",
 ];
 
 const GITHUB_REPO = "craigfelt/oricol-ticket-flow-4084ab4c";
@@ -88,6 +114,7 @@ export const SimpleMigrationManager = () => {
   const [loading, setLoading] = useState(false);
   const [selectedMigration, setSelectedMigration] = useState<string | null>(null);
   const [isFirstTimeSetup, setIsFirstTimeSetup] = useState(false);
+  const [markingComplete, setMarkingComplete] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -184,6 +211,41 @@ export const SimpleMigrationManager = () => {
     const projectId = projectIdMatch ? projectIdMatch[1] : 'YOUR_PROJECT_ID';
     
     window.open(`https://supabase.com/dashboard/project/${projectId}/sql`, '_blank');
+  };
+
+  const markMigrationAsComplete = async (migrationFilename: string) => {
+    try {
+      setMarkingComplete(migrationFilename);
+      
+      // Get the version (remove .sql extension)
+      const version = migrationFilename.replace('.sql', '');
+      
+      // Insert into schema_migrations table
+      const { error } = await supabase
+        .from('schema_migrations' as any)
+        .insert({ version, applied_at: new Date().toISOString() });
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Success",
+        description: "Migration marked as complete!",
+      });
+      
+      // Refresh the migration status
+      await checkMigrationStatus();
+    } catch (error: any) {
+      console.error('Failed to mark migration as complete:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to mark migration as complete. You may need admin permissions.",
+        variant: "destructive",
+      });
+    } finally {
+      setMarkingComplete(null);
+    }
   };
 
   const pendingMigrations = migrations.filter(m => !m.applied);
@@ -394,22 +456,42 @@ export const SimpleMigrationManager = () => {
                         VALUES ('{migration.filename.replace('.sql', '')}')<br/>
                         ON CONFLICT (version) DO NOTHING;
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => copyToClipboard(
-                          `INSERT INTO schema_migrations (version) VALUES ('${migration.filename.replace('.sql', '')}') ON CONFLICT (version) DO NOTHING;`,
-                          "Mark as applied SQL"
-                        )}
-                        className="gap-2 w-full"
-                      >
-                        <Copy className="h-3 w-3" />
-                        Copy "Mark as Applied" SQL
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyToClipboard(
+                            `INSERT INTO schema_migrations (version) VALUES ('${migration.filename.replace('.sql', '')}') ON CONFLICT (version) DO NOTHING;`,
+                            "Mark as applied SQL"
+                          )}
+                          className="gap-2 flex-1"
+                        >
+                          <Copy className="h-3 w-3" />
+                          Copy SQL
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => markMigrationAsComplete(migration.filename)}
+                          disabled={markingComplete === migration.filename}
+                          className="gap-2 flex-1"
+                        >
+                          {markingComplete === migration.filename ? (
+                            <>
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              Marking...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-3 w-3" />
+                              Mark Complete
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
 
                     <p className="text-xs text-muted-foreground italic">
-                      After running both SQLs, click "Refresh" above to update the status
+                      After running the migration SQL, click "Mark Complete" or run the SQL above, then "Refresh"
                     </p>
                   </div>
                 )}
