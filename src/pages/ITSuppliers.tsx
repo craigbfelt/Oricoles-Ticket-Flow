@@ -348,12 +348,25 @@ const ITSuppliers = () => {
           <div className="text-center py-8">Loading suppliers...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {suppliers.map((supplier) => (
-              <Card 
-                key={supplier.id} 
-                className="hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => navigate(`/it-suppliers/${supplier.id}`)}
-              >
+            {suppliers.map((supplier, index) => {
+              // Define an array of gradient colors for the cards
+              const gradients = [
+                'bg-gradient-to-br from-pink-500/10 to-rose-500/10 hover:from-pink-500/20 hover:to-rose-500/20',
+                'bg-gradient-to-br from-purple-500/10 to-indigo-500/10 hover:from-purple-500/20 hover:to-indigo-500/20',
+                'bg-gradient-to-br from-blue-500/10 to-cyan-500/10 hover:from-blue-500/20 hover:to-cyan-500/20',
+                'bg-gradient-to-br from-green-500/10 to-emerald-500/10 hover:from-green-500/20 hover:to-emerald-500/20',
+                'bg-gradient-to-br from-orange-500/10 to-amber-500/10 hover:from-orange-500/20 hover:to-amber-500/20',
+                'bg-gradient-to-br from-red-500/10 to-pink-500/10 hover:from-red-500/20 hover:to-pink-500/20',
+              ];
+              const gradientClass = gradients[index % gradients.length];
+              
+              return (
+                <Card 
+                  key={supplier.id} 
+                  className={`hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-[#E91E63] ${gradientClass}`}
+                  onClick={() => navigate(`/it-suppliers/${supplier.id}`)}
+                >
+              
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex items-center space-x-2">
@@ -431,7 +444,8 @@ const ITSuppliers = () => {
                   )}
                 </CardContent>
               </Card>
-            ))}
+            );
+          })}
           </div>
         )}
 
