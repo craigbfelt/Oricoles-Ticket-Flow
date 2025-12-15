@@ -100,9 +100,8 @@ const Rdp = () => {
   const fetchRdpCredentials = async () => {
     setLoading(true);
     
-    // Fetch ALL credentials (both VPN and RDP) for consolidation
-    // When no service_type parameter is passed, fetchCredentials() returns all credentials
-    const { data, error } = await fetchCredentials();
+    // Fetch only RDP credentials
+    const { data, error } = await fetchCredentials('RDP');
     
     if (error) {
       toast({
