@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchCredentials } from "@/lib/credentialUtils";
-import { consolidateUsersByEmail, type ConsolidatedUser, getCredentialsSummary } from "@/lib/userConsolidationUtils";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
 import { Monitor, Upload, Plus, Trash2, ArrowLeftRight, Filter, Wifi, Server, Copy, Check, ArrowLeft } from "lucide-react";
@@ -53,8 +52,6 @@ const Rdp = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [credentials, setCredentials] = useState<RdpCredential[]>([]);
-  const [consolidatedUsers, setConsolidatedUsers] = useState<ConsolidatedUser[]>([]);
-  const [showConsolidated, setShowConsolidated] = useState(true); // Default to consolidated view
   const [loading, setLoading] = useState(true);
   const [selectedCredential, setSelectedCredential] = useState<RdpCredential | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -110,16 +107,11 @@ const Rdp = () => {
         variant: "destructive",
       });
       setCredentials([]);
-      setConsolidatedUsers([]);
     } else {
       const allCredentials = (data || []) as RdpCredential[];
       
-      // Store RDP-only credentials for legacy view
+      // Store RDP-only credentials
       setCredentials(allCredentials.filter(c => c.service_type === 'RDP'));
-      
-      // Create consolidated view (one user per email with both VPN & RDP credentials)
-      const consolidated = consolidateUsersByEmail(allCredentials);
-      setConsolidatedUsers(consolidated);
     }
     setLoading(false);
   };
@@ -136,32 +128,7 @@ const Rdp = () => {
     setSheetOpen(true);
   };
 
-  const handleConsolidatedRowClick = (user: ConsolidatedUser) => {
-    // For consolidated view, we show all credentials for this user
-    // Open sheet with the first RDP credential if available, otherwise first credential
-    const firstCred = user.rdpCredentials[0] || user.allCredentials[0];
-    if (firstCred) {
-      const credential: RdpCredential = {
-        id: firstCred.id,
-        username: firstCred.username,
-        password: firstCred.password,
-        service_type: firstCred.service_type,
-        email: user.email,
-        notes: firstCred.notes,
-        created_at: firstCred.created_at,
-        updated_at: firstCred.updated_at,
-      };
-      setSelectedCredential(credential);
-      setFormData({
-        username: credential.username,
-        password: credential.password,
-        email: credential.email || "",
-        notes: credential.notes || "",
-      });
-      setIsEditing(true);
-      setSheetOpen(true);
-    }
-  };
+
 
   const handleAddNew = () => {
     setSelectedCredential(null);
@@ -518,147 +485,6 @@ rdpuser3,Pass789word,user3@example.com,Guest RDP user`;
     },
   ];
 
-  const consolidatedColumns: Column<ConsolidatedUser>[] = [
-    {
-      key: "email",
-      label: "Email",
-      sortable: true,
-      filterPlaceholder: "Filter by email...",
-    },
-    {
-      key: "vpnCredentials",
-      label: "VPN Username",
-      sortable: false,
-      render: (_value, user) => (
-        <div className="flex flex-col gap-1">
-          {user.hasVpn ? (
-            user.vpnCredentials.map((cred, idx) => (
-              <div key={`vpn-user-${idx}`} className="flex items-center gap-2">
-                <span className="text-sm">{cred.username}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    copyToClipboard(cred.username, `vpn-user-${user.email}-${idx}`);
-                  }}
-                >
-                  {copiedField === `vpn-user-${user.email}-${idx}` ? (
-                    <Check className="h-3 w-3 text-green-500" />
-                  ) : (
-                    <Copy className="h-3 w-3" />
-                  )}
-                </Button>
-              </div>
-            ))
-          ) : (
-            <span className="text-muted-foreground">NA</span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "vpnPassword",
-      label: "VPN Password",
-      sortable: false,
-      render: (_value, user) => (
-        <div className="flex flex-col gap-1">
-          {user.hasVpn ? (
-            user.vpnCredentials.map((cred, idx) => (
-              <div key={`vpn-pass-${idx}`} className="flex items-center gap-2">
-                <span className="text-sm font-mono">{cred.password}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    copyToClipboard(cred.password, `vpn-pass-${user.email}-${idx}`);
-                  }}
-                >
-                  {copiedField === `vpn-pass-${user.email}-${idx}` ? (
-                    <Check className="h-3 w-3 text-green-500" />
-                  ) : (
-                    <Copy className="h-3 w-3" />
-                  )}
-                </Button>
-              </div>
-            ))
-          ) : (
-            <span className="text-muted-foreground">NA</span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "rdpCredentials",
-      label: "RDP Username",
-      sortable: false,
-      render: (_value, user) => (
-        <div className="flex flex-col gap-1">
-          {user.hasRdp ? (
-            user.rdpCredentials.map((cred, idx) => (
-              <div key={`rdp-user-${idx}`} className="flex items-center gap-2">
-                <span className="text-sm">{cred.username}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    copyToClipboard(cred.username, `rdp-user-${user.email}-${idx}`);
-                  }}
-                >
-                  {copiedField === `rdp-user-${user.email}-${idx}` ? (
-                    <Check className="h-3 w-3 text-green-500" />
-                  ) : (
-                    <Copy className="h-3 w-3" />
-                  )}
-                </Button>
-              </div>
-            ))
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "rdpPassword",
-      label: "RDP Password",
-      sortable: false,
-      render: (_value, user) => (
-        <div className="flex flex-col gap-1">
-          {user.hasRdp ? (
-            user.rdpCredentials.map((cred, idx) => (
-              <div key={`rdp-pass-${idx}`} className="flex items-center gap-2">
-                <span className="text-sm font-mono">{cred.password}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    copyToClipboard(cred.password, `rdp-pass-${user.email}-${idx}`);
-                  }}
-                >
-                  {copiedField === `rdp-pass-${user.email}-${idx}` ? (
-                    <Check className="h-3 w-3 text-green-500" />
-                  ) : (
-                    <Copy className="h-3 w-3" />
-                  )}
-                </Button>
-              </div>
-            ))
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          )}
-        </div>
-      ),
-    },
-  ];
-
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
@@ -673,20 +499,12 @@ rdpuser3,Pass789word,user3@example.com,Guest RDP user`;
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Monitor className="w-8 h-8" />
-              RDP & VPN Users
+              RDP Users
             </h1>
             <p className="text-muted-foreground">
-              {showConsolidated 
-                ? "One user per email with all their credentials (VPN + RDP)" 
-                : "Individual RDP credentials (may show duplicates)"}
+              Users with RDP access credentials
             </p>
           </div>
-          <Button
-            variant="outline"
-            onClick={() => setShowConsolidated(!showConsolidated)}
-          >
-            {showConsolidated ? "Show Individual Credentials" : "Show Consolidated Users"}
-          </Button>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -881,14 +699,6 @@ rdpuser3,Pass789word,user3@example.com,Guest RDP user`;
 
         {loading ? (
           <p>Loading credentials...</p>
-        ) : showConsolidated ? (
-          <DataTable
-            data={consolidatedUsers}
-            columns={consolidatedColumns}
-            onRowClick={handleConsolidatedRowClick}
-            searchKeys={["email"]}
-            selectable={false}
-          />
         ) : (
           <DataTable
             data={getFilteredCredentials()}
