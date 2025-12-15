@@ -49,6 +49,7 @@ interface UserInsert {
   display_name: string | null;
   job_title: string | null;
   department: string | null;
+  branch_id: string | null;
   vpn_username: string | null;
   rdp_username: string | null;
   notes: string | null;
@@ -211,21 +212,40 @@ export function CSVUserImporter() {
 
       const tenantId = membership?.tenant_id || null;
 
+      // Fetch all branches to map branch names to IDs
+      const { data: branches } = await supabase
+        .from('branches')
+        .select('id, name');
+      
+      const branchMap = new Map<string, string>();
+      branches?.forEach(branch => {
+        branchMap.set(branch.name.toLowerCase(), branch.id);
+      });
+
       // Prepare rows for insertion
-      const usersToInsert: UserInsert[] = preview.validRows.map(row => ({
-        email: generateUserEmail(row),
-        display_name: row.display_name || row.full_name || null,
-        job_title: null,
-        department: null,
-        vpn_username: row.vpn_username || null,
-        rdp_username: row.rdp_username || null,
-        notes: generateUserNotes(row),
-        source: 'csv_import',
-        is_active: true,
-        imported_at: new Date().toISOString(),
-        imported_by: user.id,
-        ...(tenantId && { tenant_id: tenantId })
-      }));
+      const usersToInsert: UserInsert[] = preview.validRows.map(row => {
+        // Look up branch_id if branch name is provided
+        let branchId = null;
+        if (row.branch) {
+          branchId = branchMap.get(row.branch.toLowerCase()) || null;
+        }
+
+        return {
+          email: generateUserEmail(row),
+          display_name: row.display_name || row.full_name || null,
+          job_title: row.full_name || null, // Store full_name as job_title if available
+          department: row.branch || null, // Store branch name as department for reference
+          branch_id: branchId,
+          vpn_username: row.vpn_username || null,
+          rdp_username: row.rdp_username || null,
+          notes: generateUserNotes(row),
+          source: 'csv_import',
+          is_active: true,
+          imported_at: new Date().toISOString(),
+          imported_by: user.id,
+          ...(tenantId && { tenant_id: tenantId })
+        };
+      });
 
       // Deduplicate users by email to avoid "ON CONFLICT DO UPDATE command cannot affect row a second time" error
       // Keep the last occurrence of each unique email
