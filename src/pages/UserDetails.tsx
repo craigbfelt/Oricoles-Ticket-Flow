@@ -236,7 +236,7 @@ const UserDetails = () => {
             .eq("user_email", userData.email)
             .eq("is_current", true);
 
-          // Create Set once outside the loop for better performance
+          // Track serials to avoid duplicates across all device sources
           const existingSerials = new Set(devicesData.map(d => d.serial_number).filter(Boolean));
 
           // Add assigned devices to the list (avoid duplicates by serial number)
