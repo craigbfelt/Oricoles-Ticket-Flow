@@ -233,7 +233,7 @@ const Dashboard = () => {
         // 3. Has device serial number but no VPN → could be either, default to Full PC if in Intune
         let deviceType: 'thin_client' | 'full_pc' | 'unknown' = 'unknown';
         
-        const hasDeviceSerial = userDevices.length > 0 && userDevices.some(d => d.serial_number);
+        const hasDeviceSerial = userDevices.length > 0 && userDevices.some(d => d.serial_number?.trim());
         
         if (!hasDeviceSerial) {
           // No device serial number → Thin Client
