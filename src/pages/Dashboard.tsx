@@ -36,6 +36,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface DirectoryUser {
   id: string;
@@ -123,10 +124,18 @@ const Dashboard = () => {
           };
           if (cred.service_type === 'VPN') {
             const existing = vpnMap.get(email) || [];
-            vpnMap.set(email, [...existing, credInfo]);
+            // Deduplicate by username to avoid showing the same credential multiple times
+            const isDuplicate = existing.some(c => c.username === credInfo.username);
+            if (!isDuplicate) {
+              vpnMap.set(email, [...existing, credInfo]);
+            }
           } else if (cred.service_type === 'RDP') {
             const existing = rdpMap.get(email) || [];
-            rdpMap.set(email, [...existing, credInfo]);
+            // Deduplicate by username to avoid showing the same credential multiple times
+            const isDuplicate = existing.some(c => c.username === credInfo.username);
+            if (!isDuplicate) {
+              rdpMap.set(email, [...existing, credInfo]);
+            }
           }
         }
       });
@@ -141,7 +150,14 @@ const Dashboard = () => {
             device_name: device.device_name
           };
           const existing = deviceMap.get(upn) || [];
-          deviceMap.set(upn, [...existing, deviceInfo]);
+          // Deduplicate by serial_number or device_name to avoid duplicates
+          const isDuplicate = existing.some(d => 
+            (d.serial_number && d.serial_number === deviceInfo.serial_number) ||
+            (d.device_name && d.device_name === deviceInfo.device_name)
+          );
+          if (!isDuplicate) {
+            deviceMap.set(upn, [...existing, deviceInfo]);
+          }
         }
       });
 
@@ -754,7 +770,7 @@ const Dashboard = () => {
                           return (
                             <div
                               key={user.id}
-                              className="flex flex-col p-4 rounded-lg border border-border hover:bg-muted/50 hover:shadow-md transition-all cursor-pointer"
+                              className="flex flex-col p-4 rounded-lg border border-border hover:bg-muted/50 hover:shadow-md transition-all cursor-pointer min-h-[280px]"
                               onClick={() => navigate(`/user-details/${user.id}`)}
                             >
                               <div className="flex flex-col items-center mb-3">
