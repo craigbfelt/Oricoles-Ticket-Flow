@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { determineDeviceType } from "@/lib/deviceTypeUtils";
 
 interface DirectoryUser {
   id: string;
@@ -228,32 +229,21 @@ const Dashboard = () => {
                          user.user_principal_name !== user.email &&
                          !user.email?.includes('.placeholder@local.user');
         
-        // Determine device type based on device serial number and credentials
-        // NEW LOGIC: Users without a device serial number are thin clients
-        // Logic:
-        // 1. No device serial number (no devices assigned) → Thin Client
-        // 2. Has device serial number + VPN → Full PC
-        // 3. Has device serial number but no VPN → could be either, default to Full PC if in Intune
-        let deviceType: 'thin_client' | 'full_pc' | 'unknown' = 'unknown';
+        // Determine device type using the centralized utility function
+        // Get the first device serial if any exist
+        const firstDeviceSerial = userDevices.find(d => d.serial_number?.trim())?.serial_number;
+        const firstVpnUsername = userVpnCreds[0]?.username;
+        const firstRdpUsername = userRdpCreds[0]?.username;
         
-        const hasDeviceSerial = userDevices.length > 0 && userDevices.some(d => d.serial_number?.trim());
-        
-        if (!hasDeviceSerial) {
-          // No device serial number → Thin Client
-          deviceType = 'thin_client';
-        } else if (userVpnCreds.length > 0) {
-          // Has device serial + VPN credentials → Full PC
-          deviceType = 'full_pc';
-        } else if (inIntune) {
-          // Has device serial and is in Intune → Full PC
-          deviceType = 'full_pc';
-        } else if (userRdpCreds.length > 0) {
-          // Has device serial + RDP but no VPN and not in Intune → Thin Client
-          deviceType = 'thin_client';
-        } else {
-          // Has device serial but no other indicators → default to Full PC
-          deviceType = 'full_pc';
-        }
+        const deviceType = determineDeviceType({
+          deviceSerialNumber: firstDeviceSerial,
+          vpnUsername: firstVpnUsername,
+          vpnPassword: null, // We don't need password for determination if we have username
+          rdpUsername: firstRdpUsername,
+          rdpPassword: null,
+          hasIntuneDevice: inIntune,
+          deviceType: null // No explicit device type from hardware inventory here
+        });
         
         return {
           ...user,
