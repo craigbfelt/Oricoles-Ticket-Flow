@@ -44,7 +44,6 @@ const Logistics = () => {
         .select("*")
         .in("request_type", ["courier", "new_device"])
         .order("created_at", { ascending: false });
-  const navigate = useNavigate();
 
       if (error) throw error;
       return data;
