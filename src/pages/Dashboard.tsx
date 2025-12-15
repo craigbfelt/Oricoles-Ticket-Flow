@@ -225,18 +225,30 @@ const Dashboard = () => {
                          user.user_principal_name !== user.email &&
                          !user.email?.includes('.placeholder@local.user');
         
-        // Determine device type based on VPN credentials
-        // Logic: If user has VPN → Full PC, if no VPN → Thin Client
-        // Extra confirmation: If no VPN AND not in Intune → definitely Thin Client
+        // Determine device type based on device serial number and credentials
+        // NEW LOGIC: Users without a device serial number are thin clients
+        // Logic:
+        // 1. No device serial number (no devices assigned) → Thin Client
+        // 2. Has device serial number + VPN → Full PC
+        // 3. Has device serial number but no VPN → could be either, default to Full PC if in Intune
         let deviceType: 'thin_client' | 'full_pc' | 'unknown' = 'unknown';
-        if (userVpnCreds.length > 0) {
-          // Has VPN credentials → Full PC
+        
+        const hasDeviceSerial = userDevices.length > 0 && userDevices.some(d => d.serial_number);
+        
+        if (!hasDeviceSerial) {
+          // No device serial number → Thin Client
+          deviceType = 'thin_client';
+        } else if (userVpnCreds.length > 0) {
+          // Has device serial + VPN credentials → Full PC
+          deviceType = 'full_pc';
+        } else if (inIntune) {
+          // Has device serial and is in Intune → Full PC
           deviceType = 'full_pc';
         } else if (userRdpCreds.length > 0) {
-          // Has RDP but no VPN → Thin Client (confirmed if also not in Intune)
+          // Has device serial + RDP but no VPN and not in Intune → Thin Client
           deviceType = 'thin_client';
-        } else if (inIntune) {
-          // In Intune but no VPN/RDP → assume Full PC
+        } else {
+          // Has device serial but no other indicators → default to Full PC
           deviceType = 'full_pc';
         }
         
