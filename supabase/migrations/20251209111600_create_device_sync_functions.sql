@@ -22,18 +22,16 @@ DECLARE
   v_device RECORD;
   v_current_assignment RECORD;
   v_master_user RECORD;
-  v_tenant_id UUID;
+  v_tenant_id UUID := NULL;
 BEGIN
-  -- Get tenant_id from the calling user's profile
+  -- Try to get tenant_id from user_tenant_memberships if it exists
+  -- Tenant_id is now optional, so we don't fail if it's not found
   SELECT tenant_id INTO v_tenant_id
-  FROM public.profiles
+  FROM public.user_tenant_memberships
   WHERE user_id = auth.uid()
   LIMIT 1;
   
-  -- If no profile found, raise an error
-  IF v_tenant_id IS NULL THEN
-    RAISE EXCEPTION 'No tenant_id found for current user. Cannot proceed with sync.';
-  END IF;
+  -- Continue with sync even if tenant_id is NULL (tenant system is optional)
 
   -- Loop through all devices in hardware_inventory that have M365 user assignments
   FOR v_device IN 
