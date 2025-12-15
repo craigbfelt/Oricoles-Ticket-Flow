@@ -8,6 +8,7 @@ import { DeviceChangeHistory } from "@/components/DeviceChangeHistory";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Users, Upload, History, Settings, Activity, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
