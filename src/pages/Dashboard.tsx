@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { CopilotPrompt } from "@/components/CopilotPrompt";
+import { UserDetailsDialog } from "@/components/UserDetailsDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Ticket, Package, AlertCircle, CheckCircle, Monitor, User as UserIcon, Users as UsersIcon, 
@@ -71,6 +72,8 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [currentUserProfile, setCurrentUserProfile] = useState<UserWithStats | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [userDetailsDialogOpen, setUserDetailsDialogOpen] = useState(false);
 
   const enrichUsersWithStats = useCallback(async (users: DirectoryUser[]): Promise<UserWithStats[]> => {
     try {
@@ -770,7 +773,10 @@ const Dashboard = () => {
                             <div
                               key={user.id}
                               className="flex flex-col p-4 rounded-lg border border-border hover:bg-muted/50 hover:shadow-md transition-all cursor-pointer h-full"
-                              onClick={() => navigate(`/user-details/${user.id}`)}
+                              onClick={() => {
+                                setSelectedUserId(user.id);
+                                setUserDetailsDialogOpen(true);
+                              }}
                             >
                               <div className="flex flex-col items-center flex-1">
                                 <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 relative">
@@ -958,6 +964,19 @@ const Dashboard = () => {
             <CopilotPrompt />
           </TabsContent>
         </Tabs>
+
+        {/* User Details Dialog */}
+        {selectedUserId && (
+          <UserDetailsDialog
+            userId={selectedUserId}
+            open={userDetailsDialogOpen}
+            onOpenChange={setUserDetailsDialogOpen}
+            onUpdate={() => {
+              // Refresh the users list after updates
+              fetchDirectoryUsers();
+            }}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
