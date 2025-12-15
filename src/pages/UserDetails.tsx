@@ -236,11 +236,11 @@ const UserDetails = () => {
             .eq("user_email", userData.email)
             .eq("is_current", true);
 
+          // Track serials to avoid duplicates across all device sources
+          const existingSerials = new Set(devicesData.map(d => d.serial_number).filter(Boolean));
+
           // Add assigned devices to the list (avoid duplicates by serial number)
           if (assignedDevices && assignedDevices.length > 0) {
-            // Create Set once outside the loop for better performance
-            const existingSerials = new Set(devicesData.map(d => d.serial_number).filter(Boolean));
-            
             assignedDevices.forEach(assignment => {
               if (assignment.device_serial_number && !existingSerials.has(assignment.device_serial_number)) {
                 // Convert device assignment to Device format
@@ -260,6 +260,35 @@ const UserDetails = () => {
                 });
                 // Add to Set to track new serials as we process them
                 existingSerials.add(assignment.device_serial_number);
+              }
+            });
+          }
+
+          // Also fetch thin clients and manually tracked devices from manual_devices table
+          const { data: manualDevices } = await supabase
+            .from("manual_devices")
+            .select("*")
+            .eq("assigned_user_email", userData.email)
+            .eq("is_active", true);
+
+          if (manualDevices && manualDevices.length > 0) {
+            manualDevices.forEach(device => {
+              if (device.device_serial_number && !existingSerials.has(device.device_serial_number)) {
+                devicesData.push({
+                  id: device.id,
+                  device_name: device.device_name,
+                  device_type: device.device_type,
+                  manufacturer: null,
+                  model: device.device_model,
+                  serial_number: device.device_serial_number,
+                  os: null,
+                  os_version: null,
+                  status: device.is_active ? 'active' : 'inactive',
+                  branch: null,
+                  m365_user_principal_name: null,
+                  assigned_to: device.assigned_user_email,
+                });
+                existingSerials.add(device.device_serial_number);
               }
             });
           }
