@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Save, Edit, Eye, EyeOff, Shield, Monitor, Key } from "lucide-react";
+import { determineDeviceType, getDeviceTypeReason } from "@/lib/deviceTypeUtils";
 
 // Antivirus status constants
 const ANTIVIRUS_STATUS = {
@@ -120,10 +121,6 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
         }
       }
 
-      // Check if thin client (no device serial or device_type is thin_client)
-      const isThinClient = !deviceAssignment?.device_serial_number || 
-                          deviceDetails?.device_type === 'thin_client';
-
       // Fetch VPN credentials
       const { data: vpnCreds } = await supabase
         .from("vpn_rdp_credentials")
@@ -147,6 +144,24 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
         .eq("email", masterUser.email)
         .eq("service_type", "M365")
         .maybeSingle();
+
+      // Check if user has device in Intune
+      const { data: intuneDevice } = await supabase
+        .from("intune_devices")
+        .select("id")
+        .eq("user_principal_name", masterUser.email)
+        .maybeSingle();
+
+      // Determine device type using the new utility function
+      const deviceType = determineDeviceType({
+        deviceSerialNumber: deviceAssignment?.device_serial_number,
+        vpnUsername: vpnCreds?.username || masterUser.vpn_username,
+        vpnPassword: vpnCreds?.password,
+        rdpUsername: rdpCreds?.username || masterUser.rdp_username,
+        rdpPassword: rdpCreds?.password,
+        hasIntuneDevice: !!intuneDevice,
+        deviceType: deviceDetails?.device_type
+      });
 
       // Fetch branch name if branch_id exists
       let branchName = null;
@@ -184,7 +199,7 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
         antivirus_status: antivirusInfo?.antivirus_status || null,
         antivirus_enabled: antivirusInfo?.antivirus_enabled || null,
         
-        is_thin_client: isThinClient
+        is_thin_client: deviceType === 'thin_client'
       };
 
       setUserDetails(details);
