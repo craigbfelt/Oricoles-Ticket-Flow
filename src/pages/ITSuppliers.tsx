@@ -34,6 +34,16 @@ interface ITSupplier {
   updated_at: string;
 }
 
+// Define color schemes outside component for performance
+const SUPPLIER_COLOR_SCHEMES = [
+  { border: "border-blue-200", bg: "bg-blue-50", icon: "bg-blue-500", text: "text-blue-700" },
+  { border: "border-purple-200", bg: "bg-purple-50", icon: "bg-purple-500", text: "text-purple-700" },
+  { border: "border-green-200", bg: "bg-green-50", icon: "bg-green-500", text: "text-green-700" },
+  { border: "border-orange-200", bg: "bg-orange-50", icon: "bg-orange-500", text: "text-orange-700" },
+  { border: "border-pink-200", bg: "bg-pink-50", icon: "bg-pink-500", text: "text-pink-700" },
+  { border: "border-cyan-200", bg: "bg-cyan-50", icon: "bg-cyan-500", text: "text-cyan-700" },
+];
+
 const ITSuppliers = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -343,15 +353,7 @@ const ITSuppliers = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {suppliers.map((supplier, index) => {
               // Assign different colors to each card
-              const colors = [
-                { border: "border-blue-200", bg: "bg-blue-50", icon: "bg-blue-500", text: "text-blue-700" },
-                { border: "border-purple-200", bg: "bg-purple-50", icon: "bg-purple-500", text: "text-purple-700" },
-                { border: "border-green-200", bg: "bg-green-50", icon: "bg-green-500", text: "text-green-700" },
-                { border: "border-orange-200", bg: "bg-orange-50", icon: "bg-orange-500", text: "text-orange-700" },
-                { border: "border-pink-200", bg: "bg-pink-50", icon: "bg-pink-500", text: "text-pink-700" },
-                { border: "border-cyan-200", bg: "bg-cyan-50", icon: "bg-cyan-500", text: "text-cyan-700" },
-              ];
-              const colorScheme = colors[index % colors.length];
+              const colorScheme = SUPPLIER_COLOR_SCHEMES[index % SUPPLIER_COLOR_SCHEMES.length];
               
               return (
                 <Card 
@@ -444,7 +446,9 @@ const ITSuppliers = () => {
                             className="w-full justify-start gap-2 hover:bg-primary/10"
                             onClick={(e) => {
                               e.stopPropagation();
-                              window.open(supplier.website!, '_blank', 'noopener,noreferrer');
+                              if (supplier.website) {
+                                window.open(supplier.website, '_blank', 'noopener,noreferrer');
+                              }
                             }}
                           >
                             <Globe className="h-4 w-4" />
