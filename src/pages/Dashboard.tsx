@@ -586,6 +586,8 @@ const Dashboard = () => {
       { name: "Logistics", href: "/logistics", icon: Truck, requiredRoles: ['admin', 'support_staff'], color: "bg-fuchsia-500" },
       { name: "Document Hub", href: "/document-hub", icon: FolderOpen, requiredRoles: ['admin'], color: "bg-yellow-500" },
       { name: "Shared Files", href: "/shared-files", icon: FolderTree, requiredRoles: ['admin'], color: "bg-red-500" },
+      { name: "Migrations", href: "/migrations", icon: Code, requiredRoles: ['admin'], color: "bg-purple-600" },
+      { name: "Migration Tracker", href: "/migration-tracker", icon: GitBranch, requiredRoles: ['admin'], color: "bg-teal-600" },
       { name: "Reports", href: "/reports", icon: FileBarChart, requiredRoles: ['admin', 'support_staff'], color: "bg-blue-600" },
       { name: "Company Network", href: "/company-network", icon: Network, requiredRoles: ['admin', 'support_staff'], color: "bg-gray-600" },
       { name: "Settings", href: "/settings", icon: Settings, requiredRoles: [], color: "bg-stone-500" },
