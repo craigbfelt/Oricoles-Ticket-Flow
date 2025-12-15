@@ -4,7 +4,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Database, CheckCircle2, AlertCircle, Loader2, RefreshCw, Eye, FileCode, Clock, Copy, CheckCheck } from "lucide-react";
+import { Database, CheckCircle2, AlertCircle, Loader2, RefreshCw, Eye, FileCode, Clock, Copy, CheckCheck, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -356,6 +356,13 @@ const Migrations = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Back Navigation */}
+        <div>
+          <Button variant="ghost" onClick={() => window.location.href = "/dashboard"}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
