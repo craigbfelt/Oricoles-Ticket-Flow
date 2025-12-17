@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2, Save, Edit, Eye, EyeOff, Shield, Monitor, Key } from "lucide-react";
 import { determineDeviceType, getDeviceTypeReason } from "@/lib/deviceTypeUtils";
@@ -33,6 +34,7 @@ interface UserDetails {
   job_title: string | null;
   department: string | null;
   branch: string | null;
+  branch_id: string | null;
   
   // Credentials
   vpn_username: string | null;
@@ -57,12 +59,18 @@ interface UserDetails {
   is_thin_client: boolean;
 }
 
+interface Branch {
+  id: string;
+  name: string;
+}
+
 export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: UserDetailsDialogProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [editedDetails, setEditedDetails] = useState<UserDetails | null>(null);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [showPasswords, setShowPasswords] = useState<{[key: string]: boolean}>({
     vpn: false,
     rdp: false,
@@ -72,8 +80,23 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
   useEffect(() => {
     if (open && userId) {
       fetchUserDetails();
+      fetchBranches();
     }
   }, [open, userId]);
+
+  const fetchBranches = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('branches')
+        .select('id, name')
+        .order('name');
+      
+      if (error) throw error;
+      setBranches(data || []);
+    } catch (error) {
+      console.error("Error fetching branches:", error);
+    }
+  };
 
   const fetchUserDetails = async () => {
     setLoading(true);
@@ -164,14 +187,14 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
       });
 
       // Fetch branch name if branch_id exists
-      let branchName = null;
+      let branchName = "NA"; // Default to "NA" per requirement
       if (masterUser.branch_id) {
         const { data: branchData } = await supabase
           .from("branches")
           .select("name")
           .eq("id", masterUser.branch_id)
           .maybeSingle();
-        branchName = branchData?.name;
+        branchName = branchData?.name || "NA";
       }
 
       const details: UserDetails = {
@@ -182,6 +205,7 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
         job_title: masterUser.job_title,
         department: masterUser.department,
         branch: branchName,
+        branch_id: masterUser.branch_id,
         
         vpn_username: vpnCreds?.username || masterUser.vpn_username,
         vpn_password: vpnCreds?.password || null,
@@ -226,12 +250,30 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
           display_name: displayNameToUse,
           job_title: editedDetails.full_name, // Store full_name in job_title for reference
           department: editedDetails.department,
+          branch_id: editedDetails.branch_id, // Update branch_id
           vpn_username: editedDetails.vpn_username,
           rdp_username: editedDetails.rdp_username,
         })
         .eq("id", userId);
 
       if (masterError) throw masterError;
+
+      // Also update profiles table if the user has a profile
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", editedDetails.email)
+        .maybeSingle();
+      
+      if (profileData) {
+        await supabase
+          .from("profiles")
+          .update({
+            branch_id: editedDetails.branch_id,
+            full_name: displayNameToUse
+          })
+          .eq("id", profileData.id);
+      }
 
       // Update VPN credentials if changed
       if (editedDetails.vpn_username || editedDetails.vpn_password) {
@@ -429,8 +471,37 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
 
             <div className="space-y-2">
               <Label>Branch</Label>
-              <Input value={userDetails.branch || "N/A"} disabled />
-              <p className="text-xs text-muted-foreground">Branch can be updated via CSV import</p>
+              {editing ? (
+                <Select
+                  value={editedDetails?.branch_id || "none"}
+                  onValueChange={(value) => {
+                    if (!editedDetails) return;
+                    const selectedBranch = branches.find(b => b.id === value);
+                    setEditedDetails({
+                      ...editedDetails,
+                      branch_id: value === "none" ? null : value,
+                      branch: selectedBranch?.name || "NA"
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">NA (No Branch)</SelectItem>
+                    {branches.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input value={userDetails.branch || "NA"} disabled />
+              )}
+              <p className="text-xs text-muted-foreground">
+                {editing ? "Select a branch from the dropdown" : "Branch can be edited by clicking the Edit button"}
+              </p>
             </div>
           </TabsContent>
 
