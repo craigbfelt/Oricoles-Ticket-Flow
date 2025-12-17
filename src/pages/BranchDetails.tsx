@@ -182,6 +182,21 @@ const BranchDetails = () => {
     },
   });
 
+  // Fetch tickets for this branch
+  const { data: branchTickets } = useQuery({
+    queryKey: ["branch_tickets", branchId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tickets")
+        .select("*")
+        .eq("branch", branch?.name)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!branch?.name,
+  });
+
   const createNetworkDevice = useMutation({
     mutationFn: async (data: typeof networkDeviceForm) => {
       const { error } = await supabase.from("network_devices").insert([
@@ -757,7 +772,7 @@ const BranchDetails = () => {
         <h1 className="text-3xl font-bold text-foreground mb-6">{branch?.name}</h1>
 
         <Tabs value={currentTab} onValueChange={setCurrentTab}>
-          <TabsList>
+          <TabsList className="flex flex-wrap h-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="internet">Internet</TabsTrigger>
             <TabsTrigger value="master-users">Master Users</TabsTrigger>
@@ -765,6 +780,7 @@ const BranchDetails = () => {
             <TabsTrigger value="devices">Devices</TabsTrigger>
             <TabsTrigger value="network">Network Equipment</TabsTrigger>
             <TabsTrigger value="diagram">Network Diagram</TabsTrigger>
+            <TabsTrigger value="tickets">Tickets</TabsTrigger>
             <TabsTrigger value="jobs">Jobs/Migrations</TabsTrigger>
           </TabsList>
 
@@ -1396,6 +1412,79 @@ const BranchDetails = () => {
                     <p className="text-muted-foreground col-span-2">No network diagrams yet. Use "Import JSON", "Upload Image" or "Add Diagram" to get started.</p>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="tickets">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Tickets ({branchTickets?.length || 0})</CardTitle>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => exportToCSV(branchTickets || [], `${branch?.name}_tickets`)}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Export CSV
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Support tickets associated with this branch.
+                </p>
+                {branchTickets && branchTickets.length > 0 ? (
+                  <div className="space-y-4">
+                    {branchTickets.map((ticket) => (
+                      <Card key={ticket.id}>
+                        <CardContent className="p-4">
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div className="col-span-2">
+                              <p className="text-sm text-muted-foreground">Title</p>
+                              <p className="font-semibold">{ticket.title}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Status</p>
+                              <p className="font-semibold capitalize">{ticket.status}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Priority</p>
+                              <p className="font-semibold capitalize">{ticket.priority}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">User Email</p>
+                              <p className="font-semibold">{ticket.user_email || "N/A"}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Category</p>
+                              <p className="font-semibold">{ticket.category || "N/A"}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Created</p>
+                              <p className="font-semibold">{new Date(ticket.created_at).toLocaleDateString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Time Spent</p>
+                              <p className="font-semibold">{ticket.time_spent_minutes ? `${ticket.time_spent_minutes} min` : "N/A"}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Fault Type</p>
+                              <p className="font-semibold">{ticket.fault_type || "N/A"}</p>
+                            </div>
+                            {ticket.description && (
+                              <div className="col-span-3">
+                                <p className="text-sm text-muted-foreground">Description</p>
+                                <p className="text-sm">{ticket.description}</p>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No tickets associated with this branch yet.</p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
