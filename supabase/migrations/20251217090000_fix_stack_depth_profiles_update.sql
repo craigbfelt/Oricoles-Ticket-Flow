@@ -24,7 +24,7 @@ BEGIN
   
   -- For UPDATE operations, only update timestamp if other fields changed
   -- Temporarily set NEW.updated_at to OLD.updated_at for comparison
-  NEW.updated_at := OLD.updated_at;
+  NEW.updated_at = OLD.updated_at;
   
   -- Check if anything else besides updated_at changed
   IF NEW IS NOT DISTINCT FROM OLD THEN
@@ -33,7 +33,7 @@ BEGIN
     RETURN NEW;
   ELSE
     -- Something changed, so update the timestamp to now
-    NEW.updated_at := now();
+    NEW.updated_at = now();
     RETURN NEW;
   END IF;
 END;
