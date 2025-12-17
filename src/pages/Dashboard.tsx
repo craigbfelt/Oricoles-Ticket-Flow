@@ -23,6 +23,7 @@ interface DirectoryUser {
   job_title: string | null;
   account_enabled: boolean | null;
   user_principal_name: string | null;
+  branch_name: string | null;
 }
 
 interface DeviceInfo {
@@ -45,6 +46,7 @@ interface UserWithStats extends DirectoryUser {
   rdpCredentials: CredentialInfo[];
   inM365: boolean; // User exists in directory_users (M365)
   deviceType: 'thin_client' | 'full_pc' | 'unknown'; // Thin client (RDP only) or Full PC (M365 + RDP)
+  branch_name: string | null; // Branch name for display
 }
 
 const Dashboard = () => {
@@ -256,6 +258,7 @@ const Dashboard = () => {
           rdpCredentials: userRdpCreds,
           inM365: inIntune,
           deviceType,
+          branch_name: user.branch_name || "NA", // Preserve branch_name, default to "NA"
         };
       });
 
@@ -273,7 +276,7 @@ const Dashboard = () => {
       // This is now the source of truth for who should be in the system
       const { data: masterListData, error: masterListError } = await supabase
         .from("master_user_list")
-        .select("id, display_name, email, job_title, department, vpn_username, rdp_username, is_active, source")
+        .select("id, display_name, email, job_title, department, vpn_username, rdp_username, is_active, source, branch_id, branches:branch_id(name)")
         .eq("is_active", true)
         .order("display_name")
         .limit(500);
@@ -335,6 +338,7 @@ const Dashboard = () => {
             job_title: masterUser.job_title || intuneUser?.job_title || null,
             account_enabled: intuneUser?.account_enabled ?? true, // From Intune if available, else assume active
             user_principal_name: intuneUser?.user_principal_name || masterUser.email, // Use Intune UPN if available
+            branch_name: (masterUser.branches as { name: string } | null)?.name || "NA", // Extract branch name from join, default to "NA"
           };
           
           allUsers.push(directoryUser);
@@ -356,7 +360,10 @@ const Dashboard = () => {
           
           // Include all other users with valid email addresses
           if (email && email.includes('@')) {
-            allUsers.push(user);
+            allUsers.push({
+              ...user,
+              branch_name: "NA" // Intune users don't have branch info, default to "NA"
+            });
           }
         });
       }
@@ -510,7 +517,8 @@ const Dashboard = () => {
       vpnCredentials: [],
       rdpCredentials: [],
       inM365: true, // Assume true since they're in directoryUsers
-      deviceType: 'unknown' as const
+      deviceType: 'unknown' as const,
+      branch_name: u.branch_name || "NA"
     }));
   }, [usersWithStats, directoryUsers]);
 
@@ -789,6 +797,10 @@ const Dashboard = () => {
                                       {user.job_title}
                                     </p>
                                   )}
+                                  <p className="text-xs text-muted-foreground line-clamp-1 mt-1 flex items-center justify-center gap-1">
+                                    <Building2 className="h-3 w-3" />
+                                    {user.branch_name || "NA"}
+                                  </p>
                                 </div>
                               </div>
 

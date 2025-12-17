@@ -311,12 +311,14 @@ const UserDetails = () => {
         if (userData.email) {
           const { data: authUserData } = await supabase
             .from("profiles")
-            .select("user_id, branch, full_name")
+            .select("user_id, branch_id, branches:branch_id(name), full_name")
             .eq("email", userData.email)
             .maybeSingle();
 
           if (authUserData) {
-            setProfile({ branch: authUserData.branch, full_name: authUserData.full_name });
+            // Extract branch name from the joined branches table, default to "NA" if not found
+            const branchName = (authUserData.branches as { name: string } | null)?.name || "NA";
+            setProfile({ branch: branchName, full_name: authUserData.full_name });
 
             // Fetch tickets using safe parameterized approach
             const { data: createdTickets } = await supabase
