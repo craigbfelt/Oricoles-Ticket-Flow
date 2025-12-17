@@ -170,7 +170,7 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
 
       // Check if user has device in Intune
       const { data: intuneDevice } = await supabase
-        .from("intune_devices")
+        .from("directory_users")
         .select("id")
         .eq("user_principal_name", masterUser.email)
         .maybeSingle();
