@@ -15,8 +15,6 @@
 
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
 RETURNS TRIGGER AS $$
-DECLARE
-  old_updated_at TIMESTAMPTZ;
 BEGIN
   -- For INSERT operations, always set the timestamp
   IF TG_OP = 'INSERT' THEN
@@ -25,23 +23,19 @@ BEGIN
   END IF;
   
   -- For UPDATE operations, only update timestamp if other fields changed
-  -- Store the original updated_at values
-  old_updated_at := NEW.updated_at;
-  
   -- Temporarily set NEW.updated_at to OLD.updated_at for comparison
   NEW.updated_at := OLD.updated_at;
   
   -- Check if anything else besides updated_at changed
   IF NEW IS NOT DISTINCT FROM OLD THEN
-    -- Nothing changed except possibly updated_at, keep the old timestamp
-    -- But restore the NEW.updated_at to what it was (in case user explicitly set it)
-    NEW.updated_at := old_updated_at;
+    -- Nothing changed except updated_at, no need to update anything
+    -- Keep the old timestamp (it's already set above)
+    RETURN NEW;
   ELSE
     -- Something changed, so update the timestamp to now
     NEW.updated_at := now();
+    RETURN NEW;
   END IF;
-  
-  RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
