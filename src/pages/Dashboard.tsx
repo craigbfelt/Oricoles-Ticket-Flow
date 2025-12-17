@@ -4,11 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { CopilotPrompt } from "@/components/CopilotPrompt";
 import { UserDetailsDialog } from "@/components/UserDetailsDialog";
+import EndpointMonitoringCard from "@/components/EndpointMonitoringCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Ticket, Package, AlertCircle, CheckCircle, Monitor, User as UserIcon, Users as UsersIcon, 
   Wifi, Server, Computer, Key, Cloud, Video, Building2, Briefcase, Wrench, Truck, Network, 
-  FolderOpen, Settings, Code, FileBarChart, TrendingUp, Waves, Leaf, GitBranch, FolderTree, LayoutDashboard
+  FolderOpen, Settings, Code, FileBarChart, TrendingUp, Waves, Leaf, GitBranch, FolderTree, LayoutDashboard,
+  Activity, Zap
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -589,6 +591,8 @@ const Dashboard = () => {
       { name: "Shared Files", href: "/shared-files", icon: FolderTree, requiredRoles: ['admin'], color: "bg-red-500" },
       { name: "Migrations", href: "/migrations", icon: Code, requiredRoles: ['admin'], color: "bg-purple-600" },
       { name: "Migration Tracker", href: "/migration-tracker", icon: GitBranch, requiredRoles: ['admin'], color: "bg-teal-600" },
+      { name: "Edge Functions", href: "/edge-function-tracker", icon: Zap, requiredRoles: ['admin'], color: "bg-indigo-600" },
+      { name: "Endpoint Monitoring", href: "/endpoint-monitoring", icon: Activity, requiredRoles: ['admin', 'support_staff'], color: "bg-cyan-600" },
       { name: "Reports", href: "/reports", icon: FileBarChart, requiredRoles: ['admin', 'support_staff'], color: "bg-blue-600" },
       { name: "Company Network", href: "/company-network", icon: Network, requiredRoles: ['admin', 'support_staff'], color: "bg-gray-600" },
       { name: "Settings", href: "/settings", icon: Settings, requiredRoles: [], color: "bg-stone-500" },
@@ -659,6 +663,32 @@ const Dashboard = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
+            {/* Monitoring Cards Section */}
+            {(isAdmin || isSupportStaff) && (
+              <div className="grid gap-6 md:grid-cols-2">
+                <EndpointMonitoringCard />
+                <Card 
+                  className="hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() => navigate('/edge-function-tracker')}
+                >
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Zap className="h-5 w-5" />
+                      Edge Functions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Monitor Supabase Edge Function deployment status
+                    </p>
+                    <div className="text-xs text-center text-muted-foreground pt-2 border-t">
+                      Click to view function tracker →
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle>Recent Tickets</CardTitle>
