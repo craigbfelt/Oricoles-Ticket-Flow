@@ -266,13 +266,20 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
         .maybeSingle();
       
       if (profileData) {
-        await supabase
+        const { error: profileError } = await supabase
           .from("profiles")
           .update({
             branch_id: editedDetails.branch_id,
             full_name: displayNameToUse
           })
           .eq("id", profileData.id);
+        
+        if (profileError) {
+          console.error("Error updating profile branch:", profileError);
+          // Don't throw error, as master_user_list was updated successfully
+          // Just log warning for admin to investigate
+          toast.error("Warning: Profile table update failed. Please contact administrator.");
+        }
       }
 
       // Update VPN credentials if changed

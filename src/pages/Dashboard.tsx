@@ -797,12 +797,10 @@ const Dashboard = () => {
                                       {user.job_title}
                                     </p>
                                   )}
-                                  {user.branch_name && (
-                                    <p className="text-xs text-muted-foreground line-clamp-1 mt-1 flex items-center justify-center gap-1">
-                                      <Building2 className="h-3 w-3" />
-                                      {user.branch_name}
-                                    </p>
-                                  )}
+                                  <p className="text-xs text-muted-foreground line-clamp-1 mt-1 flex items-center justify-center gap-1">
+                                    <Building2 className="h-3 w-3" />
+                                    {user.branch_name || "NA"}
+                                  </p>
                                 </div>
                               </div>
 
