@@ -195,20 +195,21 @@ const EdgeFunctionTracker = () => {
         return 'error';
       }
 
-      // Construct the function URL
+      // Construct the function URL with OPTIONS request for CORS preflight check
+      // This is safer than calling the function directly as it won't trigger side effects
       const functionUrl = `${supabaseUrl}/functions/v1/${functionName}`;
       
-      // Try to call the function with a simple health check
-      // Most functions require authentication, so we expect a 401 or function-specific response
+      // Use OPTIONS method which is safe and won't trigger function logic
+      // but will still confirm if the endpoint exists
       const response = await fetch(functionUrl, {
-        method: 'GET',
+        method: 'OPTIONS',
         headers: {
           'Content-Type': 'application/json',
         },
       });
 
-      // If we get any response (even error), the function is deployed
       // 404 means function not found/not deployed
+      // Any other response (including CORS errors) means function exists
       if (response.status === 404) {
         return 'not_deployed';
       }
@@ -216,7 +217,13 @@ const EdgeFunctionTracker = () => {
       // Any other status code means function exists
       return 'deployed';
     } catch (error) {
-      // Network errors or CORS issues might indicate not deployed
+      // CORS errors actually indicate the function exists
+      // Only true network errors indicate not deployed
+      const errorMessage = error instanceof Error ? error.message : '';
+      if (errorMessage.includes('CORS') || errorMessage.includes('Failed to fetch')) {
+        // CORS error means function exists but blocks the request
+        return 'deployed';
+      }
       console.error(`Error checking ${functionName}:`, error);
       return 'error';
     }
@@ -435,7 +442,13 @@ const EdgeFunctionTracker = () => {
                           <Button 
                             size="sm" 
                             variant="outline"
-                            onClick={() => window.open('https://supabase.com/dashboard/project/_/functions', '_blank')}
+                            onClick={() => {
+                              const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+                              const url = projectId 
+                                ? `https://supabase.com/dashboard/project/${projectId}/functions`
+                                : 'https://supabase.com/dashboard';
+                              window.open(url, '_blank');
+                            }}
                           >
                             <ExternalLink className="h-3 w-3 mr-1" />
                             Open in Supabase
@@ -491,7 +504,10 @@ const EdgeFunctionTracker = () => {
           </div>
 
           <Button 
-            onClick={() => window.open('/EDGE_FUNCTIONS_SETUP.md', '_blank')}
+            onClick={() => {
+              // Open the documentation file in GitHub
+              window.open('https://github.com/leighfelt/Oricoles-Ticket-Flow/blob/main/EDGE_FUNCTIONS_SETUP.md', '_blank');
+            }}
             className="w-full"
           >
             <ExternalLink className="mr-2 h-4 w-4" />

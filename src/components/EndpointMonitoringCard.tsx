@@ -41,7 +41,6 @@ const EndpointMonitoringCard = () => {
 
       if (error) {
         console.error('Error fetching endpoints:', error);
-        setIsLoading(false);
         return;
       }
 
@@ -114,8 +113,8 @@ const EndpointMonitoringCard = () => {
   useEffect(() => {
     fetchEndpointStats();
 
-    // Refresh stats every 30 seconds
-    const interval = setInterval(fetchEndpointStats, 30000);
+    // Refresh stats every 60 seconds to reduce database load
+    const interval = setInterval(fetchEndpointStats, 60000);
     return () => clearInterval(interval);
   }, []);
 
