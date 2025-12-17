@@ -18,10 +18,17 @@ WHERE id IN (
   WHERE t.rn > 1
 );
 
--- Add the unique constraint
-ALTER TABLE public.vpn_rdp_credentials
-ADD CONSTRAINT vpn_rdp_credentials_email_service_type_unique 
-UNIQUE (email, service_type);
+-- Add the unique constraint (check if it doesn't already exist)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'vpn_rdp_credentials_email_service_type_unique'
+  ) THEN
+    ALTER TABLE public.vpn_rdp_credentials
+    ADD CONSTRAINT vpn_rdp_credentials_email_service_type_unique 
+    UNIQUE (email, service_type);
+  END IF;
+END $$;
 
 -- Add comment to document the constraint
 COMMENT ON CONSTRAINT vpn_rdp_credentials_email_service_type_unique 
