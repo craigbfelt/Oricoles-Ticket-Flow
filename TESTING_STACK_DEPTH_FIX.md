@@ -17,16 +17,14 @@ This guide explains how to verify that the stack depth fix is working correctly.
 This tests the main path: updating credentials in `master_user_list` should sync to `vpn_rdp_credentials` without causing infinite recursion.
 
 ```sql
--- Get a test user email
-SELECT email, vpn_username, rdp_username 
-FROM master_user_list 
-WHERE is_active = true 
-LIMIT 1;
-
--- Update the VPN username (this would previously cause stack overflow)
+-- Update the VPN username for a test user (this would previously cause stack overflow)
 UPDATE master_user_list 
 SET vpn_username = 'test_vpn_' || floor(random() * 1000)::text
-WHERE email = 'your_test_email@example.com';
+WHERE email = (
+  SELECT email FROM master_user_list 
+  WHERE is_active = true 
+  LIMIT 1
+);
 
 -- Verify the update worked and synced to vpn_rdp_credentials
 SELECT 
@@ -37,7 +35,8 @@ FROM master_user_list m
 LEFT JOIN vpn_rdp_credentials v 
   ON LOWER(m.email) = LOWER(v.email) 
   AND v.service_type = 'VPN'
-WHERE m.email = 'your_test_email@example.com';
+WHERE m.is_active = true
+LIMIT 1;
 ```
 
 **Expected Result**: 
@@ -51,11 +50,14 @@ WHERE m.email = 'your_test_email@example.com';
 This tests the reverse path: updating credentials in `vpn_rdp_credentials` should sync back to `master_user_list` without causing infinite recursion.
 
 ```sql
--- Update the credentials table directly
+-- Update the credentials table directly for a test user
 UPDATE vpn_rdp_credentials
 SET username = 'reverse_test_' || floor(random() * 1000)::text
-WHERE email = 'your_test_email@example.com'
-  AND service_type = 'VPN';
+WHERE email = (
+  SELECT email FROM master_user_list 
+  WHERE is_active = true 
+  LIMIT 1
+) AND service_type = 'VPN';
 
 -- Verify the sync back to master_user_list worked
 SELECT 
@@ -66,7 +68,8 @@ FROM master_user_list m
 LEFT JOIN vpn_rdp_credentials v 
   ON LOWER(m.email) = LOWER(v.email) 
   AND v.service_type = 'VPN'
-WHERE m.email = 'your_test_email@example.com';
+WHERE m.is_active = true
+LIMIT 1;
 ```
 
 **Expected Result**: 

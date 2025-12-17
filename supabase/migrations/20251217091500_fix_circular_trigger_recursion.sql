@@ -62,7 +62,7 @@ BEGIN
       SET 
         username = NEW.vpn_username,
         password = COALESCE(NEW.vpn_password, password), -- Keep existing password if new one is null
-        notes = COALESCE(notes, 'Synced from master user list'),
+        notes = 'Synced from master user list',
         updated_at = now()
       WHERE id = existing_vpn_id;
     ELSE
@@ -104,7 +104,7 @@ BEGIN
       SET 
         username = NEW.rdp_username,
         password = COALESCE(NEW.rdp_password, password), -- Keep existing password if new one is null
-        notes = COALESCE(notes, 'Synced from master user list'),
+        notes = 'Synced from master user list',
         updated_at = now()
       WHERE id = existing_rdp_id;
     ELSE
@@ -129,8 +129,8 @@ BEGIN
     END IF;
   END IF;
   
-  -- Clear recursion guard flag (transaction-scoped, auto-clears at transaction end)
-  PERFORM set_config('app.in_credential_sync', 'false', true);
+  -- Note: Recursion guard flag is transaction-scoped and will auto-clear at transaction end
+  -- No need to manually clear it here
   
   RETURN NEW;
 END;
@@ -189,8 +189,8 @@ BEGIN
     WHERE LOWER(email) = LOWER(NEW.email);
   END IF;
   
-  -- Clear recursion guard flag (transaction-scoped, auto-clears at transaction end)
-  PERFORM set_config('app.in_credential_sync', 'false', true);
+  -- Note: Recursion guard flag is transaction-scoped and will auto-clear at transaction end
+  -- No need to manually clear it here
   
   RETURN NEW;
 END;
