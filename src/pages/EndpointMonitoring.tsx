@@ -269,6 +269,12 @@ const EndpointMonitoring = () => {
   const formatDate = (dateString: string) => {
     if (!dateString) return "Never";
     const date = new Date(dateString);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return "Invalid date";
+    }
+    
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);

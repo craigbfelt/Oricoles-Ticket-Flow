@@ -1,7 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
 
+// Note: In production, restrict CORS to your specific domain(s)
+// Example: 'Access-Control-Allow-Origin': 'https://your-domain.com'
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': '*', // TODO: Restrict to specific domain in production
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-endpoint-token',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
@@ -153,9 +155,24 @@ interface EndpointData {
 }
 
 /**
+ * Hash a token using SHA-256
+ */
+async function hashToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
+/**
  * Verify endpoint agent token
  */
-async function verifyAgentToken(supabase: any, tokenHash: string): Promise<{ valid: boolean; endpointId?: string }> {
+async function verifyAgentToken(supabase: any, plainToken: string): Promise<{ valid: boolean; endpointId?: string }> {
+  // Hash the incoming token to compare with stored hash
+  const tokenHash = await hashToken(plainToken);
+  
   const { data, error } = await supabase
     .from('endpoint_agent_tokens')
     .select('endpoint_id, expires_at, is_active')
@@ -424,12 +441,30 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Parse request body
-    const endpointData: EndpointData = await req.json();
+    let endpointData: EndpointData;
+    try {
+      endpointData = await req.json();
+    } catch (error) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON payload' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Validate required fields
     if (!endpointData.agentToken || !endpointData.deviceName || !endpointData.metrics) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields: agentToken, deviceName, or metrics' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Validate data types
+    if (typeof endpointData.agentToken !== 'string' || 
+        typeof endpointData.deviceName !== 'string' ||
+        typeof endpointData.metrics !== 'object') {
+      return new Response(
+        JSON.stringify({ error: 'Invalid data types in payload' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

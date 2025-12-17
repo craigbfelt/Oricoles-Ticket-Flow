@@ -203,6 +203,8 @@ Fill in the application details:
 powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -NoProfile -NonInteractive -File "OricolEndpointAgent.ps1" -Install
 ```
 
+**Note on Execution Policy**: The `-ExecutionPolicy Bypass` parameter is used for Intune deployment to ensure the script runs regardless of the system execution policy. This is necessary for automated deployment but should only be used in controlled enterprise environments via Intune. Alternatively, you can sign the script with a trusted certificate and use `-ExecutionPolicy RemoteSigned` for enhanced security.
+
 **Uninstall command:**
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -NoProfile -NonInteractive -File "OricolEndpointAgent.ps1" -Uninstall
