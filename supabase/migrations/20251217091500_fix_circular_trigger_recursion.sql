@@ -129,8 +129,8 @@ BEGIN
     END IF;
   END IF;
   
-  -- Note: Recursion guard flag is transaction-scoped and will auto-clear at transaction end
-  -- No need to manually clear it here
+  -- Reset recursion guard flag for clarity (also auto-clears at transaction end due to transaction-scoped setting)
+  PERFORM set_config('app.in_credential_sync', 'false', true);
   
   RETURN NEW;
 END;
@@ -189,8 +189,8 @@ BEGIN
     WHERE LOWER(email) = LOWER(NEW.email);
   END IF;
   
-  -- Note: Recursion guard flag is transaction-scoped and will auto-clear at transaction end
-  -- No need to manually clear it here
+  -- Reset recursion guard flag for clarity (also auto-clears at transaction end due to transaction-scoped setting)
+  PERFORM set_config('app.in_credential_sync', 'false', true);
   
   RETURN NEW;
 END;
