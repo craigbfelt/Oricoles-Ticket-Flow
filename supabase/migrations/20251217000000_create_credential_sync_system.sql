@@ -243,7 +243,7 @@ BEGIN
           now(),
           now()
         )
-        ON CONFLICT ON CONSTRAINT vpn_rdp_credentials_pkey DO NOTHING;
+        ON CONFLICT (email, service_type) DO NOTHING;
         
         vpn_count := vpn_count + 1;
       END IF;
@@ -261,7 +261,7 @@ BEGIN
           now(),
           now()
         )
-        ON CONFLICT ON CONSTRAINT vpn_rdp_credentials_pkey DO NOTHING;
+        ON CONFLICT (email, service_type) DO NOTHING;
         
         rdp_count := rdp_count + 1;
       END IF;

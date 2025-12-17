@@ -398,10 +398,17 @@ const MasterUserData = () => {
       
       if (error) throw error;
 
-      setSyncStatus({
-        synced: true,
-        message: `Synced ${data[0].synced_users} users, ${data[0].synced_vpn} VPN credentials, ${data[0].synced_rdp} RDP credentials`,
-      });
+      if (data && data.length > 0) {
+        setSyncStatus({
+          synced: true,
+          message: `Synced ${data[0].synced_users} users, ${data[0].synced_vpn} VPN credentials, ${data[0].synced_rdp} RDP credentials`,
+        });
+      } else {
+        setSyncStatus({
+          synced: true,
+          message: 'Sync completed but no data returned',
+        });
+      }
 
       toast({
         title: "Sync Complete",

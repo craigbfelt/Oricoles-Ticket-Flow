@@ -107,7 +107,12 @@ async function exampleFetchAllUsers() {
 
 /**
  * Example 4: Display user card in a React component
+ * Note: This is example code only, not meant to be imported or used directly
  */
+/*
+import React from 'react';
+import type { ConsolidatedUserData } from './userDataConsolidation';
+
 function ExampleUserCard({ userId }: { userId: string }) {
   const [userData, setUserData] = React.useState<ConsolidatedUserData | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -188,6 +193,7 @@ function ExampleUserCard({ userId }: { userId: string }) {
     </div>
   );
 }
+*/
 
 /**
  * Key Benefits:
@@ -203,6 +209,5 @@ function ExampleUserCard({ userId }: { userId: string }) {
 export {
   exampleFetchUserById,
   exampleFetchUserByEmail,
-  exampleFetchAllUsers,
-  ExampleUserCard
+  exampleFetchAllUsers
 };

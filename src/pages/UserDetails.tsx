@@ -197,8 +197,7 @@ const UserDetails = () => {
 
       setUser(userData);
 
-      if (consolidatedData) {
-        // Convert consolidated devices to Device format
+      // Convert consolidated devices to Device format
         const devicesData: Device[] = consolidatedData.devices.map(device => ({
           id: device.serial_number, // Use serial as ID for display
           device_name: device.device_name,
@@ -284,7 +283,6 @@ const UserDetails = () => {
             setTickets(uniqueTickets);
           }
         }
-      }
     } catch (error) {
       console.error("Error fetching user data:", error);
     } finally {
