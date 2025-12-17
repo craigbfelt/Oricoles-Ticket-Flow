@@ -418,7 +418,7 @@ const Tickets = () => {
 
   const handleCloseTicket = async (ticketId: string) => {
     // If support staff, prompt for time logging first
-    if (isSupportStaff) {
+    if (isSupportStaff && selectedTicket?.id === ticketId) {
       setCloseAfterTimeLog(true);
       setTimeLogDialogOpen(true);
       return;
@@ -609,6 +609,12 @@ const Tickets = () => {
   const isOverdue = (requiredBy: string | null) => {
     if (!requiredBy) return false;
     return new Date() > new Date(requiredBy);
+  };
+
+  const isTimeLogFormValid = () => {
+    if (!timeLogMinutes) return false;
+    if (closeAfterTimeLog && !timeLogNotes) return false;
+    return true;
   };
 
   const handleSaveChanges = async () => {
@@ -1647,7 +1653,7 @@ const Tickets = () => {
                 />
               </div>
               <div className="flex gap-2">
-                <Button onClick={handleLogTime} className="flex-1" disabled={!timeLogMinutes || (closeAfterTimeLog && !timeLogNotes)}>
+                <Button onClick={handleLogTime} className="flex-1" disabled={!isTimeLogFormValid()}>
                   {closeAfterTimeLog ? "Log Time & Close" : "Log Time"}
                 </Button>
                 <Button

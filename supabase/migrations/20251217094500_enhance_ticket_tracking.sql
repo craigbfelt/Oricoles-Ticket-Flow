@@ -100,10 +100,15 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  -- If ticket is being closed and has a start time, calculate resolution time
-  IF NEW.status = 'closed' AND OLD.status != 'closed' AND NEW.started_at IS NOT NULL THEN
-    -- Calculate time from start to now in minutes
-    NEW.resolution_time_minutes := EXTRACT(EPOCH FROM (now() - NEW.started_at)) / 60;
+  -- If ticket is being closed, calculate resolution time
+  IF NEW.status = 'closed' AND OLD.status != 'closed' THEN
+    -- If work was started, calculate time from start to now in minutes
+    IF NEW.started_at IS NOT NULL THEN
+      NEW.resolution_time_minutes := EXTRACT(EPOCH FROM (now() - NEW.started_at)) / 60;
+    -- Otherwise, calculate from creation time (for tickets closed without starting work)
+    ELSE
+      NEW.resolution_time_minutes := EXTRACT(EPOCH FROM (now() - NEW.created_at)) / 60;
+    END IF;
   END IF;
   
   RETURN NEW;
