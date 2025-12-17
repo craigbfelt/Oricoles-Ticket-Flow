@@ -30,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FaultTypeSelector } from "@/components/FaultTypeSelector";
 import { useToast } from "@/hooks/use-toast";
 import { ticketSchema } from "@/lib/validations";
+import { fetchConsolidatedUserData, type ConsolidatedUserData } from "@/lib/userDataConsolidation";
 
 interface DirectoryUser {
   id: string;
@@ -65,6 +66,7 @@ interface Credential {
   service_type: string;
   email: string | null;
   notes: string | null;
+  source?: string;
 }
 
 interface Ticket {
@@ -78,6 +80,11 @@ interface Ticket {
 interface Profile {
   branch: string | null;
   full_name: string | null;
+  all_branch_sources?: Array<{
+    branch_name: string | null;
+    source: string;
+    confidence: string;
+  }>;
 }
 
 const UserDetails = () => {
@@ -165,161 +172,92 @@ const UserDetails = () => {
     try {
       setLoading(true);
 
-      // Try to fetch from master_user_list first (Dashboard uses this)
-      const { data: masterUser, error: masterError } = await supabase
-        .from("master_user_list")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle();
+      // Use consolidated user data function to pull from all sources
+      const consolidatedData = await fetchConsolidatedUserData(userId);
 
-      let userData: DirectoryUser | null = null;
-
-      if (masterUser) {
-        // Found in master_user_list - convert to DirectoryUser format
-        // Try to enrich with directory_users data if available
-        let directoryData = null;
-        if (masterUser.email) {
-          const { data: dirData } = await supabase
-            .from("directory_users")
-            .select("*")
-            .eq("email", masterUser.email)
-            .maybeSingle();
-          directoryData = dirData;
-        }
-
-        // Combine master_user_list data with directory_users data
-        userData = {
-          id: masterUser.id,
-          aad_id: directoryData?.aad_id || null,
-          display_name: masterUser.display_name || directoryData?.display_name || null,
-          email: masterUser.email,
-          user_principal_name: directoryData?.user_principal_name || masterUser.email || null,
-          job_title: masterUser.job_title || directoryData?.job_title || null,
-          department: masterUser.department || directoryData?.department || null,
-          account_enabled: directoryData?.account_enabled ?? masterUser.is_active ?? true,
-          created_at: masterUser.created_at,
-          updated_at: masterUser.updated_at,
-        };
-      } else {
-        // Not in master_user_list, try directory_users (backward compatibility)
-        const { data: dirUser, error: userError } = await supabase
-          .from("directory_users")
-          .select("*")
-          .eq("id", userId)
-          .maybeSingle();
-
-        if (userError && userError.code !== 'PGRST116') throw userError;
-        userData = dirUser;
+      if (!consolidatedData) {
+        setUser(null);
+        setLoading(false);
+        return;
       }
+
+      // Convert consolidated data to DirectoryUser format for display
+      const userData: DirectoryUser = {
+        id: consolidatedData.id,
+        aad_id: null, // Not in consolidated data
+        display_name: consolidatedData.display_name,
+        email: consolidatedData.email,
+        user_principal_name: consolidatedData.user_principal_name,
+        job_title: consolidatedData.job_title,
+        department: consolidatedData.department,
+        account_enabled: consolidatedData.account_enabled,
+        created_at: consolidatedData.created_at,
+        updated_at: consolidatedData.updated_at,
+      };
 
       setUser(userData);
 
-      if (userData) {
-        // Fetch devices associated with this user using parameterized queries
-        let devicesData: Device[] = [];
-        
-        // Try to fetch by UPN first (for M365 users)
-        if (userData.user_principal_name) {
-          const { data } = await supabase
-            .from("hardware_inventory")
-            .select("*")
-            .eq("m365_user_principal_name", userData.user_principal_name)
-            .order("device_name");
-          devicesData = data || [];
-        }
-
-        // Also fetch from device_user_assignments (for CSV-imported users)
-        if (userData.email) {
-          const { data: assignedDevices } = await supabase
-            .from("device_user_assignments")
-            .select("*")
-            .eq("user_email", userData.email)
-            .eq("is_current", true);
-
-          // Track serials to avoid duplicates across all device sources
-          const existingSerials = new Set(devicesData.map(d => d.serial_number).filter(Boolean));
-
-          // Add assigned devices to the list (avoid duplicates by serial number)
-          if (assignedDevices && assignedDevices.length > 0) {
-            assignedDevices.forEach(assignment => {
-              if (assignment.device_serial_number && !existingSerials.has(assignment.device_serial_number)) {
-                // Convert device assignment to Device format
-                devicesData.push({
-                  id: assignment.id,
-                  device_name: assignment.device_name,
-                  device_type: null,
-                  manufacturer: null,
-                  model: assignment.device_model,
-                  serial_number: assignment.device_serial_number,
-                  os: null,
-                  os_version: null,
-                  status: 'active',
-                  branch: null,
-                  m365_user_principal_name: null,
-                  assigned_to: assignment.user_email,
-                });
-                // Add to Set to track new serials as we process them
-                existingSerials.add(assignment.device_serial_number);
-              }
-            });
-          }
-
-          // Also fetch thin clients and manually tracked devices from manual_devices table
-          const { data: manualDevices } = await supabase
-            .from("manual_devices")
-            .select("*")
-            .eq("assigned_user_email", userData.email)
-            .eq("is_active", true);
-
-          if (manualDevices && manualDevices.length > 0) {
-            manualDevices.forEach(device => {
-              if (device.device_serial_number && !existingSerials.has(device.device_serial_number)) {
-                devicesData.push({
-                  id: device.id,
-                  device_name: device.device_name,
-                  device_type: device.device_type,
-                  manufacturer: null,
-                  model: device.device_model,
-                  serial_number: device.device_serial_number,
-                  os: null,
-                  os_version: null,
-                  status: device.is_active ? 'active' : 'inactive',
-                  branch: null,
-                  m365_user_principal_name: null,
-                  assigned_to: device.assigned_user_email,
-                });
-                existingSerials.add(device.device_serial_number);
-              }
-            });
-          }
-        }
+      // Convert consolidated devices to Device format
+        const devicesData: Device[] = consolidatedData.devices.map(device => ({
+          id: device.serial_number, // Use serial as ID for display
+          device_name: device.device_name,
+          device_type: device.device_type,
+          manufacturer: device.manufacturer,
+          model: device.model,
+          serial_number: device.serial_number,
+          os: null,
+          os_version: null,
+          status: device.status,
+          branch: null,
+          m365_user_principal_name: null,
+          assigned_to: consolidatedData.email,
+        }));
 
         setDevices(devicesData);
 
-        // Fetch VPN/RDP credentials for this user
-        if (userData.email) {
-          const { data: credentialsData } = await supabase
-            .from("vpn_rdp_credentials")
-            .select("id, username, service_type, email, notes")
-            .eq("email", userData.email);
+        // Convert consolidated credentials to Credential format
+        const allCredentials: Credential[] = [
+          ...consolidatedData.vpn_credentials.map(cred => ({
+            id: cred.id,
+            username: cred.username,
+            service_type: "VPN",
+            email: consolidatedData.email,
+            notes: cred.notes || `Source: ${cred.source}`,
+            source: cred.source,
+          })),
+          ...consolidatedData.rdp_credentials.map(cred => ({
+            id: cred.id,
+            username: cred.username,
+            service_type: "RDP",
+            email: consolidatedData.email,
+            notes: cred.notes || `Source: ${cred.source}`,
+            source: cred.source,
+          }))
+        ];
 
-          setCredentials(credentialsData || []);
-        }
+        setCredentials(allCredentials);
+
+        // Set profile with consolidated branch information
+        const profileData: Profile = {
+          branch: consolidatedData.branch?.branch_name || "NA",
+          full_name: consolidatedData.display_name,
+          all_branch_sources: consolidatedData.all_branch_sources.map(bs => ({
+            branch_name: bs.branch_name,
+            source: bs.source,
+            confidence: bs.confidence,
+          })),
+        };
+        setProfile(profileData);
 
         // Fetch tickets created by or assigned to this user
-        // First, find if there's a corresponding auth user
-        if (userData.email) {
+        if (consolidatedData.email) {
           const { data: authUserData } = await supabase
             .from("profiles")
-            .select("user_id, branch_id, branches:branch_id(name), full_name")
-            .eq("email", userData.email)
+            .select("user_id")
+            .eq("email", consolidatedData.email)
             .maybeSingle();
 
           if (authUserData) {
-            // Extract branch name from the joined branches table, default to "NA" if not found
-            const branchName = (authUserData.branches as { name: string } | null)?.name || "NA";
-            setProfile({ branch: branchName, full_name: authUserData.full_name });
-
             // Fetch tickets using safe parameterized approach
             const { data: createdTickets } = await supabase
               .from("tickets")
@@ -345,7 +283,6 @@ const UserDetails = () => {
             setTickets(uniqueTickets);
           }
         }
-      }
     } catch (error) {
       console.error("Error fetching user data:", error);
     } finally {
@@ -576,6 +513,16 @@ const UserDetails = () => {
             </CardHeader>
             <CardContent>
               <div className="text-lg font-semibold">{profile?.branch || "N/A"}</div>
+              {profile?.all_branch_sources && profile.all_branch_sources.length > 1 && (
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Found in {profile.all_branch_sources.length} sources
+                  {profile.all_branch_sources.map((source, idx) => (
+                    <div key={idx} className="mt-1">
+                      • {source.source}: {source.branch_name || "N/A"} ({source.confidence} confidence)
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

@@ -15,6 +15,7 @@ import Tickets from "./pages/Tickets";
 import Assets from "./pages/Assets";
 import Users from "./pages/Users";
 import UserDetails from "./pages/UserDetails";
+import MasterUserData from "./pages/MasterUserData";
 import Reports from "./pages/Reports";
 import HardwareInventory from "./pages/HardwareInventory";
 import SoftwareInventory from "./pages/SoftwareInventory";
@@ -73,6 +74,7 @@ const App = () => {
           <Route path="/tickets" element={<Tickets />} />
           <Route path="/assets" element={<Assets />} />
           <Route path="/users" element={<Users />} />
+          <Route path="/master-user-data" element={<MasterUserData />} />
           <Route path="/user-management" element={<UserManagement />} />
           <Route path="/user-details/:userId" element={<UserDetails />} />
           <Route path="/reports" element={<Reports />} />
