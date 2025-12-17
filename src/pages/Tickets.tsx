@@ -41,6 +41,8 @@ const Tickets = () => {
   const [faultType, setFaultType] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [errorCode, setErrorCode] = useState("");
+  const [startJobDialogOpen, setStartJobDialogOpen] = useState(false);
+  const [ticketToStart, setTicketToStart] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentProfileId, setCurrentProfileId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -66,6 +68,7 @@ const Tickets = () => {
   const [timeLogMinutes, setTimeLogMinutes] = useState("");
   const [timeLogNotes, setTimeLogNotes] = useState("");
   const [timeLogs, setTimeLogs] = useState<any[]>([]);
+  const [closeAfterTimeLog, setCloseAfterTimeLog] = useState(false);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
 
@@ -292,16 +295,20 @@ const Tickets = () => {
       return;
     }
 
+    // Generate title and description from fault type if not provided
+    const autoTitle = title || `${faultType} Issue - ${branch}`;
+    const autoDescription = description || `User reported ${faultType} issue from ${branch} branch.`;
+
     // Validate form data
     const formData = {
-      title,
-      description,
+      title: autoTitle,
+      description: autoDescription,
       priority,
-      category: category || null,
+      category: faultType, // Use fault type as category
       branch: branch || null,
       fault_type: faultType || null,
       user_email: userEmail || null,
-      error_code: errorCode || null,
+      error_code: null, // No longer collecting this
     };
 
     const validationResult = ticketSchema.safeParse(formData);
@@ -352,8 +359,9 @@ const Tickets = () => {
             assigneeEmail: currentUserEmail,
             assigneeName: currentUserName || "Support Staff",
             ticketId: ticketData.id,
-            ticketTitle: title,
-            ticketDescription: description,
+            ticketCode: ticketData.ticket_code,
+            ticketTitle: autoTitle,
+            ticketDescription: autoDescription,
             priority,
             branch,
             faultType,
@@ -372,12 +380,13 @@ const Tickets = () => {
         await supabase.functions.invoke("route-ticket-email", {
           body: {
             ticketId: ticketData.id,
-            title,
-            description,
+            ticketCode: ticketData.ticket_code,
+            title: autoTitle,
+            description: autoDescription,
             faultType,
             branch,
             userEmail,
-            errorCode,
+            errorCode: null,
             priority,
           },
         });
@@ -408,6 +417,13 @@ const Tickets = () => {
   };
 
   const handleCloseTicket = async (ticketId: string) => {
+    // If support staff, prompt for time logging first
+    if (isSupportStaff && selectedTicket?.id === ticketId) {
+      setCloseAfterTimeLog(true);
+      setTimeLogDialogOpen(true);
+      return;
+    }
+
     const { error } = await supabase
       .from("tickets")
       .update({ status: "closed" as any, resolved_at: new Date().toISOString() })
@@ -517,20 +533,37 @@ const Tickets = () => {
     const newTotalTime = (selectedTicket.time_spent_minutes || 0) + minutes;
     await supabase.from("tickets").update({ time_spent_minutes: newTotalTime }).eq("id", selectedTicket.id);
 
-    toast({
-      title: "Success",
-      description: `Logged ${minutes} minutes`,
-    });
+    // If closing ticket after time log, close it now
+    if (closeAfterTimeLog) {
+      await supabase
+        .from("tickets")
+        .update({ status: "closed" as any, resolved_at: new Date().toISOString() })
+        .eq("id", selectedTicket.id);
+      
+      toast({
+        title: "Success",
+        description: `Logged ${minutes} minutes and closed ticket`,
+      });
+      
+      setSheetOpen(false);
+      setSelectedTicket(null);
+    } else {
+      toast({
+        title: "Success",
+        description: `Logged ${minutes} minutes`,
+      });
+      
+      // Update selected ticket
+      const updatedTicket = { ...selectedTicket, time_spent_minutes: newTotalTime };
+      setSelectedTicket(updatedTicket);
+    }
 
     setTimeLogDialogOpen(false);
     setTimeLogMinutes("");
     setTimeLogNotes("");
+    setCloseAfterTimeLog(false);
     fetchTimeLogs(selectedTicket.id);
     fetchTickets();
-
-    // Update selected ticket
-    const updatedTicket = { ...selectedTicket, time_spent_minutes: newTotalTime };
-    setSelectedTicket(updatedTicket);
   };
 
   const handleSendReminders = async () => {
@@ -558,6 +591,30 @@ const Tickets = () => {
     if (hours === 0) return `${mins}m`;
     if (mins === 0) return `${hours}h`;
     return `${hours}h ${mins}m`;
+  };
+
+  const getTimeElapsed = (createdAt: string) => {
+    const now = new Date();
+    const created = new Date(createdAt);
+    const diffMs = now.getTime() - created.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const mins = diffMins % 60;
+    
+    if (diffHours === 0) return `${mins}m`;
+    if (mins === 0) return `${diffHours}h`;
+    return `${diffHours}h ${mins}m`;
+  };
+
+  const isOverdue = (requiredBy: string | null) => {
+    if (!requiredBy) return false;
+    return new Date() > new Date(requiredBy);
+  };
+
+  const isTimeLogFormValid = () => {
+    if (!timeLogMinutes) return false;
+    if (closeAfterTimeLog && !timeLogNotes) return false;
+    return true;
   };
 
   const handleSaveChanges = async () => {
@@ -639,6 +696,74 @@ const Tickets = () => {
     setTicketToDelete(null);
   };
 
+  const handleStartJob = async () => {
+    if (!ticketToStart) return;
+
+    const { error } = await supabase
+      .from("tickets")
+      .update({
+        started_at: new Date().toISOString(),
+        status: "in_progress" as any,
+      })
+      .eq("id", ticketToStart);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Job Started",
+        description: "Ticket status updated to In Progress",
+      });
+      fetchTickets();
+      if (selectedTicket?.id === ticketToStart) {
+        const updatedTicket = {
+          ...selectedTicket,
+          started_at: new Date().toISOString(),
+          status: "in_progress",
+        };
+        setSelectedTicket(updatedTicket);
+      }
+    }
+    setStartJobDialogOpen(false);
+    setTicketToStart(null);
+  };
+
+  const handleEscalateTicket = async (ticketId: string) => {
+    const { error } = await supabase
+      .from("tickets")
+      .update({
+        escalated: true,
+        escalated_at: new Date().toISOString(),
+      })
+      .eq("id", ticketId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Ticket Escalated",
+        description: "The ticket has been escalated for urgent attention",
+      });
+      fetchTickets();
+      if (selectedTicket?.id === ticketId) {
+        const updatedTicket = {
+          ...selectedTicket,
+          escalated: true,
+          escalated_at: new Date().toISOString(),
+        };
+        setSelectedTicket(updatedTicket);
+      }
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
       open: "bg-status-open",
@@ -710,10 +835,10 @@ const Tickets = () => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {isAdmin && allUsers.length > 0 && (
                     <div className="space-y-2">
-                      <Label htmlFor="userSelect">Select User</Label>
+                      <Label htmlFor="userSelect">Select User (Admin Only)</Label>
                       <Select value={selectedUserId} onValueChange={handleUserSelection}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a user (optional)" />
+                          <SelectValue placeholder="Select a user (optional - defaults to you)" />
                         </SelectTrigger>
                         <SelectContent>
                           {allUsers.map((user) => (
@@ -726,78 +851,22 @@ const Tickets = () => {
                     </div>
                   )}
 
-                  <div className="space-y-2">
-                    <Label htmlFor="userEmail">User Email</Label>
-                    <Input
-                      id="userEmail"
-                      type="email"
-                      value={userEmail}
-                      onChange={(e) => setUserEmail(e.target.value)}
-                      placeholder="your.email@oricol.co.za"
-                      required
-                      disabled={!!selectedUserId && isAdmin}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="branch">Branch</Label>
-                    <Select value={branch} onValueChange={setBranch} required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select branch" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="DBN">Durban (DBN)</SelectItem>
-                        <SelectItem value="CPT">Cape Town (CPT)</SelectItem>
-                        <SelectItem value="PE">Port Elizabeth (PE)</SelectItem>
-                        <SelectItem value="JHB">Johannesburg (JHB)</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-blue-900">Auto-filled Information</p>
+                        <p className="text-sm text-blue-700 mt-1">
+                          <strong>User:</strong> {userEmail}
+                        </p>
+                        <p className="text-sm text-blue-700">
+                          <strong>Branch:</strong> {branch || "Not set - please update your profile"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   <FaultTypeSelector value={faultType} onChange={setFaultType} required />
-
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Fault Title</Label>
-                    <Input
-                      id="title"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Brief description of the issue"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Fault Description / Error Message</Label>
-                    <Textarea
-                      id="description"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Describe the issue in detail or paste any error messages"
-                      rows={4}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="errorCode">Error Code (Optional)</Label>
-                    <Input
-                      id="errorCode"
-                      value={errorCode}
-                      onChange={(e) => setErrorCode(e.target.value)}
-                      placeholder="e.g., 0x80070005"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Category (Optional)</Label>
-                    <Input
-                      id="category"
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      placeholder="e.g., Hardware, Software, Network"
-                    />
-                  </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="priority">Priority</Label>
@@ -809,13 +878,36 @@ const Tickets = () => {
                         <SelectItem value="low">Low</SelectItem>
                         <SelectItem value="medium">Medium</SelectItem>
                         <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
+                        <SelectItem value="urgent">Urgent - Response within 2 hours</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? "Creating..." : "Create Ticket"}
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Brief Issue Summary (Optional)</Label>
+                    <Input
+                      id="title"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="e.g., Cannot connect to RDP"
+                    />
+                  </div>
+
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <Clock className="h-5 w-5 text-amber-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-amber-900">Response Time Commitment</p>
+                        <p className="text-sm text-amber-700 mt-1">
+                          • Standard tickets: Response within 15 minutes<br />
+                          • Urgent tickets: Resolution within 2 hours
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={isSubmitting || !faultType}>
+                    {isSubmitting ? "Creating..." : "Submit Ticket"}
                   </Button>
                 </form>
               </DialogContent>
@@ -890,44 +982,101 @@ const Tickets = () => {
                   <p className="text-muted-foreground">No open tickets.</p>
                 ) : (
                   <div className="space-y-4">
-                    {openTickets.map((ticket) => (
-                      <div
-                        key={ticket.id}
-                        className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors gap-4 cursor-pointer"
-                        onClick={() => handleTicketClick(ticket)}
-                      >
-                        <div className="flex-1">
-                          <h3 className="font-medium">{ticket.title}</h3>
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{ticket.description}</p>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {ticket.branch && (
+                    {openTickets.map((ticket) => {
+                      const timeElapsed = getTimeElapsed(ticket.created_at);
+                      const responseOverdue = isOverdue(ticket.response_required_by);
+                      const resolutionOverdue = isOverdue(ticket.resolution_required_by);
+                      
+                      return (
+                        <div
+                          key={ticket.id}
+                          className={`flex flex-col md:flex-row md:items-center justify-between p-4 rounded-lg border transition-colors gap-4 cursor-pointer ${
+                            ticket.escalated ? 'border-red-500 bg-red-50/50' : 
+                            responseOverdue ? 'border-orange-500 bg-orange-50/50' : 
+                            'border-border hover:bg-muted/50'
+                          }`}
+                          onClick={() => handleTicketClick(ticket)}
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              {ticket.ticket_code && (
+                                <Badge variant="outline" className="bg-gray-100 text-gray-800 font-mono text-xs">
+                                  {ticket.ticket_code}
+                                </Badge>
+                              )}
+                              {ticket.escalated && (
+                                <Badge variant="destructive" className="text-xs">
+                                  ⚠️ ESCALATED
+                                </Badge>
+                              )}
+                            </div>
+                            <h3 className="font-medium">{ticket.title}</h3>
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{ticket.description}</p>
+                            <div className="flex flex-wrap gap-2 mt-2">
                               <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
-                                📍 {ticket.branch}
+                                <Clock className="h-3 w-3 mr-1" />
+                                {timeElapsed} elapsed
                               </Badge>
-                            )}
-                            {ticket.fault_type && (
-                              <Badge
+                              {ticket.branch && (
+                                <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+                                  📍 {ticket.branch}
+                                </Badge>
+                              )}
+                              {ticket.fault_type && (
+                                <Badge
+                                  variant="outline"
+                                  className="bg-orange-500/10 text-orange-600 border-orange-500/20"
+                                >
+                                  🔧 {ticket.fault_type}
+                                </Badge>
+                              )}
+                              {ticket.user_email && (
+                                <span className="text-xs text-muted-foreground">👤 {ticket.user_email}</span>
+                              )}
+                              {responseOverdue && !ticket.started_at && (
+                                <Badge variant="destructive" className="text-xs">
+                                  ⏰ Response Overdue
+                                </Badge>
+                              )}
+                              {resolutionOverdue && ticket.priority === 'urgent' && (
+                                <Badge variant="destructive" className="text-xs">
+                                  ⏰ Resolution Overdue
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                            {getPriorityBadge(ticket.priority)}
+                            {getStatusBadge(ticket.status)}
+                            {isSupportStaff && !ticket.started_at && (
+                              <Button
+                                size="sm"
                                 variant="outline"
-                                className="bg-orange-500/10 text-orange-600 border-orange-500/20"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setTicketToStart(ticket.id);
+                                  setStartJobDialogOpen(true);
+                                }}
                               >
-                                🔧 {ticket.fault_type}
-                              </Badge>
+                                Start Job
+                              </Button>
                             )}
-                            {ticket.category && <Badge variant="secondary">{ticket.category}</Badge>}
-                            {ticket.user_email && (
-                              <span className="text-xs text-muted-foreground">👤 {ticket.user_email}</span>
+                            {isSupportStaff && !ticket.escalated && responseOverdue && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEscalateTicket(ticket.id);
+                                }}
+                              >
+                                Escalate
+                              </Button>
                             )}
-                            <span className="text-xs text-muted-foreground">
-                              📅 {new Date(ticket.created_at).toLocaleDateString()}
-                            </span>
                           </div>
                         </div>
-                        <div className="flex gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
-                          {getPriorityBadge(ticket.priority)}
-                          {getStatusBadge(ticket.status)}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
@@ -1104,15 +1253,23 @@ const Tickets = () => {
                       </Button>
                     )}
                   </SheetTitle>
-                  <SheetDescription>Ticket #{selectedTicket.id.slice(0, 8)}</SheetDescription>
+                  <SheetDescription>
+                    {selectedTicket.ticket_code && (
+                      <span className="font-mono font-semibold">{selectedTicket.ticket_code}</span>
+                    )}
+                    {!selectedTicket.ticket_code && `Ticket #${selectedTicket.id.slice(0, 8)}`}
+                  </SheetDescription>
                 </SheetHeader>
 
                 <div className="space-y-6 mt-6">
                   {!editMode ? (
                     <>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         {getPriorityBadge(selectedTicket.priority)}
                         {getStatusBadge(selectedTicket.status)}
+                        {selectedTicket.escalated && (
+                          <Badge variant="destructive">⚠️ ESCALATED</Badge>
+                        )}
                       </div>
 
                       <div>
@@ -1120,6 +1277,55 @@ const Tickets = () => {
                         <p className="text-sm text-muted-foreground mt-2 whitespace-pre-wrap">
                           {selectedTicket.description}
                         </p>
+                      </div>
+
+                      <Separator />
+
+                      {/* Time Tracking Info */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-blue-900">Time Elapsed Since Creation</Label>
+                            <Badge variant="outline" className="bg-blue-100 text-blue-900">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {getTimeElapsed(selectedTicket.created_at)}
+                            </Badge>
+                          </div>
+                          
+                          {selectedTicket.started_at && (
+                            <div className="flex items-center justify-between">
+                              <Label className="text-blue-900">Work Duration</Label>
+                              <Badge variant="outline" className="bg-blue-100 text-blue-900">
+                                <Clock className="h-3 w-3 mr-1" />
+                                {getTimeElapsed(selectedTicket.started_at)}
+                              </Badge>
+                            </div>
+                          )}
+
+                          {selectedTicket.response_required_by && (
+                            <div className="flex items-center justify-between">
+                              <Label className={isOverdue(selectedTicket.response_required_by) ? "text-red-900" : "text-blue-900"}>
+                                Response Required By
+                              </Label>
+                              <span className={`text-sm ${isOverdue(selectedTicket.response_required_by) ? "text-red-900 font-semibold" : "text-blue-700"}`}>
+                                {new Date(selectedTicket.response_required_by).toLocaleString()}
+                                {isOverdue(selectedTicket.response_required_by) && " (OVERDUE)"}
+                              </span>
+                            </div>
+                          )}
+
+                          {selectedTicket.resolution_required_by && selectedTicket.priority === 'urgent' && (
+                            <div className="flex items-center justify-between">
+                              <Label className={isOverdue(selectedTicket.resolution_required_by) ? "text-red-900" : "text-blue-900"}>
+                                Resolution Required By
+                              </Label>
+                              <span className={`text-sm ${isOverdue(selectedTicket.resolution_required_by) ? "text-red-900 font-semibold" : "text-blue-700"}`}>
+                                {new Date(selectedTicket.resolution_required_by).toLocaleString()}
+                                {isOverdue(selectedTicket.resolution_required_by) && " (OVERDUE)"}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <Separator />
@@ -1222,6 +1428,20 @@ const Tickets = () => {
                       )}
 
                       <div className="flex flex-wrap gap-2">
+                        {isSupportStaff && !selectedTicket.started_at && selectedTicket.status !== "closed" && (
+                          <Button
+                            onClick={() => {
+                              setTicketToStart(selectedTicket.id);
+                              setStartJobDialogOpen(true);
+                            }}
+                            variant="default"
+                            className="flex-1"
+                          >
+                            <Clock className="h-4 w-4 mr-2" />
+                            Start Job
+                          </Button>
+                        )}
+                        
                         {selectedTicket.status === "closed" ? (
                           <Button onClick={() => handleReopenTicket(selectedTicket.id)} className="flex-1">
                             <RotateCcw className="h-4 w-4 mr-2" />
@@ -1237,6 +1457,17 @@ const Tickets = () => {
                             Close Ticket
                           </Button>
                         )}
+                        
+                        {isSupportStaff && !selectedTicket.escalated && selectedTicket.status !== "closed" && (
+                          <Button
+                            onClick={() => handleEscalateTicket(selectedTicket.id)}
+                            variant="destructive"
+                          >
+                            <AlertCircle className="h-4 w-4 mr-2" />
+                            Escalate
+                          </Button>
+                        )}
+                        
                         {isAdmin && (
                           <Button
                             variant="destructive"
@@ -1388,11 +1619,18 @@ const Tickets = () => {
         <Dialog open={timeLogDialogOpen} onOpenChange={setTimeLogDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Log Time</DialogTitle>
+              <DialogTitle>{closeAfterTimeLog ? "Log Time and Close Ticket" : "Log Time"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-4">
+              {closeAfterTimeLog && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-sm text-amber-900">
+                    <strong>Note:</strong> Please log your resolution time. The ticket will be closed after you submit.
+                  </p>
+                </div>
+              )}
               <div className="space-y-2">
-                <Label htmlFor="timeLogMinutes">Time Spent (minutes)</Label>
+                <Label htmlFor="timeLogMinutes">Time Spent (minutes) *</Label>
                 <Input
                   id="timeLogMinutes"
                   type="number"
@@ -1404,18 +1642,19 @@ const Tickets = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="timeLogNotes">Notes (Optional)</Label>
+                <Label htmlFor="timeLogNotes">Resolution Notes {closeAfterTimeLog ? "*" : "(Optional)"}</Label>
                 <Textarea
                   id="timeLogNotes"
                   value={timeLogNotes}
                   onChange={(e) => setTimeLogNotes(e.target.value)}
-                  placeholder="What did you work on?"
+                  placeholder={closeAfterTimeLog ? "Describe how you resolved the issue" : "What did you work on?"}
                   rows={3}
+                  required={closeAfterTimeLog}
                 />
               </div>
               <div className="flex gap-2">
-                <Button onClick={handleLogTime} className="flex-1">
-                  Log Time
+                <Button onClick={handleLogTime} className="flex-1" disabled={!isTimeLogFormValid()}>
+                  {closeAfterTimeLog ? "Log Time & Close" : "Log Time"}
                 </Button>
                 <Button
                   variant="outline"
@@ -1423,6 +1662,7 @@ const Tickets = () => {
                     setTimeLogDialogOpen(false);
                     setTimeLogMinutes("");
                     setTimeLogNotes("");
+                    setCloseAfterTimeLog(false);
                   }}
                 >
                   Cancel
@@ -1431,6 +1671,22 @@ const Tickets = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        <AlertDialog open={startJobDialogOpen} onOpenChange={setStartJobDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Start Job</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will mark the ticket as "In Progress" and start tracking the resolution time. 
+                You should only start the job when you're actively working on it.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setTicketToStart(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleStartJob}>Start Job</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );

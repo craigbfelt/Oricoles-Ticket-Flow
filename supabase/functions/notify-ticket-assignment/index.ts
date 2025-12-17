@@ -27,6 +27,7 @@ interface NotificationRequest {
   assigneeEmail: string;
   assigneeName: string;
   ticketId: string;
+  ticketCode?: string;
   ticketTitle: string;
   ticketDescription: string;
   priority: string;
@@ -45,6 +46,7 @@ Deno.serve(async (req) => {
       assigneeEmail,
       assigneeName,
       ticketId,
+      ticketCode,
       ticketTitle,
       ticketDescription,
       priority,
@@ -52,6 +54,13 @@ Deno.serve(async (req) => {
       faultType,
       userEmail,
     }: NotificationRequest = await req.json();
+
+    // Required recipients to CC on all ticket assignments
+    const requiredRecipients = [
+      "craig@zerobitone.co.za",
+      "Jerusha.naidoo@oricoles.co.za",
+      "graeme.smart@oricoles.co.za"
+    ];
 
     // Validate required fields
     if (!assigneeEmail || !ticketId || !ticketTitle) {
@@ -86,7 +95,8 @@ Deno.serve(async (req) => {
     const emailResponse = await resend.emails.send({
       from: "Oricol Helpdesk <onboarding@resend.dev>",
       to: [assigneeEmail],
-      subject: `New Ticket Assigned: ${escapeHtml(ticketTitle)}`,
+      cc: requiredRecipients,
+      subject: `New Ticket Assigned${ticketCode ? ` [${escapeHtml(ticketCode)}]` : ''}: ${escapeHtml(ticketTitle)}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -105,6 +115,9 @@ Deno.serve(async (req) => {
                 <span style="display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase; background-color: ${priorityColors[sanitizedPriority]}; color: white;">
                   ${escapeHtml(sanitizedPriority)} Priority
                 </span>
+                ${ticketCode ? `<span style="display: inline-block; margin-left: 8px; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; background-color: #e5e7eb; color: #1a1a1a;">
+                  ${escapeHtml(ticketCode)}
+                </span>` : ''}
               </div>
 
               <h2 style="color: #1a1a1a; margin: 0 0 12px 0; font-size: 20px;">${escapeHtml(ticketTitle)}</h2>
