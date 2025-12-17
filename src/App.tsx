@@ -48,6 +48,7 @@ import ITSuppliers from "./pages/ITSuppliers";
 import ITSupplierDetails from "./pages/ITSupplierDetails";
 import NetworkDiagramOverview from "./pages/NetworkDiagramOverview";
 import UserManagement from "./pages/UserManagement";
+import EndpointMonitoring from "./pages/EndpointMonitoring";
 
 const queryClient = new QueryClient();
 
@@ -82,6 +83,7 @@ const App = () => {
           <Route path="/software" element={<SoftwareInventory />} />
           <Route path="/licenses" element={<Licenses />} />
           <Route path="/microsoft-365" element={<Microsoft365Dashboard />} />
+          <Route path="/endpoint-monitoring" element={<EndpointMonitoring />} />
           <Route path="/vpn" element={<Vpn />} />
           <Route path="/rdp" element={<Rdp />} />
           <Route path="/remote-support" element={<RemoteSupport />} />

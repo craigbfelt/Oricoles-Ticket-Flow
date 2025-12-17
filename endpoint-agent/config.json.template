@@ -1,0 +1,9 @@
+{
+  "SupabaseUrl": "https://your-project.supabase.co",
+  "SupabaseAnonKey": "your-supabase-anon-key",
+  "AgentToken": "your-agent-token-here",
+  "CollectionIntervalMinutes": 5,
+  "EnableAutoPatching": false,
+  "EnableZeroTrustBlocking": false,
+  "LogLevel": "Info"
+}
