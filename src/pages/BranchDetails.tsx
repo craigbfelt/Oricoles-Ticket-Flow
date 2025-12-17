@@ -116,6 +116,19 @@ const BranchDetails = () => {
     enabled: !!branch?.name,
   });
 
+  // Fetch master user list for this branch
+  const { data: masterUsers } = useQuery({
+    queryKey: ["master_users", branchId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("master_user_list")
+        .select("*")
+        .eq("branch_id", branchId);
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Fetch network devices
   const { data: networkDevices } = useQuery({
     queryKey: ["network_devices", branchId],
@@ -150,6 +163,20 @@ const BranchDetails = () => {
         .from("internet_connectivity")
         .select("*")
         .eq("branch_id", branchId);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch jobs/migrations for this branch
+  const { data: branchJobs } = useQuery({
+    queryKey: ["branch_jobs", branchId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("jobs")
+        .select("*")
+        .eq("branch_id", branchId)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -686,6 +713,7 @@ const BranchDetails = () => {
     { key: "manufacturer", label: "Manufacturer", sortable: true },
     { key: "model", label: "Model", sortable: true },
     { key: "serial_number", label: "Serial Number", sortable: true },
+    { key: "assigned_to", label: "Assigned To", sortable: true },
     { key: "status", label: "Status", sortable: true },
   ];
 
@@ -694,6 +722,16 @@ const BranchDetails = () => {
     { key: "email", label: "Email", sortable: true },
     { key: "job_title", label: "Job Title", sortable: true },
     { key: "department", label: "Department", sortable: true },
+  ];
+
+  const masterUsersColumns: Column<any>[] = [
+    { key: "display_name", label: "Name", sortable: true },
+    { key: "email", label: "Email", sortable: true },
+    { key: "job_title", label: "Job Title", sortable: true },
+    { key: "department", label: "Department", sortable: true },
+    { key: "vpn_username", label: "VPN Username", sortable: true },
+    { key: "rdp_username", label: "RDP Username", sortable: true },
+    { key: "m365_username", label: "M365 Username", sortable: true },
   ];
 
   const networkDevicesColumns: Column<any>[] = [
@@ -722,10 +760,12 @@ const BranchDetails = () => {
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="internet">Internet</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="master-users">Master Users</TabsTrigger>
+            <TabsTrigger value="users">Directory Users</TabsTrigger>
             <TabsTrigger value="devices">Devices</TabsTrigger>
             <TabsTrigger value="network">Network Equipment</TabsTrigger>
             <TabsTrigger value="diagram">Network Diagram</TabsTrigger>
+            <TabsTrigger value="jobs">Jobs/Migrations</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -972,11 +1012,36 @@ const BranchDetails = () => {
             </Card>
           </TabsContent>
 
+          <TabsContent value="master-users">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Master Users ({masterUsers?.length || 0})</CardTitle>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => exportToCSV(masterUsers || [], `${branch?.name}_master_users`)}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Export CSV
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Users from the master user list assigned to this branch. Includes email, credentials, and device serial numbers.
+                </p>
+                <DataTable
+                  data={masterUsers || []}
+                  columns={masterUsersColumns}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="users">
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>Users ({directoryUsers?.length || 0})</CardTitle>
+                  <CardTitle>Directory Users ({directoryUsers?.length || 0})</CardTitle>
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={() => downloadCSVTemplate("users")}>
                       <Download className="w-4 h-4 mr-2" />
@@ -1331,6 +1396,71 @@ const BranchDetails = () => {
                     <p className="text-muted-foreground col-span-2">No network diagrams yet. Use "Import JSON", "Upload Image" or "Add Diagram" to get started.</p>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="jobs">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Jobs & Migrations ({branchJobs?.length || 0})</CardTitle>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => exportToCSV(branchJobs || [], `${branch?.name}_jobs`)}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Export CSV
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Jobs and migrations associated with this branch.
+                </p>
+                {branchJobs && branchJobs.length > 0 ? (
+                  <div className="space-y-4">
+                    {branchJobs.map((job) => (
+                      <Card key={job.id}>
+                        <CardContent className="p-4">
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div>
+                              <p className="text-sm text-muted-foreground">Client Name</p>
+                              <p className="font-semibold">{job.client_name || "N/A"}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Status</p>
+                              <p className="font-semibold">{job.status || "N/A"}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Priority</p>
+                              <p className="font-semibold">{job.priority || "N/A"}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Start Date</p>
+                              <p className="font-semibold">{job.start_date ? new Date(job.start_date).toLocaleDateString() : "N/A"}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Estimated Hours</p>
+                              <p className="font-semibold">{job.estimated_hours || "N/A"}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Actual Hours</p>
+                              <p className="font-semibold">{job.actual_hours || "N/A"}</p>
+                            </div>
+                            {job.notes && (
+                              <div className="col-span-3">
+                                <p className="text-sm text-muted-foreground">Notes</p>
+                                <p className="text-sm">{job.notes}</p>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No jobs or migrations associated with this branch yet.</p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
