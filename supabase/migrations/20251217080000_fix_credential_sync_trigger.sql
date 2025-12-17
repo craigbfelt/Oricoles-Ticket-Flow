@@ -123,7 +123,7 @@ $$;
 -- ============================================================================
 
 CREATE TRIGGER sync_credentials_trigger
-BEFORE INSERT OR UPDATE OF vpn_username, vpn_password, rdp_username, rdp_password, m365_username, m365_password, email
+BEFORE INSERT OR UPDATE OF vpn_username, vpn_password, rdp_username, rdp_password, email
 ON public.master_user_list
 FOR EACH ROW
 EXECUTE FUNCTION sync_credentials_from_master();
