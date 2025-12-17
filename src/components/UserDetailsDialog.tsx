@@ -285,12 +285,14 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
       // Update VPN credentials if changed
       if (editedDetails.vpn_username || editedDetails.vpn_password) {
         // Check if VPN credential exists (case-insensitive email check)
-        const { data: existingVpn } = await supabase
+        const { data: existingVpn, error: vpnCheckError } = await supabase
           .from("vpn_rdp_credentials")
           .select("id")
           .ilike("email", editedDetails.email)
           .eq("service_type", "VPN")
           .maybeSingle();
+        
+        if (vpnCheckError) throw vpnCheckError;
         
         if (existingVpn) {
           // Update existing credential
@@ -304,7 +306,7 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
             })
             .eq("id", existingVpn.id);
           
-          if (vpnError) console.error("VPN update error:", vpnError);
+          if (vpnError) throw vpnError;
         } else {
           // Insert new credential
           const { error: vpnError } = await supabase
@@ -317,19 +319,21 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
               notes: `Created on ${new Date().toISOString()}`
             });
           
-          if (vpnError) console.error("VPN insert error:", vpnError);
+          if (vpnError) throw vpnError;
         }
       }
 
       // Update RDP credentials if changed
       if (editedDetails.rdp_username || editedDetails.rdp_password) {
         // Check if RDP credential exists (case-insensitive email check)
-        const { data: existingRdp } = await supabase
+        const { data: existingRdp, error: rdpCheckError } = await supabase
           .from("vpn_rdp_credentials")
           .select("id")
           .ilike("email", editedDetails.email)
           .eq("service_type", "RDP")
           .maybeSingle();
+        
+        if (rdpCheckError) throw rdpCheckError;
         
         if (existingRdp) {
           // Update existing credential
@@ -343,7 +347,7 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
             })
             .eq("id", existingRdp.id);
           
-          if (rdpError) console.error("RDP update error:", rdpError);
+          if (rdpError) throw rdpError;
         } else {
           // Insert new credential
           const { error: rdpError } = await supabase
@@ -356,19 +360,21 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
               notes: `Created on ${new Date().toISOString()}`
             });
           
-          if (rdpError) console.error("RDP insert error:", rdpError);
+          if (rdpError) throw rdpError;
         }
       }
 
       // Update M365 credentials if changed
       if (editedDetails.m365_password) {
         // Check if M365 credential exists (case-insensitive email check)
-        const { data: existingM365 } = await supabase
+        const { data: existingM365, error: m365CheckError } = await supabase
           .from("vpn_rdp_credentials")
           .select("id")
           .ilike("email", editedDetails.email)
           .eq("service_type", "M365")
           .maybeSingle();
+        
+        if (m365CheckError) throw m365CheckError;
         
         if (existingM365) {
           // Update existing credential
@@ -382,7 +388,7 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
             })
             .eq("id", existingM365.id);
           
-          if (m365Error) console.error("M365 update error:", m365Error);
+          if (m365Error) throw m365Error;
         } else {
           // Insert new credential
           const { error: m365Error } = await supabase
@@ -395,7 +401,7 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
               notes: `Created on ${new Date().toISOString()}`
             });
           
-          if (m365Error) console.error("M365 insert error:", m365Error);
+          if (m365Error) throw m365Error;
         }
       }
 

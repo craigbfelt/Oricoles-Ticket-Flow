@@ -1774,7 +1774,7 @@ const BranchDetails = () => {
               </AlertDialogTitle>
               <AlertDialogDescription>
                 This action cannot be undone. This will permanently delete the branch
-                <strong> {branch?.name}</strong> and may affect associated data such as:
+                <strong>{" "}{branch?.name}</strong> and may affect associated data such as:
                 <ul className="list-disc list-inside mt-2 space-y-1">
                   <li>Users ({masterUsers?.length || 0} master users, {directoryUsers?.length || 0} directory users)</li>
                   <li>Devices ({hardwareDevices?.length || 0} hardware devices, {networkDevices?.length || 0} network devices)</li>
