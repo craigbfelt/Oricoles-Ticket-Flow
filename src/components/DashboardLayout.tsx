@@ -25,7 +25,8 @@ import {
   TrendingUp,
   Waves,
   Leaf,
-  GitBranch
+  GitBranch,
+  Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -155,6 +156,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Assets", href: "/assets", icon: Package, requiredRoles: ['admin', 'support_staff'] },
     { name: "Branches", href: "/branches", icon: Building2, requiredRoles: ['admin', 'support_staff'] },
     { name: "Microsoft 365", href: "/microsoft-365", icon: Cloud, requiredRoles: ['admin', 'support_staff'] },
+    { name: "Endpoint Monitoring", href: "/endpoint-monitoring", icon: Shield, requiredRoles: ['admin', 'support_staff'] },
     { name: "Computers", href: "/hardware", icon: Monitor, requiredRoles: ['admin', 'support_staff'] },
     { name: "Software", href: "/software", icon: Code, requiredRoles: ['admin', 'support_staff'] },
     { name: "Licenses", href: "/licenses", icon: Key, requiredRoles: ['admin', 'support_staff'] },
