@@ -317,7 +317,7 @@ const UserDetails = () => {
 
           if (authUserData) {
             // Extract branch name from the joined branches table, default to "NA" if not found
-            const branchName = (authUserData.branches as any)?.name || "NA";
+            const branchName = (authUserData.branches as { name: string } | null)?.name || "NA";
             setProfile({ branch: branchName, full_name: authUserData.full_name });
 
             // Fetch tickets using safe parameterized approach

@@ -338,7 +338,7 @@ const Dashboard = () => {
             job_title: masterUser.job_title || intuneUser?.job_title || null,
             account_enabled: intuneUser?.account_enabled ?? true, // From Intune if available, else assume active
             user_principal_name: intuneUser?.user_principal_name || masterUser.email, // Use Intune UPN if available
-            branch_name: (masterUser.branches as any)?.name || "NA", // Extract branch name from join, default to "NA"
+            branch_name: (masterUser.branches as { name: string } | null)?.name || "NA", // Extract branch name from join, default to "NA"
           };
           
           allUsers.push(directoryUser);
