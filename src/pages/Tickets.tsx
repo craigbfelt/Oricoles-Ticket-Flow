@@ -359,6 +359,7 @@ const Tickets = () => {
             assigneeEmail: currentUserEmail,
             assigneeName: currentUserName || "Support Staff",
             ticketId: ticketData.id,
+            ticketCode: ticketData.ticket_code,
             ticketTitle: autoTitle,
             ticketDescription: autoDescription,
             priority,
