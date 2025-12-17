@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Upload, Download, Plus, Trash2, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Upload, Download, Plus, Trash2, Image as ImageIcon, Edit, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DataTable, Column } from "@/components/DataTable";
 import { ImportHistory } from "@/components/ImportHistory";
@@ -16,7 +16,19 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -72,6 +84,19 @@ const BranchDetails = () => {
   const [imageFormData, setImageFormData] = useState({
     diagram_name: "",
     description: "",
+  });
+  const [isEditBranchDialogOpen, setIsEditBranchDialogOpen] = useState(false);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [editBranchForm, setEditBranchForm] = useState({
+    name: "",
+    address: "",
+    city: "",
+    state: "",
+    postal_code: "",
+    country: "",
+    phone: "",
+    email: "",
+    notes: "",
   });
 
   // Fetch branch details
@@ -292,6 +317,76 @@ const BranchDetails = () => {
       });
     },
   });
+
+  // Mutation for updating branch
+  const updateBranch = useMutation({
+    mutationFn: async (data: typeof editBranchForm) => {
+      const { error } = await supabase
+        .from("branches")
+        .update(data)
+        .eq("id", branchId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["branch", branchId] });
+      queryClient.invalidateQueries({ queryKey: ["branches"] });
+      setIsEditBranchDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Branch updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update branch",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation for deleting branch
+  const deleteBranch = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("branches")
+        .delete()
+        .eq("id", branchId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["branches"] });
+      toast({
+        title: "Success",
+        description: "Branch deleted successfully",
+      });
+      navigate("/branches");
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete branch. There may be associated data.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Populate edit form when branch data is loaded
+  useEffect(() => {
+    if (branch) {
+      setEditBranchForm({
+        name: branch.name || "",
+        address: branch.address || "",
+        city: branch.city || "",
+        state: branch.state || "",
+        postal_code: branch.postal_code || "",
+        country: branch.country || "",
+        phone: branch.phone || "",
+        email: branch.email || "",
+        notes: branch.notes || "",
+      });
+    }
+  }, [branch]);
 
   const uploadDiagramImage = useMutation({
     mutationFn: async (data: typeof imageFormData & { imagePath: string }) => {
@@ -769,7 +864,19 @@ const BranchDetails = () => {
           </Button>
         </div>
 
-        <h1 className="text-3xl font-bold text-foreground mb-6">{branch?.name}</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-foreground">{branch?.name}</h1>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsEditBranchDialogOpen(true)}>
+              <Edit className="w-4 h-4 mr-2" />
+              Edit Branch
+            </Button>
+            <Button variant="destructive" onClick={() => setIsDeleteAlertOpen(true)}>
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Branch
+            </Button>
+          </div>
+        </div>
 
         <Tabs value={currentTab} onValueChange={setCurrentTab}>
           <TabsList className="flex flex-wrap h-auto">
@@ -1554,6 +1661,141 @@ const BranchDetails = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Edit Branch Dialog */}
+        <Dialog open={isEditBranchDialogOpen} onOpenChange={setIsEditBranchDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Branch</DialogTitle>
+              <DialogDescription>
+                Update branch information. Changes will affect all associated data.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={(e) => { e.preventDefault(); updateBranch.mutate(editBranchForm); }} className="space-y-4">
+              <div>
+                <Label htmlFor="edit-name">Branch Name *</Label>
+                <Input
+                  id="edit-name"
+                  value={editBranchForm.name}
+                  onChange={(e) => setEditBranchForm({ ...editBranchForm, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-address">Address</Label>
+                <Input
+                  id="edit-address"
+                  value={editBranchForm.address}
+                  onChange={(e) => setEditBranchForm({ ...editBranchForm, address: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-city">City</Label>
+                  <Input
+                    id="edit-city"
+                    value={editBranchForm.city}
+                    onChange={(e) => setEditBranchForm({ ...editBranchForm, city: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-state">State</Label>
+                  <Input
+                    id="edit-state"
+                    value={editBranchForm.state}
+                    onChange={(e) => setEditBranchForm({ ...editBranchForm, state: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-postal_code">Postal Code</Label>
+                  <Input
+                    id="edit-postal_code"
+                    value={editBranchForm.postal_code}
+                    onChange={(e) => setEditBranchForm({ ...editBranchForm, postal_code: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-country">Country</Label>
+                  <Input
+                    id="edit-country"
+                    value={editBranchForm.country}
+                    onChange={(e) => setEditBranchForm({ ...editBranchForm, country: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-phone">Phone</Label>
+                  <Input
+                    id="edit-phone"
+                    value={editBranchForm.phone}
+                    onChange={(e) => setEditBranchForm({ ...editBranchForm, phone: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-email">Email</Label>
+                  <Input
+                    id="edit-email"
+                    type="email"
+                    value={editBranchForm.email}
+                    onChange={(e) => setEditBranchForm({ ...editBranchForm, email: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="edit-notes">Notes</Label>
+                <Textarea
+                  id="edit-notes"
+                  value={editBranchForm.notes}
+                  onChange={(e) => setEditBranchForm({ ...editBranchForm, notes: e.target.value })}
+                />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsEditBranchDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateBranch.isPending}>
+                  {updateBranch.isPending ? "Updating..." : "Update Branch"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Branch Alert Dialog */}
+        <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                Are you absolutely sure?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the branch
+                <strong> {branch?.name}</strong> and may affect associated data such as:
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>Users ({masterUsers?.length || 0} master users, {directoryUsers?.length || 0} directory users)</li>
+                  <li>Devices ({hardwareDevices?.length || 0} hardware devices, {networkDevices?.length || 0} network devices)</li>
+                  <li>Network diagrams ({networkDiagrams?.length || 0})</li>
+                  <li>Internet connections ({internetConnectivity?.length || 0})</li>
+                  <li>Tickets ({branchTickets?.length || 0})</li>
+                  <li>Jobs ({branchJobs?.length || 0})</li>
+                </ul>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteBranch.mutate()}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleteBranch.isPending ? "Deleting..." : "Delete Branch"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
