@@ -60,7 +60,14 @@ const Branches = () => {
     queryFn: async () => {
       if (!branches) return {};
 
-      const stats: Record<string, { users: number; devices: number; networkDevices: number }> = {};
+      const stats: Record<string, { 
+        users: number; 
+        masterUsers: number;
+        devices: number; 
+        networkDevices: number;
+        tickets: number;
+        jobs: number;
+      }> = {};
 
       for (const branch of branches) {
         // Count directory users (department field matches branch name)
@@ -68,6 +75,12 @@ const Branches = () => {
           .from("directory_users")
           .select("*", { count: "exact", head: true })
           .eq("department", branch.name);
+
+        // Count master users (branch_id matches)
+        const { count: masterUserCount } = await supabase
+          .from("master_user_list")
+          .select("*", { count: "exact", head: true })
+          .eq("branch_id", branch.id);
 
         // Count hardware devices (branch field matches branch name)
         const { count: deviceCount } = await supabase
@@ -81,10 +94,25 @@ const Branches = () => {
           .select("*", { count: "exact", head: true })
           .eq("branch_id", branch.id);
 
+        // Count tickets (branch field matches branch name)
+        const { count: ticketCount } = await supabase
+          .from("tickets")
+          .select("*", { count: "exact", head: true })
+          .eq("branch", branch.name);
+
+        // Count jobs (branch_id matches)
+        const { count: jobCount } = await supabase
+          .from("jobs")
+          .select("*", { count: "exact", head: true })
+          .eq("branch_id", branch.id);
+
         stats[branch.id] = {
           users: userCount || 0,
+          masterUsers: masterUserCount || 0,
           devices: deviceCount || 0,
           networkDevices: networkDeviceCount || 0,
+          tickets: ticketCount || 0,
+          jobs: jobCount || 0,
         };
       }
 
@@ -822,8 +850,8 @@ const Branches = () => {
                           <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
                             <UsersIcon className="w-3 h-3" />
                           </div>
-                          <div className="text-lg font-bold text-foreground">{stats.users}</div>
-                          <div className="text-xs text-muted-foreground">Users</div>
+                          <div className="text-lg font-bold text-foreground">{stats.masterUsers}</div>
+                          <div className="text-xs text-muted-foreground">Master Users</div>
                         </div>
                         <div className="text-center">
                           <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
@@ -838,6 +866,18 @@ const Branches = () => {
                           </div>
                           <div className="text-lg font-bold text-foreground">{stats.networkDevices}</div>
                           <div className="text-xs text-muted-foreground">Network</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-foreground">{stats.tickets}</div>
+                          <div className="text-xs text-muted-foreground">Tickets</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-foreground">{stats.jobs}</div>
+                          <div className="text-xs text-muted-foreground">Jobs</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-foreground">{stats.users}</div>
+                          <div className="text-xs text-muted-foreground">Dir Users</div>
                         </div>
                       </div>
                     )}
