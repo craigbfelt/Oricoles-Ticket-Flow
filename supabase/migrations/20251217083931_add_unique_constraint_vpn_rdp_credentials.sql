@@ -13,7 +13,7 @@ WHERE id IN (
         ORDER BY updated_at DESC, created_at DESC
       ) as rn
     FROM public.vpn_rdp_credentials
-    WHERE email IS NOT NULL
+    WHERE email IS NOT NULL AND service_type IS NOT NULL
   ) t
   WHERE t.rn > 1
 );
