@@ -284,53 +284,125 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
 
       // Update VPN credentials if changed
       if (editedDetails.vpn_username || editedDetails.vpn_password) {
-        const { error: vpnError } = await supabase
+        // Check if VPN credential exists (case-insensitive email check)
+        const { data: existingVpn, error: vpnCheckError } = await supabase
           .from("vpn_rdp_credentials")
-          .upsert({
-            email: editedDetails.email,
-            service_type: "VPN",
-            username: editedDetails.vpn_username || "",
-            password: editedDetails.vpn_password || "",
-            notes: `Updated on ${new Date().toISOString()}`
-          }, {
-            onConflict: "email,service_type"
-          });
+          .select("id")
+          .ilike("email", editedDetails.email)
+          .eq("service_type", "VPN")
+          .maybeSingle();
         
-        if (vpnError) console.error("VPN update error:", vpnError);
+        if (vpnCheckError) throw vpnCheckError;
+        
+        if (existingVpn) {
+          // Update existing credential
+          const { error: vpnError } = await supabase
+            .from("vpn_rdp_credentials")
+            .update({
+              email: editedDetails.email,
+              username: editedDetails.vpn_username || "",
+              password: editedDetails.vpn_password || "",
+              notes: `Updated on ${new Date().toISOString()}`
+            })
+            .eq("id", existingVpn.id);
+          
+          if (vpnError) throw vpnError;
+        } else {
+          // Insert new credential
+          const { error: vpnError } = await supabase
+            .from("vpn_rdp_credentials")
+            .insert({
+              email: editedDetails.email,
+              service_type: "VPN",
+              username: editedDetails.vpn_username || "",
+              password: editedDetails.vpn_password || "",
+              notes: `Created on ${new Date().toISOString()}`
+            });
+          
+          if (vpnError) throw vpnError;
+        }
       }
 
       // Update RDP credentials if changed
       if (editedDetails.rdp_username || editedDetails.rdp_password) {
-        const { error: rdpError } = await supabase
+        // Check if RDP credential exists (case-insensitive email check)
+        const { data: existingRdp, error: rdpCheckError } = await supabase
           .from("vpn_rdp_credentials")
-          .upsert({
-            email: editedDetails.email,
-            service_type: "RDP",
-            username: editedDetails.rdp_username || "",
-            password: editedDetails.rdp_password || "",
-            notes: `Updated on ${new Date().toISOString()}`
-          }, {
-            onConflict: "email,service_type"
-          });
+          .select("id")
+          .ilike("email", editedDetails.email)
+          .eq("service_type", "RDP")
+          .maybeSingle();
         
-        if (rdpError) console.error("RDP update error:", rdpError);
+        if (rdpCheckError) throw rdpCheckError;
+        
+        if (existingRdp) {
+          // Update existing credential
+          const { error: rdpError } = await supabase
+            .from("vpn_rdp_credentials")
+            .update({
+              email: editedDetails.email,
+              username: editedDetails.rdp_username || "",
+              password: editedDetails.rdp_password || "",
+              notes: `Updated on ${new Date().toISOString()}`
+            })
+            .eq("id", existingRdp.id);
+          
+          if (rdpError) throw rdpError;
+        } else {
+          // Insert new credential
+          const { error: rdpError } = await supabase
+            .from("vpn_rdp_credentials")
+            .insert({
+              email: editedDetails.email,
+              service_type: "RDP",
+              username: editedDetails.rdp_username || "",
+              password: editedDetails.rdp_password || "",
+              notes: `Created on ${new Date().toISOString()}`
+            });
+          
+          if (rdpError) throw rdpError;
+        }
       }
 
       // Update M365 credentials if changed
       if (editedDetails.m365_password) {
-        const { error: m365Error } = await supabase
+        // Check if M365 credential exists (case-insensitive email check)
+        const { data: existingM365, error: m365CheckError } = await supabase
           .from("vpn_rdp_credentials")
-          .upsert({
-            email: editedDetails.email,
-            service_type: "M365",
-            username: editedDetails.m365_username || editedDetails.email,
-            password: editedDetails.m365_password,
-            notes: `Updated on ${new Date().toISOString()}`
-          }, {
-            onConflict: "email,service_type"
-          });
+          .select("id")
+          .ilike("email", editedDetails.email)
+          .eq("service_type", "M365")
+          .maybeSingle();
         
-        if (m365Error) console.error("M365 update error:", m365Error);
+        if (m365CheckError) throw m365CheckError;
+        
+        if (existingM365) {
+          // Update existing credential
+          const { error: m365Error } = await supabase
+            .from("vpn_rdp_credentials")
+            .update({
+              email: editedDetails.email,
+              username: editedDetails.m365_username || editedDetails.email,
+              password: editedDetails.m365_password,
+              notes: `Updated on ${new Date().toISOString()}`
+            })
+            .eq("id", existingM365.id);
+          
+          if (m365Error) throw m365Error;
+        } else {
+          // Insert new credential
+          const { error: m365Error } = await supabase
+            .from("vpn_rdp_credentials")
+            .insert({
+              email: editedDetails.email,
+              service_type: "M365",
+              username: editedDetails.m365_username || editedDetails.email,
+              password: editedDetails.m365_password,
+              notes: `Created on ${new Date().toISOString()}`
+            });
+          
+          if (m365Error) throw m365Error;
+        }
       }
 
       toast.success("User details updated successfully");
