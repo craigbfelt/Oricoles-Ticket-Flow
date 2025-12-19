@@ -250,7 +250,18 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
       const displayNameToUse = editedDetails.full_name || editedDetails.display_name;
       
       // Build update object - only include password fields if they have values
-      const updateData: any = {
+      const updateData: {
+        display_name: string | null;
+        job_title: string | null;
+        department: string | null;
+        branch_id: string | null;
+        vpn_username: string | null;
+        rdp_username: string | null;
+        vpn_password?: string;
+        rdp_password?: string;
+        m365_username?: string;
+        m365_password?: string;
+      } = {
         display_name: displayNameToUse,
         job_title: editedDetails.full_name, // Store full_name in job_title for reference
         department: editedDetails.department,
