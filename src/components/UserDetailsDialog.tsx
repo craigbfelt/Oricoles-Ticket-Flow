@@ -285,12 +285,11 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
       // Update VPN credentials if changed
       if (editedDetails.vpn_username || editedDetails.vpn_password) {
         // Check if VPN credential exists (case-insensitive email check)
-        // Using ilike for case-insensitive pattern match, then filtering in JS for exact match
+        // Fetch ALL VPN credentials and filter in JavaScript to match the database's LOWER(email) constraint
         const { data: existingVpnList, error: vpnCheckError } = await supabase
           .from("vpn_rdp_credentials")
           .select("id, email")
-          .eq("service_type", "VPN")
-          .filter('email', 'ilike', editedDetails.email);
+          .eq("service_type", "VPN");
         
         if (vpnCheckError) throw vpnCheckError;
         
@@ -332,12 +331,11 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
       // Update RDP credentials if changed
       if (editedDetails.rdp_username || editedDetails.rdp_password) {
         // Check if RDP credential exists (case-insensitive email check)
-        // Using ilike for case-insensitive pattern match, then filtering in JS for exact match
+        // Fetch ALL RDP credentials and filter in JavaScript to match the database's LOWER(email) constraint
         const { data: existingRdpList, error: rdpCheckError } = await supabase
           .from("vpn_rdp_credentials")
           .select("id, email")
-          .eq("service_type", "RDP")
-          .filter('email', 'ilike', editedDetails.email);
+          .eq("service_type", "RDP");
         
         if (rdpCheckError) throw rdpCheckError;
         
@@ -379,12 +377,11 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
       // Update M365 credentials if changed
       if (editedDetails.m365_password) {
         // Check if M365 credential exists (case-insensitive email check)
-        // Using ilike for case-insensitive pattern match, then filtering in JS for exact match
+        // Fetch ALL M365 credentials and filter in JavaScript to match the database's LOWER(email) constraint
         const { data: existingM365List, error: m365CheckError } = await supabase
           .from("vpn_rdp_credentials")
           .select("id, email")
-          .eq("service_type", "M365")
-          .filter('email', 'ilike', editedDetails.email);
+          .eq("service_type", "M365");
         
         if (m365CheckError) throw m365CheckError;
         
