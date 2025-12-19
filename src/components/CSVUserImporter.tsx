@@ -332,80 +332,35 @@ export function CSVUserImporter() {
         }
       }
 
-      // Insert VPN and RDP credentials
-      const credentialsToInsert: CredentialInsert[] = [];
+      // =========================================================================
+      // NOTE: We DO NOT manually insert credentials into vpn_rdp_credentials!
+      // The database trigger (sync_credentials_from_master) automatically syncs
+      // credentials from master_user_list to vpn_rdp_credentials when users are
+      // inserted/updated. This prevents duplicate key violations and race conditions.
+      // 
+      // The trigger handles:
+      // - VPN credentials (from vpn_username/vpn_password)
+      // - RDP credentials (from rdp_username/rdp_password)
+      // - M365 credentials (from m365_username/m365_password)
+      // =========================================================================
       
+      // Count how many credentials were included in the import for reporting
+      let credentialCount = 0;
       preview.validRows.forEach(row => {
-        const userEmail = generateUserEmail(row);
-        
-        // Add VPN credentials if provided
-        if (row.vpn_username && row.vpn_password) {
-          credentialsToInsert.push({
-            username: row.vpn_username,
-            password: row.vpn_password,
-            service_type: 'VPN',
-            email: userEmail,
-            notes: `Imported from CSV on ${new Date().toISOString()}`,
-            ...(tenantId && { tenant_id: tenantId })
-          });
-        }
-        
-        // Add RDP credentials if provided
-        if (row.rdp_username && row.rdp_password) {
-          credentialsToInsert.push({
-            username: row.rdp_username,
-            password: row.rdp_password,
-            service_type: 'RDP',
-            email: userEmail,
-            notes: `Imported from CSV on ${new Date().toISOString()}`,
-            ...(tenantId && { tenant_id: tenantId })
-          });
-        }
-
-        // Add M365 credentials if provided
-        if (row["365_username"] && row["365 password"]) {
-          credentialsToInsert.push({
-            username: row["365_username"],
-            password: row["365 password"],
-            service_type: 'M365',
-            email: userEmail,
-            notes: `Imported from CSV on ${new Date().toISOString()}`,
-            ...(tenantId && { tenant_id: tenantId })
-          });
-        }
+        if (row.vpn_username && row.vpn_password) credentialCount++;
+        if (row.rdp_username && row.rdp_password) credentialCount++;
+        if (row["365_username"] && row["365 password"]) credentialCount++;
       });
-
-      // Deduplicate credentials by (email, service_type, tenant_id) combination
-      // Keep the last occurrence of each unique combination
-      const credentialMap = new Map<string, CredentialInsert>();
-      credentialsToInsert.forEach(cred => {
-        const key = JSON.stringify({
-          email: cred.email,
-          service_type: cred.service_type,
-          tenant_id: cred.tenant_id || null
-        });
-        credentialMap.set(key, cred);
-      });
-      const uniqueCredentials = Array.from(credentialMap.values());
-
-      if (uniqueCredentials.length > 0) {
-        const { error: credError } = await supabase
-          .from('vpn_rdp_credentials')
-          .insert(uniqueCredentials);
-
-        if (credError) {
-          console.error('Error creating credentials:', credError);
-          toast.warning(`Users imported, but some credentials failed: ${credError.message}`);
-        }
-      }
+      
+      // Credentials will be automatically synced by the database trigger
 
       // Final success message
       let successMessage = `Successfully imported ${data?.length || 0} users`;
       if (uniqueDeviceAssignments.length > 0) {
         successMessage += `, ${uniqueDeviceAssignments.length} device assignments`;
       }
-      if (uniqueCredentials.length > 0) {
-        successMessage += `, ${uniqueCredentials.length} credentials`;
+      if (credentialCount > 0) {
+        successMessage += `. Credentials will be synced automatically`;
       }
       successMessage += '!';
       toast.success(successMessage);

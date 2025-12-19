@@ -241,22 +241,47 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
     
     setSaving(true);
     try {
-      // Update master_user_list
-      // If full_name changed, update display_name as well
+      // =========================================================================
+      // SINGLE SOURCE OF TRUTH: Update master_user_list ONLY
+      // The database trigger (sync_credentials_from_master) will automatically
+      // sync credentials to vpn_rdp_credentials table, preventing duplicates
+      // =========================================================================
+      
       const displayNameToUse = editedDetails.full_name || editedDetails.display_name;
+      
+      // Build update object - only include password fields if they have values
+      const updateData: any = {
+        display_name: displayNameToUse,
+        job_title: editedDetails.full_name, // Store full_name in job_title for reference
+        department: editedDetails.department,
+        branch_id: editedDetails.branch_id,
+        vpn_username: editedDetails.vpn_username || null,
+        rdp_username: editedDetails.rdp_username || null,
+      };
+      
+      // Only include passwords if they were actually changed (not empty or null)
+      if (editedDetails.vpn_password && editedDetails.vpn_password.trim()) {
+        updateData.vpn_password = editedDetails.vpn_password;
+      }
+      if (editedDetails.rdp_password && editedDetails.rdp_password.trim()) {
+        updateData.rdp_password = editedDetails.rdp_password;
+      }
+      if (editedDetails.m365_password && editedDetails.m365_password.trim()) {
+        updateData.m365_password = editedDetails.m365_password;
+      }
+      if (editedDetails.m365_username && editedDetails.m365_username.trim()) {
+        updateData.m365_username = editedDetails.m365_username;
+      }
+      
       const { error: masterError } = await supabase
         .from("master_user_list")
-        .update({
-          display_name: displayNameToUse,
-          job_title: editedDetails.full_name, // Store full_name in job_title for reference
-          department: editedDetails.department,
-          branch_id: editedDetails.branch_id, // Update branch_id
-          vpn_username: editedDetails.vpn_username,
-          rdp_username: editedDetails.rdp_username,
-        })
+        .update(updateData)
         .eq("id", userId);
 
-      if (masterError) throw masterError;
+      if (masterError) {
+        console.error("Error updating master_user_list:", masterError);
+        throw new Error(`Failed to update user: ${masterError.message}`);
+      }
 
       // Also update profiles table if the user has a profile
       const { data: profileData } = await supabase
@@ -278,155 +303,31 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
           console.error("Error updating profile branch:", profileError);
           // Don't throw error, as master_user_list was updated successfully
           // Just log warning for admin to investigate
-          toast.error("Warning: Profile table update failed. Please contact administrator.");
+          toast.warning("Profile table update failed, but user details were saved.");
         }
       }
 
-      // Update VPN credentials if changed
-      if (editedDetails.vpn_username || editedDetails.vpn_password) {
-        // Check if VPN credential exists (case-insensitive email check)
-        // Fetch ALL VPN credentials and filter in JavaScript to match the database's LOWER(email) constraint
-        const { data: existingVpnList, error: vpnCheckError } = await supabase
-          .from("vpn_rdp_credentials")
-          .select("id, email")
-          .eq("service_type", "VPN");
-        
-        if (vpnCheckError) throw vpnCheckError;
-        
-        // Filter by exact lowercase match to ensure we find the right record
-        // This matches the database's case-insensitive unique index on (service_type, lower(email))
-        const existingVpn = existingVpnList?.find(
-          cred => cred.email.toLowerCase() === editedDetails.email.toLowerCase()
-        );
-        
-        if (existingVpn) {
-          // Update existing credential
-          const { error: vpnError } = await supabase
-            .from("vpn_rdp_credentials")
-            .update({
-              email: editedDetails.email,
-              username: editedDetails.vpn_username || "",
-              password: editedDetails.vpn_password || "",
-              notes: `Updated on ${new Date().toISOString()}`
-            })
-            .eq("id", existingVpn.id);
-          
-          if (vpnError) throw vpnError;
-        } else {
-          // Insert new credential
-          const { error: vpnError } = await supabase
-            .from("vpn_rdp_credentials")
-            .insert({
-              email: editedDetails.email,
-              service_type: "VPN",
-              username: editedDetails.vpn_username || "",
-              password: editedDetails.vpn_password || "",
-              notes: `Created on ${new Date().toISOString()}`
-            });
-          
-          if (vpnError) throw vpnError;
-        }
-      }
-
-      // Update RDP credentials if changed
-      if (editedDetails.rdp_username || editedDetails.rdp_password) {
-        // Check if RDP credential exists (case-insensitive email check)
-        // Fetch ALL RDP credentials and filter in JavaScript to match the database's LOWER(email) constraint
-        const { data: existingRdpList, error: rdpCheckError } = await supabase
-          .from("vpn_rdp_credentials")
-          .select("id, email")
-          .eq("service_type", "RDP");
-        
-        if (rdpCheckError) throw rdpCheckError;
-        
-        // Filter by exact lowercase match to ensure we find the right record
-        // This matches the database's case-insensitive unique index on (service_type, lower(email))
-        const existingRdp = existingRdpList?.find(
-          cred => cred.email.toLowerCase() === editedDetails.email.toLowerCase()
-        );
-        
-        if (existingRdp) {
-          // Update existing credential
-          const { error: rdpError } = await supabase
-            .from("vpn_rdp_credentials")
-            .update({
-              email: editedDetails.email,
-              username: editedDetails.rdp_username || "",
-              password: editedDetails.rdp_password || "",
-              notes: `Updated on ${new Date().toISOString()}`
-            })
-            .eq("id", existingRdp.id);
-          
-          if (rdpError) throw rdpError;
-        } else {
-          // Insert new credential
-          const { error: rdpError } = await supabase
-            .from("vpn_rdp_credentials")
-            .insert({
-              email: editedDetails.email,
-              service_type: "RDP",
-              username: editedDetails.rdp_username || "",
-              password: editedDetails.rdp_password || "",
-              notes: `Created on ${new Date().toISOString()}`
-            });
-          
-          if (rdpError) throw rdpError;
-        }
-      }
-
-      // Update M365 credentials if changed
-      if (editedDetails.m365_password) {
-        // Check if M365 credential exists (case-insensitive email check)
-        // Fetch ALL M365 credentials and filter in JavaScript to match the database's LOWER(email) constraint
-        const { data: existingM365List, error: m365CheckError } = await supabase
-          .from("vpn_rdp_credentials")
-          .select("id, email")
-          .eq("service_type", "M365");
-        
-        if (m365CheckError) throw m365CheckError;
-        
-        // Filter by exact lowercase match to ensure we find the right record
-        // This matches the database's case-insensitive unique index on (service_type, lower(email))
-        const existingM365 = existingM365List?.find(
-          cred => cred.email.toLowerCase() === editedDetails.email.toLowerCase()
-        );
-        
-        if (existingM365) {
-          // Update existing credential
-          const { error: m365Error } = await supabase
-            .from("vpn_rdp_credentials")
-            .update({
-              email: editedDetails.email,
-              username: editedDetails.m365_username || editedDetails.email,
-              password: editedDetails.m365_password,
-              notes: `Updated on ${new Date().toISOString()}`
-            })
-            .eq("id", existingM365.id);
-          
-          if (m365Error) throw m365Error;
-        } else {
-          // Insert new credential
-          const { error: m365Error } = await supabase
-            .from("vpn_rdp_credentials")
-            .insert({
-              email: editedDetails.email,
-              service_type: "M365",
-              username: editedDetails.m365_username || editedDetails.email,
-              password: editedDetails.m365_password,
-              notes: `Created on ${new Date().toISOString()}`
-            });
-          
-          if (m365Error) throw m365Error;
-        }
-      }
+      // =========================================================================
+      // NOTE: We DO NOT manually update vpn_rdp_credentials here!
+      // The database trigger (sync_credentials_from_master) handles this automatically
+      // This prevents race conditions and duplicate key violations
+      // =========================================================================
 
       toast.success("User details updated successfully");
       setEditing(false);
       setUserDetails(editedDetails);
       if (onUpdate) onUpdate();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving user details:", error);
-      toast.error("Failed to save user details");
+      
+      // Provide helpful error messages for common issues
+      if (error?.code === '23505') {
+        toast.error("A user with this email already exists. Please check for duplicates.");
+      } else if (error?.message) {
+        toast.error(`Failed to save: ${error.message}`);
+      } else {
+        toast.error("Failed to save user details. Please try again.");
+      }
     } finally {
       setSaving(false);
     }
