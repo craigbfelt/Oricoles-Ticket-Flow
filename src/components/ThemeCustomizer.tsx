@@ -9,7 +9,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { Palette, Type, Image as ImageIcon, Upload, RotateCcw, Sun, Moon, PanelLeft, GripVertical, Eye, EyeOff, ChevronUp, ChevronDown, Ticket, Trash2, AlignLeft, AlignCenter, AlignRight, LayoutGrid, Rows } from "lucide-react";
+import { Palette, Type, Image as ImageIcon, Upload, RotateCcw, Sun, Moon, PanelLeft, GripVertical, Eye, EyeOff, ChevronUp, ChevronDown, Ticket, Trash2, AlignLeft, AlignCenter, AlignRight, LayoutGrid, Rows, LayoutDashboard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { THEME_STORAGE_KEY, defaultThemeSettings, ThemeSettings, LogoPosition, LogoLayout } from "@/lib/theme-constants";
 
@@ -538,7 +538,7 @@ export const ThemeCustomizer = () => {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="colors" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="colors">
               <Palette className="h-4 w-4 mr-2" />
               Colors
@@ -546,6 +546,10 @@ export const ThemeCustomizer = () => {
             <TabsTrigger value="sidebar">
               <PanelLeft className="h-4 w-4 mr-2" />
               Sidebar
+            </TabsTrigger>
+            <TabsTrigger value="dashboard">
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              Cards
             </TabsTrigger>
             <TabsTrigger value="tickets">
               <Ticket className="h-4 w-4 mr-2" />
@@ -832,6 +836,143 @@ export const ThemeCustomizer = () => {
                   <span className="text-sm">Menu Item</span>
                 </div>
               </div>
+            </div>
+          </TabsContent>
+
+          {/* Dashboard Cards Tab */}
+          <TabsContent value="dashboard" className="space-y-6 mt-6">
+            <div className="space-y-4">
+              <div>
+                <Label className="text-base font-semibold">Dashboard Card Colors</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Customize the appearance of navigation cards on the dashboard page.
+                </p>
+              </div>
+              
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="dashboardCardBackground">Card Background Color</Label>
+                  <div className="flex items-center gap-3">
+                    <ColorPicker
+                      value={theme.dashboardCardBackground}
+                      onChange={(hsl) => setTheme({ ...theme, dashboardCardBackground: hsl })}
+                      label="Card Background"
+                    />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.dashboardCardBackground)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    The background color for all dashboard navigation cards
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="dashboardCardTitleColor">Card Title Text Color</Label>
+                  <div className="flex items-center gap-3">
+                    <ColorPicker
+                      value={theme.dashboardCardTitleColor}
+                      onChange={(hsl) => setTheme({ ...theme, dashboardCardTitleColor: hsl })}
+                      label="Title Color"
+                    />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.dashboardCardTitleColor)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    The text color for card titles (e.g., "Dashboard", "Tickets", etc.)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="dashboardCardIconBackground">Icon Background Color</Label>
+                  <div className="flex items-center gap-3">
+                    <ColorPicker
+                      value={theme.dashboardCardIconBackground}
+                      onChange={(hsl) => setTheme({ ...theme, dashboardCardIconBackground: hsl })}
+                      label="Icon Background"
+                    />
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {hslToHex(theme.dashboardCardIconBackground)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Background color for the circular icon container
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="dashboardCardIconSize">Icon Size: {theme.dashboardCardIconSize}px</Label>
+                  <Slider
+                    id="dashboardCardIconSize"
+                    min={20}
+                    max={64}
+                    step={4}
+                    value={[theme.dashboardCardIconSize]}
+                    onValueChange={([value]) => setTheme({ ...theme, dashboardCardIconSize: value })}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Adjust the size of icons within the cards (20px - 64px)
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Live Preview */}
+            <div className="space-y-4 pt-4 border-t">
+              <Label className="text-base font-semibold">Live Preview</Label>
+              <div className="flex gap-4 flex-wrap">
+                <div 
+                  className="rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-3 p-6 min-w-[140px]"
+                  style={{ backgroundColor: `hsl(${theme.dashboardCardBackground})` }}
+                >
+                  <div 
+                    className="rounded-full p-3 flex items-center justify-center"
+                    style={{ backgroundColor: `hsl(${theme.dashboardCardIconBackground})` }}
+                  >
+                    <LayoutDashboard 
+                      style={{ 
+                        height: `${theme.dashboardCardIconSize}px`, 
+                        width: `${theme.dashboardCardIconSize}px`,
+                        color: `hsl(${theme.dashboardCardBackground})`
+                      }} 
+                    />
+                  </div>
+                  <span 
+                    className="text-sm font-medium text-center"
+                    style={{ color: `hsl(${theme.dashboardCardTitleColor})` }}
+                  >
+                    Sample Card
+                  </span>
+                </div>
+                <div 
+                  className="rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-3 p-6 min-w-[140px]"
+                  style={{ backgroundColor: `hsl(${theme.dashboardCardBackground})` }}
+                >
+                  <div 
+                    className="rounded-full p-3 flex items-center justify-center"
+                    style={{ backgroundColor: `hsl(${theme.dashboardCardIconBackground})` }}
+                  >
+                    <Ticket 
+                      style={{ 
+                        height: `${theme.dashboardCardIconSize}px`, 
+                        width: `${theme.dashboardCardIconSize}px`,
+                        color: `hsl(${theme.dashboardCardBackground})`
+                      }} 
+                    />
+                  </div>
+                  <span 
+                    className="text-sm font-medium text-center"
+                    style={{ color: `hsl(${theme.dashboardCardTitleColor})` }}
+                  >
+                    Tickets
+                  </span>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Preview of how your dashboard navigation cards will appear with these settings.
+              </p>
             </div>
           </TabsContent>
 

@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { determineDeviceType } from "@/lib/deviceTypeUtils";
+import { THEME_STORAGE_KEY, defaultThemeSettings, type ThemeSettings } from "@/lib/theme-constants";
 
 interface DirectoryUser {
   id: string;
@@ -79,6 +80,23 @@ const Dashboard = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [userDetailsDialogOpen, setUserDetailsDialogOpen] = useState(false);
+  const [themeSettings, setThemeSettings] = useState<ThemeSettings>(defaultThemeSettings);
+
+  // Load theme settings on component mount
+  useEffect(() => {
+    const loadTheme = () => {
+      const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+      if (savedTheme) {
+        try {
+          const parsed = JSON.parse(savedTheme);
+          setThemeSettings({ ...defaultThemeSettings, ...parsed });
+        } catch (error) {
+          console.error('Error loading theme:', error);
+        }
+      }
+    };
+    loadTheme();
+  }, []);
 
   /**
    * Consolidates user data from multiple sources across the database
@@ -640,6 +658,38 @@ const Dashboard = () => {
 
   const navigationCards = getNavigationCards();
 
+  // Helper function to render a navigation card with consistent styling
+  const renderNavigationCard = (icon: any, name: string, onClick: () => void, key?: string) => {
+    const IconComponent = icon;
+    return (
+      <div
+        key={key}
+        onClick={onClick}
+        className="rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-3 h-full min-h-[120px] p-6"
+        style={{ backgroundColor: `hsl(${themeSettings.dashboardCardBackground})` }}
+      >
+        <div 
+          className="rounded-full p-3 flex items-center justify-center"
+          style={{ backgroundColor: `hsl(${themeSettings.dashboardCardIconBackground})` }}
+        >
+          <IconComponent 
+            style={{ 
+              height: `${themeSettings.dashboardCardIconSize}px`, 
+              width: `${themeSettings.dashboardCardIconSize}px`,
+              color: `hsl(${themeSettings.dashboardCardBackground})`
+            }} 
+          />
+        </div>
+        <span 
+          className="text-sm font-medium text-center"
+          style={{ color: `hsl(${themeSettings.dashboardCardTitleColor})` }}
+        >
+          {name}
+        </span>
+      </div>
+    );
+  };
+
   return (
     <DashboardLayout>
       <div className="p-4 md:p-6 space-y-6 w-full">
@@ -657,26 +707,12 @@ const Dashboard = () => {
           <CardContent className="pb-6">
             <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {/* Dashboard/Home button card */}
-              <div
-                onClick={() => navigate("/dashboard")}
-                className="bg-gray-700 text-white p-6 rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-3 h-full min-h-[120px]"
-              >
-                <LayoutDashboard className="h-10 w-10" />
-                <span className="text-sm font-medium text-center">Dashboard</span>
-              </div>
-              {navigationCards.map((card) => {
-                const Icon = card.icon;
-                return (
-                  <div
-                    key={card.href}
-                    onClick={() => navigate(card.href)}
-                    className={`${card.color} text-white p-6 rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-3 h-full min-h-[120px]`}
-                  >
-                    <Icon className="h-10 w-10" />
-                    <span className="text-sm font-medium text-center">{card.name}</span>
-                  </div>
-                );
-              })}
+              {renderNavigationCard(LayoutDashboard, "Dashboard", () => navigate("/dashboard"), "dashboard-card")}
+              
+              {/* Other navigation cards */}
+              {navigationCards.map((card) => 
+                renderNavigationCard(card.icon, card.name, () => navigate(card.href), card.href)
+              )}
             </div>
           </CardContent>
         </Card>
