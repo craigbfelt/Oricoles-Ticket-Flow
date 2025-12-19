@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -660,36 +659,36 @@ const Dashboard = () => {
   const navigationCards = getNavigationCards();
 
   // Helper function to render a navigation card with consistent styling
-  const renderNavigationCard = (icon: any, name: string, onClick: () => void) => (
-    <div
-      onClick={onClick}
-      className="rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-3 h-full min-h-[120px] p-6"
-      style={{ backgroundColor: `hsl(${themeSettings.dashboardCardBackground})` }}
-    >
-      <div 
-        className="rounded-full p-3 flex items-center justify-center"
-        style={{ backgroundColor: `hsl(${themeSettings.dashboardCardIconBackground})` }}
+  const renderNavigationCard = (icon: any, name: string, onClick: () => void, key?: string) => {
+    const IconComponent = icon;
+    return (
+      <div
+        key={key}
+        onClick={onClick}
+        className="rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-3 h-full min-h-[120px] p-6"
+        style={{ backgroundColor: `hsl(${themeSettings.dashboardCardBackground})` }}
       >
-        {typeof icon === 'function' ? (
-          React.createElement(icon, {
-            style: { 
+        <div 
+          className="rounded-full p-3 flex items-center justify-center"
+          style={{ backgroundColor: `hsl(${themeSettings.dashboardCardIconBackground})` }}
+        >
+          <IconComponent 
+            style={{ 
               height: `${themeSettings.dashboardCardIconSize}px`, 
               width: `${themeSettings.dashboardCardIconSize}px`,
               color: `hsl(${themeSettings.dashboardCardBackground})`
-            }
-          })
-        ) : (
-          icon
-        )}
+            }} 
+          />
+        </div>
+        <span 
+          className="text-sm font-medium text-center"
+          style={{ color: `hsl(${themeSettings.dashboardCardTitleColor})` }}
+        >
+          {name}
+        </span>
       </div>
-      <span 
-        className="text-sm font-medium text-center"
-        style={{ color: `hsl(${themeSettings.dashboardCardTitleColor})` }}
-      >
-        {name}
-      </span>
-    </div>
-  );
+    );
+  };
 
   return (
     <DashboardLayout>
@@ -708,14 +707,12 @@ const Dashboard = () => {
           <CardContent className="pb-6">
             <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {/* Dashboard/Home button card */}
-              {renderNavigationCard(LayoutDashboard, "Dashboard", () => navigate("/dashboard"))}
+              {renderNavigationCard(LayoutDashboard, "Dashboard", () => navigate("/dashboard"), "dashboard-card")}
               
               {/* Other navigation cards */}
-              {navigationCards.map((card) => (
-                <React.Fragment key={card.href}>
-                  {renderNavigationCard(card.icon, card.name, () => navigate(card.href))}
-                </React.Fragment>
-              ))}
+              {navigationCards.map((card) => 
+                renderNavigationCard(card.icon, card.name, () => navigate(card.href), card.href)
+              )}
             </div>
           </CardContent>
         </Card>
