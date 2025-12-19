@@ -290,6 +290,7 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
           .select("id")
           .ilike("email", editedDetails.email)
           .eq("service_type", "VPN")
+          .limit(1)
           .maybeSingle();
         
         if (vpnCheckError) throw vpnCheckError;
@@ -331,6 +332,7 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
           .select("id")
           .ilike("email", editedDetails.email)
           .eq("service_type", "RDP")
+          .limit(1)
           .maybeSingle();
         
         if (rdpCheckError) throw rdpCheckError;
@@ -372,6 +374,7 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
           .select("id")
           .ilike("email", editedDetails.email)
           .eq("service_type", "M365")
+          .limit(1)
           .maybeSingle();
         
         if (m365CheckError) throw m365CheckError;
