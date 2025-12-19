@@ -54,6 +54,11 @@ export const defaultThemeSettings = {
   ticketPriorityMedium: '45 93% 47%',
   ticketPriorityHigh: '38 92% 50%',
   ticketPriorityUrgent: '0 72% 51%',
+  // Dashboard card styling
+  dashboardCardBackground: '330 100% 63%', // Bright pink (#FF3385)
+  dashboardCardTitleColor: '0 0% 0%', // Black
+  dashboardCardIconBackground: '0 0% 100%', // White
+  dashboardCardIconSize: 32, // Smaller icon size in pixels
 };
 
 export type ThemeSettings = typeof defaultThemeSettings;

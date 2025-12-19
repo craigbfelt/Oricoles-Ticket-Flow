@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { determineDeviceType } from "@/lib/deviceTypeUtils";
+import { THEME_STORAGE_KEY, defaultThemeSettings, type ThemeSettings } from "@/lib/theme-constants";
 
 interface DirectoryUser {
   id: string;
@@ -79,6 +80,23 @@ const Dashboard = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [userDetailsDialogOpen, setUserDetailsDialogOpen] = useState(false);
+  const [themeSettings, setThemeSettings] = useState<ThemeSettings>(defaultThemeSettings);
+
+  // Load theme settings on component mount
+  useEffect(() => {
+    const loadTheme = () => {
+      const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+      if (savedTheme) {
+        try {
+          const parsed = JSON.parse(savedTheme);
+          setThemeSettings({ ...defaultThemeSettings, ...parsed });
+        } catch (error) {
+          console.error('Error loading theme:', error);
+        }
+      }
+    };
+    loadTheme();
+  }, []);
 
   /**
    * Consolidates user data from multiple sources across the database
@@ -659,10 +677,27 @@ const Dashboard = () => {
               {/* Dashboard/Home button card */}
               <div
                 onClick={() => navigate("/dashboard")}
-                className="bg-gray-700 text-white p-6 rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-3 h-full min-h-[120px]"
+                className="rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-3 h-full min-h-[120px] p-6"
+                style={{ backgroundColor: `hsl(${themeSettings.dashboardCardBackground})` }}
               >
-                <LayoutDashboard className="h-10 w-10" />
-                <span className="text-sm font-medium text-center">Dashboard</span>
+                <div 
+                  className="rounded-full p-3 flex items-center justify-center"
+                  style={{ backgroundColor: `hsl(${themeSettings.dashboardCardIconBackground})` }}
+                >
+                  <LayoutDashboard 
+                    style={{ 
+                      height: `${themeSettings.dashboardCardIconSize}px`, 
+                      width: `${themeSettings.dashboardCardIconSize}px`,
+                      color: `hsl(${themeSettings.dashboardCardBackground})`
+                    }} 
+                  />
+                </div>
+                <span 
+                  className="text-sm font-medium text-center"
+                  style={{ color: `hsl(${themeSettings.dashboardCardTitleColor})` }}
+                >
+                  Dashboard
+                </span>
               </div>
               {navigationCards.map((card) => {
                 const Icon = card.icon;
@@ -670,10 +705,27 @@ const Dashboard = () => {
                   <div
                     key={card.href}
                     onClick={() => navigate(card.href)}
-                    className={`${card.color} text-white p-6 rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-3 h-full min-h-[120px]`}
+                    className="rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-3 h-full min-h-[120px] p-6"
+                    style={{ backgroundColor: `hsl(${themeSettings.dashboardCardBackground})` }}
                   >
-                    <Icon className="h-10 w-10" />
-                    <span className="text-sm font-medium text-center">{card.name}</span>
+                    <div 
+                      className="rounded-full p-3 flex items-center justify-center"
+                      style={{ backgroundColor: `hsl(${themeSettings.dashboardCardIconBackground})` }}
+                    >
+                      <Icon 
+                        style={{ 
+                          height: `${themeSettings.dashboardCardIconSize}px`, 
+                          width: `${themeSettings.dashboardCardIconSize}px`,
+                          color: `hsl(${themeSettings.dashboardCardBackground})`
+                        }} 
+                      />
+                    </div>
+                    <span 
+                      className="text-sm font-medium text-center"
+                      style={{ color: `hsl(${themeSettings.dashboardCardTitleColor})` }}
+                    >
+                      {card.name}
+                    </span>
                   </div>
                 );
               })}
