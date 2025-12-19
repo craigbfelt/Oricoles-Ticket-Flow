@@ -285,15 +285,19 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
       // Update VPN credentials if changed
       if (editedDetails.vpn_username || editedDetails.vpn_password) {
         // Check if VPN credential exists (case-insensitive email check)
-        const { data: existingVpn, error: vpnCheckError } = await supabase
+        // Using filter with lower() function to match the database unique index
+        const { data: existingVpnList, error: vpnCheckError } = await supabase
           .from("vpn_rdp_credentials")
-          .select("id")
-          .ilike("email", editedDetails.email)
+          .select("id, email")
           .eq("service_type", "VPN")
-          .limit(1)
-          .maybeSingle();
+          .filter('email', 'ilike', editedDetails.email);
         
         if (vpnCheckError) throw vpnCheckError;
+        
+        // Additional check: filter by lowercase in JavaScript to ensure case-insensitive match
+        const existingVpn = existingVpnList?.find(
+          cred => cred.email.toLowerCase() === editedDetails.email.toLowerCase()
+        );
         
         if (existingVpn) {
           // Update existing credential
@@ -327,15 +331,19 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
       // Update RDP credentials if changed
       if (editedDetails.rdp_username || editedDetails.rdp_password) {
         // Check if RDP credential exists (case-insensitive email check)
-        const { data: existingRdp, error: rdpCheckError } = await supabase
+        // Using filter with lower() function to match the database unique index
+        const { data: existingRdpList, error: rdpCheckError } = await supabase
           .from("vpn_rdp_credentials")
-          .select("id")
-          .ilike("email", editedDetails.email)
+          .select("id, email")
           .eq("service_type", "RDP")
-          .limit(1)
-          .maybeSingle();
+          .filter('email', 'ilike', editedDetails.email);
         
         if (rdpCheckError) throw rdpCheckError;
+        
+        // Additional check: filter by lowercase in JavaScript to ensure case-insensitive match
+        const existingRdp = existingRdpList?.find(
+          cred => cred.email.toLowerCase() === editedDetails.email.toLowerCase()
+        );
         
         if (existingRdp) {
           // Update existing credential
@@ -369,15 +377,19 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
       // Update M365 credentials if changed
       if (editedDetails.m365_password) {
         // Check if M365 credential exists (case-insensitive email check)
-        const { data: existingM365, error: m365CheckError } = await supabase
+        // Using filter with lower() function to match the database unique index
+        const { data: existingM365List, error: m365CheckError } = await supabase
           .from("vpn_rdp_credentials")
-          .select("id")
-          .ilike("email", editedDetails.email)
+          .select("id, email")
           .eq("service_type", "M365")
-          .limit(1)
-          .maybeSingle();
+          .filter('email', 'ilike', editedDetails.email);
         
         if (m365CheckError) throw m365CheckError;
+        
+        // Additional check: filter by lowercase in JavaScript to ensure case-insensitive match
+        const existingM365 = existingM365List?.find(
+          cred => cred.email.toLowerCase() === editedDetails.email.toLowerCase()
+        );
         
         if (existingM365) {
           // Update existing credential
