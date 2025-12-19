@@ -68,7 +68,7 @@ BEGIN
       SET 
         username = NEW.vpn_username,
         password = COALESCE(NEW.vpn_password, password), -- Keep existing password if new one is null
-        notes = COALESCE(notes, 'Synced from master user list'),
+        notes = COALESCE(notes, 'Synced from master user list'), -- Preserve existing notes
         updated_at = now()
       WHERE id = existing_vpn_id;
     ELSE
@@ -84,7 +84,7 @@ BEGIN
       ) VALUES (
         NEW.email,
         NEW.vpn_username,
-        COALESCE(NEW.vpn_password, '***ENCRYPTED***'),
+        COALESCE(NEW.vpn_password, '***ENCRYPTED***'), -- Placeholder for null passwords (maintains consistency with original migration)
         'VPN',
         'Synced from master user list',
         now(),
@@ -110,7 +110,7 @@ BEGIN
       SET 
         username = NEW.rdp_username,
         password = COALESCE(NEW.rdp_password, password), -- Keep existing password if new one is null
-        notes = COALESCE(notes, 'Synced from master user list'),
+        notes = COALESCE(notes, 'Synced from master user list'), -- Preserve existing notes
         updated_at = now()
       WHERE id = existing_rdp_id;
     ELSE
@@ -126,7 +126,7 @@ BEGIN
       ) VALUES (
         NEW.email,
         NEW.rdp_username,
-        COALESCE(NEW.rdp_password, '***ENCRYPTED***'),
+        COALESCE(NEW.rdp_password, '***ENCRYPTED***'), -- Placeholder for null passwords (maintains consistency with original migration)
         'RDP',
         'Synced from master user list',
         now(),
