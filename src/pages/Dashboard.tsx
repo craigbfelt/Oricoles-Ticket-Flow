@@ -795,8 +795,11 @@ const Dashboard = () => {
                           return true;
                         })
                         .map((user: UserWithStats) => {
-                          // Simplified card showing only user name and minimal info
-                          // All detailed data (devices, VPN, RDP, serial numbers) shown on UserDetails page only
+                          // User card with consolidated data from all sources:
+                          // - Branch from master_user_list.branch_id -> branches table
+                          // - VPN credentials from vpn_rdp_credentials + master_user_list
+                          // - RDP credentials from vpn_rdp_credentials + master_user_list
+                          // - Device info from device_user_assignments + hardware_inventory
                           return (
                             <div
                               key={user.id}
@@ -832,6 +835,30 @@ const Dashboard = () => {
                                     {user.branch_name || "NA"}
                                   </p>
                                 </div>
+
+                                {/* Credentials & Device Summary - pulled from master_user_list + other tables */}
+                                {(user.vpnCount > 0 || user.rdpCount > 0 || user.deviceCount > 0) && (
+                                  <div className="flex flex-wrap gap-1 justify-center mb-2">
+                                    {user.vpnCount > 0 && (
+                                      <Badge variant="outline" className="text-xs gap-1" title="VPN credentials configured">
+                                        <Wifi className="h-3 w-3" />
+                                        {user.vpnCount}
+                                      </Badge>
+                                    )}
+                                    {user.rdpCount > 0 && (
+                                      <Badge variant="outline" className="text-xs gap-1" title="RDP credentials configured">
+                                        <Server className="h-3 w-3" />
+                                        {user.rdpCount}
+                                      </Badge>
+                                    )}
+                                    {user.deviceCount > 0 && (
+                                      <Badge variant="outline" className="text-xs gap-1" title="Devices assigned">
+                                        <Computer className="h-3 w-3" />
+                                        {user.deviceCount}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                )}
                               </div>
 
                               {/* Device Type Badge - consistent positioning at bottom */}
