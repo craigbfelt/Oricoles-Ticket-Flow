@@ -80,6 +80,24 @@ const Dashboard = () => {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [userDetailsDialogOpen, setUserDetailsDialogOpen] = useState(false);
 
+  /**
+   * Consolidates user data from multiple sources across the database
+   * 
+   * DATA SOURCES:
+   * 1. Branch Information: master_user_list.branch_id → branches table (name)
+   * 2. VPN Credentials: vpn_rdp_credentials (service_type='VPN') + master_user_list.vpn_username
+   * 3. RDP Credentials: vpn_rdp_credentials (service_type='RDP') + master_user_list.rdp_username
+   * 4. Device Information: device_user_assignments + hardware_inventory
+   * 5. Staff Users: profiles table (email matching)
+   * 
+   * DEDUPLICATION:
+   * - Credentials are deduplicated by username + service_type
+   * - Devices are deduplicated by serial_number
+   * - Users are deduplicated by email address
+   * 
+   * @param users - Base user list from master_user_list/directory_users
+   * @returns Enriched users with consolidated stats and credentials
+   */
   const enrichUsersWithStats = useCallback(async (users: DirectoryUser[]): Promise<UserWithStats[]> => {
     try {
       // Fetch all staff users (profiles)
@@ -272,10 +290,23 @@ const Dashboard = () => {
     }
   }, []);
 
+  /**
+   * Fetches the user list from master_user_list with branch information
+   * 
+   * This function establishes the base user list by:
+   * 1. Fetching from master_user_list (single source of truth)
+   * 2. Joining with branches table to get branch names
+   * 3. Enriching with M365/Intune data from directory_users
+   * 4. Calling enrichUsersWithStats to add VPN/RDP/device data
+   * 
+   * The master_user_list is populated via CSV imports and serves as
+   * the authoritative list of users in the system.
+   */
   const fetchDirectoryUsers = useCallback(async () => {
     try {
       // PRIMARY SOURCE: Fetch from master_user_list (fixed user list)
       // This is now the source of truth for who should be in the system
+      // INCLUDES: branch_id with JOIN to branches table for branch name
       const { data: masterListData, error: masterListError } = await supabase
         .from("master_user_list")
         .select("id, display_name, email, job_title, department, vpn_username, rdp_username, is_active, source, branch_id, branches:branch_id(name)")
@@ -795,8 +826,11 @@ const Dashboard = () => {
                           return true;
                         })
                         .map((user: UserWithStats) => {
-                          // Simplified card showing only user name and minimal info
-                          // All detailed data (devices, VPN, RDP, serial numbers) shown on UserDetails page only
+                          // User card with consolidated data from all sources:
+                          // - Branch from master_user_list.branch_id -> branches table
+                          // - VPN credentials from vpn_rdp_credentials + master_user_list
+                          // - RDP credentials from vpn_rdp_credentials + master_user_list
+                          // - Device info from device_user_assignments + hardware_inventory
                           return (
                             <div
                               key={user.id}
@@ -832,6 +866,30 @@ const Dashboard = () => {
                                     {user.branch_name || "NA"}
                                   </p>
                                 </div>
+
+                                {/* Credentials & Device Summary - pulled from master_user_list + other tables */}
+                                {(user.vpnCount > 0 || user.rdpCount > 0 || user.deviceCount > 0) && (
+                                  <div className="flex flex-wrap gap-1 justify-center mb-2">
+                                    {user.vpnCount > 0 && (
+                                      <Badge variant="outline" className="text-xs gap-1" title="VPN credentials configured">
+                                        <Wifi className="h-3 w-3" />
+                                        {user.vpnCount}
+                                      </Badge>
+                                    )}
+                                    {user.rdpCount > 0 && (
+                                      <Badge variant="outline" className="text-xs gap-1" title="RDP credentials configured">
+                                        <Server className="h-3 w-3" />
+                                        {user.rdpCount}
+                                      </Badge>
+                                    )}
+                                    {user.deviceCount > 0 && (
+                                      <Badge variant="outline" className="text-xs gap-1" title="Devices assigned">
+                                        <Computer className="h-3 w-3" />
+                                        {user.deviceCount}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                )}
                               </div>
 
                               {/* Device Type Badge - consistent positioning at bottom */}
