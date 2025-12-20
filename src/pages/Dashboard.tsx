@@ -648,12 +648,39 @@ const Dashboard = () => {
     ];
 
     // Filter cards based on user roles
-    return allCards.filter(card => {
+    const roleFilteredCards = allCards.filter(card => {
       if (card.requiredRoles.length === 0) return true;
       if (card.requiredRoles.includes('admin') && isAdmin) return true;
       if (card.requiredRoles.includes('support_staff') && isSupportStaff) return true;
       return false;
     });
+
+    // Filter out hidden cards based on theme settings
+    const visibleCards = roleFilteredCards.filter(card => 
+      !themeSettings.hiddenNavItems.includes(card.href)
+    );
+
+    // Sort cards based on navigationOrder if specified
+    if (themeSettings.navigationOrder.length > 0) {
+      const orderedCards: typeof visibleCards = [];
+      themeSettings.navigationOrder.forEach(href => {
+        const card = visibleCards.find(c => c.href === href);
+        if (card) orderedCards.push(card);
+      });
+      
+      // Add any cards not in the order (new cards that were added after order was saved)
+      // Use Set for O(1) lookup performance instead of O(n) with find
+      const addedHrefs = new Set(orderedCards.map(c => c.href));
+      visibleCards.forEach(card => {
+        if (!addedHrefs.has(card.href)) {
+          orderedCards.push(card);
+        }
+      });
+      
+      return orderedCards;
+    }
+
+    return visibleCards;
   };
 
   const navigationCards = getNavigationCards();
@@ -665,23 +692,23 @@ const Dashboard = () => {
       <div
         key={key}
         onClick={onClick}
-        className="rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-3 h-full min-h-[120px] p-6"
+        className="rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-2 h-full min-h-[80px] p-3 border border-gray-200"
         style={{ backgroundColor: `hsl(${themeSettings.dashboardCardBackground})` }}
       >
         <div 
-          className="rounded-full p-3 flex items-center justify-center"
+          className="rounded-full p-2 flex items-center justify-center"
           style={{ backgroundColor: `hsl(${themeSettings.dashboardCardIconBackground})` }}
         >
           <IconComponent 
             style={{ 
               height: `${themeSettings.dashboardCardIconSize}px`, 
               width: `${themeSettings.dashboardCardIconSize}px`,
-              color: `hsl(${themeSettings.dashboardCardBackground})`
+              color: 'white'
             }} 
           />
         </div>
         <span 
-          className="text-sm font-medium text-center"
+          className="text-xs font-medium text-center leading-tight"
           style={{ color: `hsl(${themeSettings.dashboardCardTitleColor})` }}
         >
           {name}

@@ -194,35 +194,34 @@ const ColorPicker = ({ value, onChange, label }: ColorPickerProps) => {
   );
 };
 
-// Default navigation items that can be reordered
+// Default dashboard navigation card items that can be reordered and hidden
+// This matches the navigation cards shown on the Dashboard page
 const defaultNavItems = [
   { name: "Dashboard", href: "/dashboard" },
   { name: "Tickets", href: "/tickets" },
   { name: "IT Suppliers", href: "/it-suppliers" },
-  { name: "Oricol CRM", href: "/crm" },
-  { name: "Bluewave CRM", href: "/bluewave-crm" },
-  { name: "Sage", href: "/sage" },
   { name: "Remote Support", href: "/remote-support" },
+  { name: "Assets", href: "/assets" },
+  { name: "Users", href: "/users" },
+  { name: "User Management", href: "/user-management" },
+  { name: "VPN", href: "/vpn" },
+  { name: "RDP", href: "/rdp" },
+  { name: "Computers", href: "/hardware" },
+  { name: "Microsoft 365", href: "/microsoft-365" },
+  { name: "Software", href: "/software" },
+  { name: "Licenses", href: "/licenses" },
+  { name: "Branches", href: "/branches" },
+  { name: "Jobs", href: "/jobs" },
+  { name: "Maintenance", href: "/maintenance" },
+  { name: "Logistics", href: "/logistics" },
   { name: "Document Hub", href: "/document-hub" },
   { name: "Shared Files", href: "/shared-files" },
   { name: "Migrations", href: "/migrations" },
   { name: "Migration Tracker", href: "/migration-tracker" },
-  { name: "Jobs", href: "/jobs" },
-  { name: "Maintenance", href: "/maintenance" },
-  { name: "Logistics", href: "/logistics" },
-  { name: "Assets", href: "/assets" },
-  { name: "Branches", href: "/branches" },
-  { name: "Microsoft 365", href: "/microsoft-365" },
-  { name: "Computers", href: "/hardware" },
-  { name: "Software", href: "/software" },
-  { name: "Licenses", href: "/licenses" },
-  { name: "Provider Emails", href: "/provider-emails" },
-  { name: "VPN", href: "/vpn" },
-  { name: "RDP", href: "/rdp" },
-  { name: "Nymbis RDP Cloud", href: "/nymbis-rdp-cloud" },
-  { name: "Company Network", href: "/company-network" },
+  { name: "Edge Functions", href: "/edge-function-tracker" },
+  { name: "Endpoint Monitoring", href: "/endpoint-monitoring" },
   { name: "Reports", href: "/reports" },
-  { name: "Users", href: "/users" },
+  { name: "Company Network", href: "/company-network" },
   { name: "Settings", href: "/settings" },
 ];
 
@@ -1615,9 +1614,9 @@ export const ThemeCustomizer = () => {
             {/* Navigation Order Section */}
             <div className="space-y-4 pt-4 border-t">
               <div>
-                <Label className="text-base font-semibold">Navigation Menu Editor</Label>
+                <Label className="text-base font-semibold">Dashboard Navigation Cards Editor</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Reorder menu items using the arrows or hide items you don't need. Changes are saved with your theme.
+                  Reorder or hide dashboard navigation cards. Changes apply to the navigation card grid on the Dashboard page (the section titled "Quick Navigation"). Hidden cards won't appear, but you can still access those pages through direct links.
                 </p>
               </div>
               
