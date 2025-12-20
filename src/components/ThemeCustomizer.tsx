@@ -336,7 +336,7 @@ const NavigationEditor = ({ navigationOrder, hiddenNavItems, onOrderChange, onHi
       </div>
       <p className="text-sm text-muted-foreground">
         Use the arrows to reorder menu items. Click the eye icon to hide/show items. 
-        Hidden items will not appear in the sidebar navigation.
+        Hidden items will not appear in the sidebar navigation or Dashboard cards.
       </p>
     </div>
   );
@@ -1614,9 +1614,9 @@ export const ThemeCustomizer = () => {
             {/* Navigation Order Section */}
             <div className="space-y-4 pt-4 border-t">
               <div>
-                <Label className="text-base font-semibold">Dashboard Navigation Cards Editor</Label>
+                <Label className="text-base font-semibold">Sidebar Navigation Editor</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Reorder or hide dashboard navigation cards. Changes apply to the navigation card grid on the Dashboard page (the section titled "Quick Navigation"). Hidden cards won't appear, but you can still access those pages through direct links.
+                  Reorder or hide sidebar navigation links. Changes apply to the sidebar menu on the left and the Dashboard navigation card grid. Hidden items won't appear in the sidebar, but you can still access those pages through direct links or the Dashboard cards (if not hidden there as well).
                 </p>
               </div>
               
