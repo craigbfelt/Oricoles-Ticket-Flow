@@ -52,13 +52,13 @@ All colors MUST be HSL.
     --priority-urgent: 0 72% 51%;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 355 75% 50%;
-    --sidebar-primary: 355 75% 50%;
+    --sidebar-foreground: 337 98% 47%; /* Bright pink #f20262 */
+    --sidebar-primary: 337 98% 47%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 355 75% 95%;
-    --sidebar-accent-foreground: 355 75% 50%;
-    --sidebar-border: 355 75% 90%;
-    --sidebar-ring: 355 75% 50%;
+    --sidebar-accent: 337 98% 95%; /* Light pink for hover */
+    --sidebar-accent-foreground: 337 98% 47%;
+    --sidebar-border: 220 13% 91%; /* Light gray border */
+    --sidebar-ring: 337 98% 47%;
     
     /* Theme customization variables */
     --theme-primary: 212 85% 48%;
@@ -99,13 +99,13 @@ All colors MUST be HSL.
     --ring: 212 85% 48%;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 355 75% 50%;
-    --sidebar-primary: 355 75% 50%;
+    --sidebar-foreground: 337 98% 47%; /* Bright pink #f20262 */
+    --sidebar-primary: 337 98% 47%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 355 75% 95%;
-    --sidebar-accent-foreground: 355 75% 50%;
-    --sidebar-border: 355 75% 90%;
-    --sidebar-ring: 355 75% 50%;
+    --sidebar-accent: 337 98% 95%; /* Light pink for hover */
+    --sidebar-accent-foreground: 337 98% 47%;
+    --sidebar-border: 220 13% 91%; /* Light gray border */
+    --sidebar-ring: 337 98% 47%;
   }
 }
 

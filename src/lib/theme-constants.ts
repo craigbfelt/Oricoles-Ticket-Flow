@@ -28,13 +28,13 @@ export const defaultThemeSettings = {
   showSecondaryLogo: false,
   layoutDensity: 'comfortable' as const,
   darkMode: false,
-  // Sidebar colors - Custom vibrant scheme
-  // Background: #ffffff (white), Text: #f20262 (bright pink), Accent: #007573 (teal), Border: #2a3951 (dark blue-gray)
+  // Sidebar colors - Bright pink scheme for all users by default
+  // Background: white, Text: bright pink (#f20262), Accent: lighter pink, Border: light gray
   sidebarBackground: '0 0% 100%',
-  sidebarForeground: '337 98% 47%',
-  sidebarAccent: '179 100% 23%',
-  sidebarAccentForeground: '0 0% 100%',
-  sidebarBorder: '211 30% 24%',
+  sidebarForeground: '337 98% 47%', // Bright pink #f20262
+  sidebarAccent: '337 98% 95%', // Light pink background for active/hover
+  sidebarAccentForeground: '337 98% 47%', // Bright pink text on hover
+  sidebarBorder: '220 13% 91%', // Light gray border
   // Font colors
   headingColor: '215 25% 15%',
   textColor: '215 25% 15%',
