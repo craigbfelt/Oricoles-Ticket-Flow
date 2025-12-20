@@ -669,8 +669,10 @@ const Dashboard = () => {
       });
       
       // Add any cards not in the order (new cards that were added after order was saved)
+      // Use Set for O(1) lookup performance instead of O(n) with find
+      const addedHrefs = new Set(orderedCards.map(c => c.href));
       visibleCards.forEach(card => {
-        if (!orderedCards.find(c => c.href === card.href)) {
+        if (!addedHrefs.has(card.href)) {
           orderedCards.push(card);
         }
       });

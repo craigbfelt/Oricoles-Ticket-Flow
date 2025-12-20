@@ -1616,7 +1616,7 @@ export const ThemeCustomizer = () => {
               <div>
                 <Label className="text-base font-semibold">Dashboard Navigation Cards Editor</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Reorder or hide dashboard navigation cards. Changes apply to the Quick Navigation section on the Dashboard page. Hidden cards won't appear, but you can still access those pages through direct links.
+                  Reorder or hide dashboard navigation cards. Changes apply to the navigation card grid on the Dashboard page (the section titled "Quick Navigation"). Hidden cards won't appear, but you can still access those pages through direct links.
                 </p>
               </div>
               
