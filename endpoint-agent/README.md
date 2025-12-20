@@ -41,49 +41,56 @@ The Oricol Endpoint Monitoring Agent is a comprehensive Windows-based monitoring
 
 This is the recommended deployment method for enterprise environments as it allows silent installation across all managed endpoints.
 
+#### Quick Start with Helper Scripts
+
+We provide automated helper scripts to simplify Intune deployment:
+
+1. **Navigate to Intune Helper Directory**
+   ```powershell
+   cd intune
+   ```
+
+2. **Run Automated Package Preparation**
+   ```powershell
+   .\Prepare-IntunePackage.ps1 `
+       -SupabaseUrl "https://your-project.supabase.co" `
+       -SupabaseAnonKey "your-anon-key" `
+       -AgentToken "your-token" `
+       -OutputPath "C:\IntunePackages"
+   ```
+   
+   This script automatically:
+   - ✓ Validates environment
+   - ✓ Creates configuration file
+   - ✓ Downloads NSSM service manager
+   - ✓ Creates .intunewin package
+
+3. **Upload and Configure in Intune**
+   - See detailed guide: `intune/DEPLOYMENT_GUIDE.md`
+   - Or quick reference: `intune/README.md`
+
+#### Helper Scripts Included
+
+| Script | Purpose |
+|--------|---------|
+| `intune/Prepare-IntunePackage.ps1` | Automated package preparation |
+| `intune/detect-agent.ps1` | Detection script for Intune |
+| `intune/requirements-check.ps1` | System requirements validation |
+| `intune/install-wrapper.ps1` | Installation wrapper with logging |
+
 #### Prerequisites
 1. Microsoft 365 tenant with Intune licensing
 2. Intune device management configured
 3. Devices enrolled in Intune
+4. Supabase project with endpoint monitoring backend
+5. Microsoft Win32 Content Prep Tool ([Download](https://github.com/microsoft/Microsoft-Win32-Content-Prep-Tool/releases))
 
-#### Deployment Steps
+#### Complete Documentation
 
-1. **Prepare the Package**
-   - Download the complete endpoint-agent folder
-   - Update `config.json` with your Supabase credentials
-   - Package as `.intunewin` file using Microsoft Win32 Content Prep Tool
-
-2. **Create Intune Application**
-   ```powershell
-   # Download Win32 Content Prep Tool
-   # Package the application
-   IntuneWinAppUtil.exe -c "C:\endpoint-agent" -s "OricolEndpointAgent.ps1" -o "C:\IntunePackages"
-   ```
-
-3. **Configure in Intune Admin Center**
-   - Navigate to: Apps > Windows > Add > Windows app (Win32)
-   - Upload the `.intunewin` package
-   
-4. **Installation Commands**
-   - Install command:
-     ```powershell
-     powershell.exe -ExecutionPolicy Bypass -File "OricolEndpointAgent.ps1" -Install
-     ```
-   - Uninstall command:
-     ```powershell
-     powershell.exe -ExecutionPolicy Bypass -File "OricolEndpointAgent.ps1" -Uninstall
-     ```
-
-5. **Detection Rules**
-   - Rule type: File
-   - Path: `C:\Program Files\Oricol\EndpointAgent`
-   - File: `OricolEndpointAgent.ps1`
-   - Detection method: File or folder exists
-
-6. **Assignment**
-   - Assign to: All Devices (or specific security groups)
-   - Installation behavior: System
-   - Device restart behavior: No specific action
+For comprehensive step-by-step instructions:
+- **Quick Start**: See `intune/README.md`
+- **Detailed Guide**: See `intune/DEPLOYMENT_GUIDE.md`
+- **System Overview**: See `../ENDPOINT_MONITORING_INTUNE_DEPLOYMENT.md`
 
 ### Method 2: Group Policy Deployment
 
