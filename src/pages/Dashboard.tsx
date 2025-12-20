@@ -648,12 +648,37 @@ const Dashboard = () => {
     ];
 
     // Filter cards based on user roles
-    return allCards.filter(card => {
+    const roleFilteredCards = allCards.filter(card => {
       if (card.requiredRoles.length === 0) return true;
       if (card.requiredRoles.includes('admin') && isAdmin) return true;
       if (card.requiredRoles.includes('support_staff') && isSupportStaff) return true;
       return false;
     });
+
+    // Filter out hidden cards based on theme settings
+    const visibleCards = roleFilteredCards.filter(card => 
+      !themeSettings.hiddenNavItems.includes(card.href)
+    );
+
+    // Sort cards based on navigationOrder if specified
+    if (themeSettings.navigationOrder.length > 0) {
+      const orderedCards: typeof visibleCards = [];
+      themeSettings.navigationOrder.forEach(href => {
+        const card = visibleCards.find(c => c.href === href);
+        if (card) orderedCards.push(card);
+      });
+      
+      // Add any cards not in the order (new cards that were added after order was saved)
+      visibleCards.forEach(card => {
+        if (!orderedCards.find(c => c.href === card.href)) {
+          orderedCards.push(card);
+        }
+      });
+      
+      return orderedCards;
+    }
+
+    return visibleCards;
   };
 
   const navigationCards = getNavigationCards();
