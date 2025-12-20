@@ -61,10 +61,31 @@ Apply the SQL file in Supabase SQL Editor to store tokens.
 1. **Download Win32 Content Prep Tool**
    ```powershell
    # From: https://github.com/microsoft/Microsoft-Win32-Content-Prep-Tool
+   # Save IntuneWinAppUtil.exe to a known location
    ```
 
-2. **Package the Agent**
+2. **Use Automated Package Preparation** (Recommended)
    ```powershell
+   # Navigate to intune helper directory
+   cd intune
+   
+   # Run automated preparation script
+   .\Prepare-IntunePackage.ps1 `
+       -SupabaseUrl "https://your-project.supabase.co" `
+       -SupabaseAnonKey "your-anon-key-here" `
+       -AgentToken "token-from-step-2" `
+       -OutputPath "C:\IntunePackages" `
+       -IntuneWinAppUtilPath "C:\Tools\IntuneWinAppUtil.exe"
+   ```
+   
+   This script automatically:
+   - Creates config.json with your credentials
+   - Downloads NSSM service manager
+   - Packages everything into .intunewin file
+   
+   **OR Manual Method:**
+   ```powershell
+   # Create config.json manually, then:
    .\IntuneWinAppUtil.exe `
        -c "C:\path\to\endpoint-agent" `
        -s "OricolEndpointAgent.ps1" `
@@ -74,13 +95,17 @@ Apply the SQL file in Supabase SQL Editor to store tokens.
 
 ### Step 5: Deploy via Intune (15 minutes)
 
+For detailed step-by-step instructions, see: `intune/DEPLOYMENT_GUIDE.md`
+
+**Quick Steps:**
+
 1. **Go to Intune Admin Center**: https://endpoint.microsoft.com
 2. **Add App**: Apps > Windows > Add > Windows app (Win32)
-3. **Upload**: Select the `.intunewin` file
+3. **Upload**: Select the `.intunewin` file from Step 4
 4. **Configure**:
    - Install command: 
      ```powershell
-     powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -NoProfile -File "OricolEndpointAgent.ps1" -Install
+     powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -NoProfile -NonInteractive -File "OricolEndpointAgent.ps1" -Install
      ```
    - Detection: Registry key `HKLM\SYSTEM\CurrentControlSet\Services\OricolEndpointAgent`
 5. **Assign**: Select "All Devices" or specific groups
@@ -170,6 +195,8 @@ Test-NetConnection your-project.supabase.co -Port 443
 
 ## 📚 Full Documentation
 
+- **Intune Helper Scripts**: `intune/README.md` - Quick start for Intune deployment
+- **Intune Deployment Guide**: `intune/DEPLOYMENT_GUIDE.md` - Detailed step-by-step instructions
 - **Complete System Overview**: `../ENDPOINT_MONITORING_SYSTEM.md`
 - **Detailed Deployment**: `../ENDPOINT_MONITORING_INTUNE_DEPLOYMENT.md`
 - **Agent Documentation**: `README.md` (in this folder)
