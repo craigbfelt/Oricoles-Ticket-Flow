@@ -243,7 +243,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <img src={secondaryLogoUrl} alt="Zero Bit One" style={{ height: `${secondaryLogoSize}px`, maxHeight: '80px' }} className="w-auto object-contain" />
           )}
         </div>
-        {/* Navigation Links */}
+        {/* Navigation Links - Icons are intentionally smaller (w-4 h-4) than Dashboard cards for compact sidebar layout */}
         <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
           {navigation.map((item) => {
             const Icon = item.icon;

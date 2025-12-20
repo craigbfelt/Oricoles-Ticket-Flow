@@ -711,6 +711,7 @@ const Dashboard = () => {
           className="text-[10px] font-medium text-center leading-tight"
           style={{ color: `hsl(${themeSettings.dashboardCardTitleColor})` }}
         >
+          {/* Note: text-[10px] is intentionally smaller than Tailwind's text-xs (12px) for compact card layout */}
           {name}
         </span>
       </div>
