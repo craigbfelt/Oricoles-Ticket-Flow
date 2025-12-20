@@ -152,6 +152,8 @@ if (-not $SkipNSSM) {
         Write-Success "NSSM already present"
     } else {
         try {
+            # NOTE: NSSM version 2.24 is stable and widely used
+            # If you need a different version, use -SkipNSSM and provide nssm.exe manually
             $nssmUrl = "https://nssm.cc/release/nssm-2.24.zip"
             $nssmZip = Join-Path $env:TEMP "nssm.zip"
             $nssmExtract = Join-Path $env:TEMP "nssm-extract"
@@ -162,14 +164,24 @@ if (-not $SkipNSSM) {
             Write-Info "Extracting NSSM..."
             Expand-Archive -Path $nssmZip -DestinationPath $nssmExtract -Force
             
-            # Copy 64-bit version
-            $nssm64 = Get-ChildItem -Path $nssmExtract -Filter "nssm.exe" -Recurse | Where-Object { $_.FullName -like "*win64*" } | Select-Object -First 1
+            # Try multiple patterns to find 64-bit version
+            $nssm64 = Get-ChildItem -Path $nssmExtract -Filter "nssm.exe" -Recurse | 
+                Where-Object { $_.FullName -match "win64|x64|amd64" } | 
+                Select-Object -First 1
+            
+            if (-not $nssm64) {
+                # Fallback: try to find any nssm.exe in a 64-bit path structure
+                $nssm64 = Get-ChildItem -Path $nssmExtract -Filter "nssm.exe" -Recurse | 
+                    Where-Object { $_.DirectoryName -match "64" } | 
+                    Select-Object -First 1
+            }
             
             if ($nssm64) {
                 Copy-Item -Path $nssm64.FullName -Destination $nssmPath
                 Write-Success "NSSM downloaded and extracted"
             } else {
-                Write-Warning "Could not find 64-bit NSSM. You may need to add it manually."
+                Write-Warning "Could not find 64-bit NSSM in the archive."
+                Write-Warning "Please download NSSM manually from https://nssm.cc and place nssm.exe in $stagingPath"
             }
             
             # Cleanup

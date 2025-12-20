@@ -43,19 +43,28 @@ try {
     Write-InstallLog "User: $env:USERNAME"
     Write-InstallLog "Computer: $env:COMPUTERNAME"
     
-    # Locate the main agent script
-    $agentScript = Join-Path $PSScriptRoot "..\OricolEndpointAgent.ps1"
+    # Locate the main agent script - try multiple possible locations
+    $possiblePaths = @(
+        (Join-Path $PSScriptRoot "..\OricolEndpointAgent.ps1"),  # Parent directory (normal structure)
+        (Join-Path $PSScriptRoot "OricolEndpointAgent.ps1"),     # Same directory
+        ".\OricolEndpointAgent.ps1",                              # Current directory
+        (Join-Path $PWD "OricolEndpointAgent.ps1")               # Working directory
+    )
     
-    if (-not (Test-Path $agentScript)) {
-        # Try alternative path (when script is in same directory)
-        $agentScript = Join-Path $PSScriptRoot "OricolEndpointAgent.ps1"
+    $agentScript = $null
+    foreach ($path in $possiblePaths) {
+        Write-InstallLog "Checking for agent script at: $path"
+        if (Test-Path $path) {
+            $agentScript = $path
+            Write-InstallLog "Agent script found: $agentScript"
+            break
+        }
     }
     
-    if (-not (Test-Path $agentScript)) {
-        throw "OricolEndpointAgent.ps1 not found. Expected location: $agentScript"
+    if (-not $agentScript) {
+        $searchedPaths = $possiblePaths -join "`n  "
+        throw "OricolEndpointAgent.ps1 not found. Searched locations:`n  $searchedPaths"
     }
-    
-    Write-InstallLog "Agent script found: $agentScript"
     
     # Execute the main agent script
     if ($Action -eq 'Install') {

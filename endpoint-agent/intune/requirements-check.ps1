@@ -31,8 +31,9 @@ try {
     $osVersion = [System.Version]$osInfo.Version
     $osBuild = $osInfo.BuildNumber
     
-    # Windows 10 1809 is build 17763
-    # Windows Server 2016 is build 14393
+    # Minimum build numbers:
+    # Windows 10 1809 (client) = build 17763
+    # Windows Server 2016 RTM = build 14393
     $minClientBuild = 17763
     $minServerBuild = 14393
     
