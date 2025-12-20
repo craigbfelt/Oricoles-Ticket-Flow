@@ -665,23 +665,23 @@ const Dashboard = () => {
       <div
         key={key}
         onClick={onClick}
-        className="rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-3 h-full min-h-[120px] p-6"
+        className="rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-2 h-full min-h-[80px] p-3 border border-gray-200"
         style={{ backgroundColor: `hsl(${themeSettings.dashboardCardBackground})` }}
       >
         <div 
-          className="rounded-full p-3 flex items-center justify-center"
+          className="rounded-full p-2 flex items-center justify-center"
           style={{ backgroundColor: `hsl(${themeSettings.dashboardCardIconBackground})` }}
         >
           <IconComponent 
             style={{ 
               height: `${themeSettings.dashboardCardIconSize}px`, 
               width: `${themeSettings.dashboardCardIconSize}px`,
-              color: `hsl(${themeSettings.dashboardCardBackground})`
+              color: 'white'
             }} 
           />
         </div>
         <span 
-          className="text-sm font-medium text-center"
+          className="text-xs font-medium text-center leading-tight"
           style={{ color: `hsl(${themeSettings.dashboardCardTitleColor})` }}
         >
           {name}
