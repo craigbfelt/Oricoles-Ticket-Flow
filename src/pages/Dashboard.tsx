@@ -692,11 +692,11 @@ const Dashboard = () => {
       <div
         key={key}
         onClick={onClick}
-        className="rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-2 h-full min-h-[80px] p-3 border border-gray-200"
+        className="rounded-lg cursor-pointer hover:opacity-90 hover:shadow-lg transition-all flex flex-col items-center justify-center gap-1.5 h-full min-h-[70px] p-2 border border-gray-200"
         style={{ backgroundColor: `hsl(${themeSettings.dashboardCardBackground})` }}
       >
         <div 
-          className="rounded-full p-2 flex items-center justify-center"
+          className="rounded-full p-1.5 flex items-center justify-center"
           style={{ backgroundColor: `hsl(${themeSettings.dashboardCardIconBackground})` }}
         >
           <IconComponent 
@@ -708,9 +708,10 @@ const Dashboard = () => {
           />
         </div>
         <span 
-          className="text-xs font-medium text-center leading-tight"
+          className="text-[10px] font-medium text-center leading-tight"
           style={{ color: `hsl(${themeSettings.dashboardCardTitleColor})` }}
         >
+          {/* Note: text-[10px] is intentionally smaller than Tailwind's text-xs (12px) for compact card layout */}
           {name}
         </span>
       </div>
@@ -732,7 +733,7 @@ const Dashboard = () => {
             </p>
           </CardHeader>
           <CardContent className="pb-6">
-            <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            <div className="grid gap-2 grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
               {/* Dashboard/Home button card */}
               {renderNavigationCard(LayoutDashboard, "Dashboard", () => navigate("/dashboard"), "dashboard-card")}
               
