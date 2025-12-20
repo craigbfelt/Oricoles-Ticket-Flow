@@ -233,7 +233,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Sidebar - Desktop - Minimal version with only logo and sign out */}
+      {/* Sidebar - Desktop - Navigation links with icons */}
       <aside className="hidden md:flex md:flex-col md:w-64 bg-sidebar border-r border-sidebar-border">
         <div className={`${getLogoContainerClasses()} min-h-20 px-4 border-b border-sidebar-border py-3`}>
           {showPrimaryLogo && (
