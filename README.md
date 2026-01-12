@@ -186,6 +186,19 @@ Without CLI:
 - Admin-only access
 - **⚠️ First-time setup required** - See [CRM_SETUP_GUIDE.md](./CRM_SETUP_GUIDE.md)
 
+### 🖥️ Endpoint Monitoring (Intune Deployment)
+- Real-time endpoint monitoring for Windows devices
+- Silent deployment via Microsoft 365 Intune
+- Comprehensive security monitoring (antivirus, updates, ransomware protection, encryption, firewall)
+- Performance tracking (CPU, memory, storage, network bandwidth)
+- Compliance monitoring (Group Policy, security posture, vulnerabilities)
+- Zero Trust process monitoring (when enabled)
+- Automatic security patching (when enabled)
+- 5-minute reporting intervals to dashboard
+- **Complete deployment guide** - See [INTUNE_DEPLOYMENT_READY.md](./INTUNE_DEPLOYMENT_READY.md)
+- **Quick start** - See [endpoint-agent/START_HERE_INTUNE.md](./endpoint-agent/START_HERE_INTUNE.md)
+- **System overview** - See [ENDPOINT_MONITORING_SYSTEM.md](./ENDPOINT_MONITORING_SYSTEM.md)
+
 ### 🎨 User Interface
 - Modern, responsive design
 - Mobile-friendly with hamburger menu
