@@ -327,7 +327,7 @@ const Dashboard = () => {
       // INCLUDES: branch_id with JOIN to branches table for branch name
       const { data: masterListData, error: masterListError } = await supabase
         .from("master_user_list")
-        .select("id, display_name, email, job_title, department, vpn_username, rdp_username, is_active, source, branch_id, branches:branch_id(name)")
+        .select("id, display_name, email, job_title, vpn_username, rdp_username, is_active, source, branch_id, branches:branch_id(name)")
         .eq("is_active", true)
         .order("display_name")
         .limit(500);
@@ -340,7 +340,7 @@ const Dashboard = () => {
       // This provides additional data like account_enabled status and UPN
       const { data: intuneData, error: intuneError } = await supabase
         .from("directory_users")
-        .select("id, display_name, email, job_title, account_enabled, user_principal_name, department")
+        .select("id, display_name, email, job_title, account_enabled, user_principal_name")
         .order("display_name")
         .limit(500);
 

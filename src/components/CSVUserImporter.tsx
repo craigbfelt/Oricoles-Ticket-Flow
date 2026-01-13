@@ -234,7 +234,7 @@ export function CSVUserImporter() {
           email: generateUserEmail(row),
           display_name: row.display_name || row.full_name || null,
           job_title: row.full_name || null, // Store full_name as job_title if available
-          department: row.branch || null, // Store branch name as department for reference
+          department: null, // Department field is not used - branch_id links to branches table
           branch_id: branchId,
           vpn_username: row.vpn_username || null,
           rdp_username: row.rdp_username || null,
