@@ -62,6 +62,65 @@ bash scripts/migrate-supabase.sh [command]
 
 ---
 
+### 3. `verify-supabase-connection.cjs` (Supabase Verification Tool)
+
+**Purpose**: Verify that your GitHub repository is correctly connected to the right Supabase account and database.
+
+**Usage**:
+```bash
+node scripts/verify-supabase-connection.cjs
+```
+
+**Or using npm**:
+```bash
+npm run verify:supabase
+```
+
+**What it checks**:
+- ✅ Environment variables are configured correctly
+- ✅ Project ID matches expected configuration
+- ✅ Supabase connection is working
+- ✅ Database schema exists and is accessible
+- ✅ Migration files are present
+
+**When to use**:
+- After setting up a new environment
+- To troubleshoot connection issues
+- To verify configuration before deployment
+- When switching between Supabase projects
+
+**See also**: [SUPABASE_VERIFICATION_GUIDE.md](../SUPABASE_VERIFICATION_GUIDE.md) for detailed documentation.
+
+---
+
+### 4. `detect-database.sh` (Database Detection Tool)
+
+**Purpose**: Comprehensive 8-step database detection and diagnostic tool.
+
+**Usage**:
+```bash
+bash scripts/detect-database.sh
+```
+
+**Or using npm**:
+```bash
+npm run detect:db
+```
+
+**What it does**:
+- Checks admin UI for database configuration
+- Provides detection queries for different databases
+- Inspects configuration files
+- Searches for SQL files and migrations
+- Tests direct database connections
+
+**When to use**:
+- First-time setup to identify database type
+- Troubleshooting database connectivity
+- Understanding database configuration
+
+---
+
 ## Quick Start Guide
 
 ### For Lovable Users (Most Common Use Case)
@@ -124,6 +183,10 @@ npm run supabase:start     # Start local Supabase
 npm run supabase:stop      # Stop local Supabase
 npm run supabase:status    # Check status
 npm run supabase:link      # Link to project
+
+# Verification & Diagnostics
+npm run verify:supabase    # Verify Supabase connection
+npm run detect:db          # Detect database type
 ```
 
 ---

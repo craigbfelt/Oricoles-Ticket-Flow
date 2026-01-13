@@ -19,7 +19,8 @@
     "supabase:stop": "npx supabase stop",
     "supabase:status": "npx supabase status",
     "supabase:link": "npx supabase link",
-    "detect:db": "bash scripts/detect-database.sh"
+    "detect:db": "bash scripts/detect-database.sh",
+    "verify:supabase": "node scripts/verify-supabase-connection.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

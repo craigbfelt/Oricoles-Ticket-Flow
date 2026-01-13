@@ -50,6 +50,7 @@ To enable automated deployments, configure these secrets in your GitHub reposito
 
 ### 🎯 Quick Start
 
+**⭐ [SUPABASE_VERIFICATION_GUIDE.md](./SUPABASE_VERIFICATION_GUIDE.md)** - **Verify your Supabase connection**  
 **⭐ [NEXT_STEPS_AFTER_SQL_SETUP.md](./NEXT_STEPS_AFTER_SQL_SETUP.md)** - **Database done? Configure Vercel next!**  
 **⭐ [VERCEL_SUPABASE_MIGRATION.md](./VERCEL_SUPABASE_MIGRATION.md)** - **Complete setup guide**  
 **⭐ [QUICKSTART_GITHUB_SUPABASE.md](./QUICKSTART_GITHUB_SUPABASE.md)** - **5-minute setup guide**  
@@ -507,7 +508,12 @@ oricol-ticket-flow/
 - `npm run supabase:status` - Check local Supabase status
 - `npm run supabase:link` - Link to remote Supabase project
 
-**📖 For complete migration guide, see [SUPABASE_MIGRATIONS.md](./SUPABASE_MIGRATIONS.md)**
+### Verification & Diagnostics
+- `npm run verify:supabase` - Verify Supabase connection and configuration
+- `npm run detect:db` - Detect database type and configuration
+
+**📖 For complete migration guide, see [SUPABASE_MIGRATIONS.md](./SUPABASE_MIGRATIONS.md)**  
+**🔍 For Supabase verification, see [SUPABASE_VERIFICATION_GUIDE.md](./SUPABASE_VERIFICATION_GUIDE.md)**
 
 ## Database Migrations
 
