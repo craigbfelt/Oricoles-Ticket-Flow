@@ -25,8 +25,9 @@ const colors = {
   cyan: '\x1b[36m',
 };
 
-// Expected Supabase configuration from .env.example
-const EXPECTED_CONFIG = {
+// Expected Supabase configuration - will be loaded from .env.example
+// This is a fallback in case .env.example cannot be read
+const EXPECTED_CONFIG_FALLBACK = {
   projectId: 'blhidceerkrumgxjhidq',
   url: 'https://blhidceerkrumgxjhidq.supabase.co',
   // Note: We can't hardcode the actual publishable key for security
@@ -247,10 +248,16 @@ async function testSupabaseConnection() {
       return true;
     } else {
       printError(`Connection failed with status: ${response.status}`);
-      // Only read a portion of the response to avoid memory issues
-      const text = await response.text();
-      const preview = text.substring(0, 200) + (text.length > 200 ? '...' : '');
-      printInfo(`  Response: ${preview}`);
+      // Read response text with reasonable size limit for error preview
+      // Note: For a verification script that runs infrequently, this is acceptable
+      // For production use with large responses, consider streaming
+      try {
+        const text = await response.text();
+        const preview = text.substring(0, 200) + (text.length > 200 ? '...' : '');
+        printInfo(`  Response: ${preview}`);
+      } catch (e) {
+        printInfo('  Could not read response body');
+      }
       return false;
     }
   } catch (error) {
@@ -403,9 +410,12 @@ function generateSummary(results) {
   if (allPassed) {
     console.log(colors.green + colors.bright + '✓ ALL CHECKS PASSED' + colors.reset);
     console.log(colors.green + '\nYour GitHub repository is correctly configured with Supabase!' + colors.reset);
+    
+    // Load expected config from .env.example or use fallback
+    const expectedConfig = loadExpectedConfig() || EXPECTED_CONFIG_FALLBACK;
     console.log('\nExpected Supabase Project:');
-    printInfo(`  Project ID: ${EXPECTED_CONFIG.projectId}`);
-    printInfo(`  URL: ${EXPECTED_CONFIG.url}`);
+    printInfo(`  Project ID: ${expectedConfig.projectId}`);
+    printInfo(`  URL: ${expectedConfig.url}`);
   } else {
     console.log(colors.red + colors.bright + '✗ SOME CHECKS FAILED' + colors.reset);
     console.log(colors.yellow + '\nPlease review the errors above and fix the configuration.' + colors.reset);
@@ -466,3 +476,4 @@ async function main() {
 
 // Run the script
 main();
+
