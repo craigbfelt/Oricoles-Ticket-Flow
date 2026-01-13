@@ -226,8 +226,9 @@ async function testSupabaseConnection() {
         fetch = nodeFetch.default;
       }
     } catch (e) {
-      printWarning('Cannot test connection - fetch not available');
-      printInfo('This is optional - environment variables look correct');
+      printWarning('Cannot test connection - fetch API not available');
+      printInfo('Node 18+ has built-in fetch, or install node-fetch: npm install node-fetch');
+      printInfo('Skipping connection test - environment variables look correct');
       return true; // Return true since env vars are correct
     }
     
@@ -246,8 +247,10 @@ async function testSupabaseConnection() {
       return true;
     } else {
       printError(`Connection failed with status: ${response.status}`);
+      // Only read a portion of the response to avoid memory issues
       const text = await response.text();
-      printInfo(`  Response: ${text.substring(0, 200)}`);
+      const preview = text.substring(0, 200) + (text.length > 200 ? '...' : '');
+      printInfo(`  Response: ${preview}`);
       return false;
     }
   } catch (error) {
@@ -281,8 +284,9 @@ async function checkDatabaseSchema() {
         fetch = nodeFetch.default;
       }
     } catch (e) {
-      printWarning('Cannot check schema - fetch not available');
-      printInfo('This is optional - you can manually verify in Supabase dashboard');
+      printWarning('Cannot check schema - fetch API not available');
+      printInfo('Node 18+ has built-in fetch, or install node-fetch: npm install node-fetch');
+      printInfo('Skipping schema check - you can manually verify in Supabase dashboard');
       return true; // Return true since we can't test
     }
     

@@ -280,5 +280,5 @@ This ensures that every deployment uses the correct Supabase configuration.
 ---
 
 **Last Updated**: January 2026  
-**Script Location**: `scripts/verify-supabase-connection.js`  
+**Script Location**: `scripts/verify-supabase-connection.cjs`  
 **Command**: `npm run verify:supabase`
