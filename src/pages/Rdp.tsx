@@ -735,7 +735,7 @@ rdpuser3,Pass789word,user3@example.com,Guest RDP user`;
                 <Label htmlFor="password">Password *</Label>
                 <Input
                   id="password"
-                  type="password"
+                  type="text"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder="Enter password"
