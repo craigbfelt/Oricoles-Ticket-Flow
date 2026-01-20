@@ -467,6 +467,13 @@ vpnuser3,Pass789word,user3@example.com,Guest VPN user`;
       key: "password",
       label: "Password",
       sortable: false,
+      render: (password) => {
+        // Handle encrypted placeholder - show as masked password instead
+        if (password === '***ENCRYPTED***') {
+          return <span className="text-muted-foreground">••••••••</span>;
+        }
+        return <span>{password || "—"}</span>;
+      },
     },
     {
       key: "email",

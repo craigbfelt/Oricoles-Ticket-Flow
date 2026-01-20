@@ -748,7 +748,7 @@ const Users = () => {
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Password</label>
                       <p className="text-sm text-muted-foreground font-mono">
-                        {selectedUser.password}
+                        {selectedUser.password === '***ENCRYPTED***' ? '••••••••' : selectedUser.password}
                       </p>
                     </div>
 

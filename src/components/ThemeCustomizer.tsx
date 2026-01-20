@@ -222,6 +222,9 @@ const defaultNavItems = [
   { name: "Endpoint Monitoring", href: "/endpoint-monitoring" },
   { name: "Reports", href: "/reports" },
   { name: "Company Network", href: "/company-network" },
+  { name: "Oricol CRM", href: "/crm" },
+  { name: "Bluewave CRM", href: "/bluewave-crm" },
+  { name: "Sage", href: "/sage" },
   { name: "Settings", href: "/settings" },
 ];
 

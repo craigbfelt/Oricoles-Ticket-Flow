@@ -136,7 +136,7 @@ export const UserCredentialsView = ({
                 ) : (
                   <div className="flex items-center gap-2 p-2 bg-muted rounded-md flex-1">
                     <code className="text-sm flex-1">
-                      {vpnPassword || "Not set"}
+                      {vpnPassword === '***ENCRYPTED***' ? '••••••••' : (vpnPassword || "Not set")}
                     </code>
                   </div>
                 )}
@@ -181,7 +181,7 @@ export const UserCredentialsView = ({
                 ) : (
                   <div className="flex items-center gap-2 p-2 bg-muted rounded-md flex-1">
                     <code className="text-sm flex-1">
-                      {rdpPassword || "Not set"}
+                      {rdpPassword === '***ENCRYPTED***' ? '••••••••' : (rdpPassword || "Not set")}
                     </code>
                   </div>
                 )}
