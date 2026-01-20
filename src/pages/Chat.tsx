@@ -101,7 +101,11 @@ const Chat = () => {
       .single();
 
     if (broadcastError) {
-      console.error("Error fetching broadcast room:", broadcastError);
+      toast({
+        title: "Error loading broadcast room",
+        description: broadcastError.message,
+        variant: "destructive",
+      });
     } else {
       setBroadcastRoom(broadcastData);
       setSelectedRoom(broadcastData);
@@ -375,7 +379,7 @@ const Chat = () => {
                         placeholder="Type your message..."
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                        onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                       />
                       <Button onClick={handleSendMessage} size="icon">
                         <Send className="h-4 w-4" />
