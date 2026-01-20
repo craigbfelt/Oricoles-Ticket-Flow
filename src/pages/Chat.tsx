@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { MessageSquare, X, Send, Users } from "lucide-react";
+import { MessageSquare, Send, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
+import DashboardLayout from "@/components/DashboardLayout";
 
 interface Profile {
   id: string;
@@ -35,8 +36,7 @@ interface ChatRoom {
   room_name: string | null;
 }
 
-export const StaffChat = () => {
-  const [isOpen, setIsOpen] = useState(false);
+const Chat = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
@@ -48,12 +48,8 @@ export const StaffChat = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isOpen) {
-      initializeChat();
-    }
-    // initializeChat is not included in deps to avoid re-fetching on every render
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+    initializeChat();
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -105,10 +101,14 @@ export const StaffChat = () => {
       .single();
 
     if (broadcastError) {
-      console.error("Error loading broadcast room:", broadcastError);
+      toast({
+        title: "Error loading broadcast room",
+        description: broadcastError.message,
+        variant: "destructive",
+      });
     } else {
       setBroadcastRoom(broadcastData);
-      setSelectedRoom(broadcastData); // Default to broadcast
+      setSelectedRoom(broadcastData);
     }
   };
 
@@ -118,13 +118,7 @@ export const StaffChat = () => {
       .select(
         `
         *,
-        sender:sender_id (
-          id,
-          user_id,
-          full_name,
-          email,
-          role
-        )
+        sender:profiles!staff_chat_messages_sender_id_fkey(*)
       `
       )
       .eq("staff_chat_messages.room_id", roomId)
@@ -140,27 +134,12 @@ export const StaffChat = () => {
       return;
     }
 
-    // Transform the data to match our interface
-    const transformedMessages = data.map((msg: {
-      id: string;
-      room_id: string;
-      sender_id: string;
-      message: string;
-      created_at: string;
-      is_edited: boolean | null;
-      is_deleted: boolean | null;
-      sender: Profile | Profile[];
-    }) => ({
-      ...msg,
-      sender: Array.isArray(msg.sender) ? msg.sender[0] : msg.sender,
-    }));
-
-    setMessages(transformedMessages || []);
+    setMessages(data || []);
   };
 
   const subscribeToRoom = (roomId: string) => {
     const channel = supabase
-      .channel(`room-${roomId}`)
+      .channel(`room:${roomId}`)
       .on(
         "postgres_changes",
         {
@@ -170,7 +149,7 @@ export const StaffChat = () => {
           filter: `room_id=eq.${roomId}`,
         },
         async (payload) => {
-          // Fetch sender profile
+          // Fetch the sender profile for the new message
           const { data: senderData } = await supabase
             .from("profiles")
             .select("*")
@@ -192,7 +171,7 @@ export const StaffChat = () => {
     };
   };
 
-  const selectUser = async (user: Profile) => {
+  const openDirectChat = async (user: Profile) => {
     if (!currentUser) return;
 
     setSelectedUser(user);
@@ -272,73 +251,65 @@ export const StaffChat = () => {
   };
 
   return (
-    <>
-      {!isOpen && (
-        <Button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-20 right-6 h-14 w-14 rounded-full shadow-lg z-50"
-          size="icon"
-          variant="default"
-        >
-          <MessageSquare className="h-6 w-6" />
-        </Button>
-      )}
-
-      {isOpen && (
-        <Card className="fixed bottom-6 right-6 w-[800px] h-[600px] shadow-xl z-50 flex flex-col">
+    <DashboardLayout>
+      <div className="p-8 h-full">
+        <Card className="h-full flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
+            <CardTitle className="text-xl flex items-center gap-2">
+              <MessageSquare className="h-6 w-6" />
               IT Support Staff Chat
             </CardTitle>
-            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
-              <X className="h-4 w-4" />
-            </Button>
           </CardHeader>
           <CardContent className="flex-1 flex p-0 overflow-hidden">
             <div className="w-64 border-r flex flex-col">
               <Tabs defaultValue="broadcast" className="flex-1 flex flex-col">
-                <TabsList className="grid w-full grid-cols-2 mx-4 mt-2">
-                  <TabsTrigger value="broadcast">Broadcast</TabsTrigger>
-                  <TabsTrigger value="direct">Direct</TabsTrigger>
+                <TabsList className="mx-4 mt-4">
+                  <TabsTrigger value="broadcast" className="flex-1">
+                    Broadcast
+                  </TabsTrigger>
+                  <TabsTrigger value="direct" className="flex-1">
+                    Direct
+                  </TabsTrigger>
                 </TabsList>
+
                 <TabsContent value="broadcast" className="flex-1 mt-0">
-                  <ScrollArea className="h-[470px]">
-                    <div className="p-4 space-y-2">
+                  <ScrollArea className="h-full">
+                    <div className="p-4">
                       <Button
-                        variant={selectedRoom?.room_type === "broadcast" ? "secondary" : "ghost"}
+                        variant="ghost"
                         className="w-full justify-start"
                         onClick={selectBroadcast}
                       >
                         <Users className="mr-2 h-4 w-4" />
-                        Company Wide
+                        Company Wide - IT Support
                       </Button>
                     </div>
                   </ScrollArea>
                 </TabsContent>
+
                 <TabsContent value="direct" className="flex-1 mt-0">
-                  <ScrollArea className="h-[470px]">
+                  <ScrollArea className="h-full">
                     <div className="p-4 space-y-2">
                       {profiles.map((profile) => (
                         <Button
                           key={profile.id}
-                          variant={selectedUser?.id === profile.id ? "secondary" : "ghost"}
+                          variant="ghost"
                           className="w-full justify-start"
-                          onClick={() => selectUser(profile)}
+                          onClick={() => openDirectChat(profile)}
                         >
-                          <Avatar className="h-6 w-6 mr-2">
-                            <AvatarFallback className="text-xs">
+                          <Avatar className="h-8 w-8 mr-2">
+                            <AvatarFallback>
                               {getInitials(profile.full_name)}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="flex-1 text-left truncate">
-                            <div className="text-sm font-medium truncate">
+                          <div className="flex-1 text-left">
+                            <p className="text-sm font-medium">
                               {profile.full_name || profile.email}
-                            </div>
+                            </p>
                             {profile.role && (
-                              <div className="text-xs text-muted-foreground truncate">
+                              <p className="text-xs text-muted-foreground">
                                 {profile.role}
-                              </div>
+                              </p>
                             )}
                           </div>
                         </Button>
@@ -408,7 +379,7 @@ export const StaffChat = () => {
                         placeholder="Type your message..."
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                        onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                       />
                       <Button onClick={handleSendMessage} size="icon">
                         <Send className="h-4 w-4" />
@@ -424,7 +395,9 @@ export const StaffChat = () => {
             </div>
           </CardContent>
         </Card>
-      )}
-    </>
+      </div>
+    </DashboardLayout>
   );
 };
+
+export default Chat;
