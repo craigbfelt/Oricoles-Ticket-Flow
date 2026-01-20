@@ -60,6 +60,9 @@ All colors MUST be HSL.
     --sidebar-border: 220 13% 91%; /* Light gray border */
     --sidebar-ring: 337 98% 47%;
     
+    /* Heading color */
+    --heading-color: 337 98% 47%; /* Bright pink #f20262 for headings */
+    
     /* Theme customization variables */
     --theme-primary: 212 85% 48%;
     --theme-secondary: 271 91% 65%;
@@ -106,6 +109,9 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 337 98% 47%;
     --sidebar-border: 220 13% 91%; /* Light gray border */
     --sidebar-ring: 337 98% 47%;
+    
+    /* Heading color - pink in dark mode too */
+    --heading-color: 337 98% 47%; /* Bright pink #f20262 for headings */
   }
 }
 
@@ -123,14 +129,17 @@ All colors MUST be HSL.
   /* Mobile-first responsive typography */
   h1 {
     @apply text-2xl sm:text-3xl lg:text-4xl font-bold;
+    color: hsl(var(--heading-color));
   }
   
   h2 {
     @apply text-xl sm:text-2xl lg:text-3xl font-semibold;
+    color: hsl(var(--heading-color));
   }
   
   h3 {
     @apply text-lg sm:text-xl lg:text-2xl font-semibold;
+    color: hsl(var(--heading-color));
   }
   
   /* Improve mobile touch targets */

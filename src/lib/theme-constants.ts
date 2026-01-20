@@ -36,7 +36,7 @@ export const defaultThemeSettings = {
   sidebarAccentForeground: '337 98% 47%', // Bright pink text on hover
   sidebarBorder: '220 13% 91%', // Light gray border
   // Font colors
-  headingColor: '215 25% 15%',
+  headingColor: '337 98% 47%', // Bright pink #f20262 for headings
   textColor: '215 25% 15%',
   mutedTextColor: '215 16% 46%',
   linkColor: '212 85% 48%',

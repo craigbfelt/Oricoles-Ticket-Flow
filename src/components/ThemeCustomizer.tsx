@@ -407,6 +407,7 @@ export const ThemeCustomizer = () => {
     root.style.setProperty('--foreground', theme.textColor);
     root.style.setProperty('--muted-foreground', theme.mutedTextColor);
     root.style.setProperty('--card-foreground', theme.textColor);
+    root.style.setProperty('--heading-color', theme.headingColor);
     
     // Apply font
     root.style.setProperty('--theme-font-family', theme.fontFamily);
