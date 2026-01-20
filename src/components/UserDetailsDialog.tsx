@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Save, Edit, Eye, EyeOff, Shield, Monitor, Key } from "lucide-react";
+import { Loader2, Save, Edit, Shield, Monitor, Key } from "lucide-react";
 import { determineDeviceType, getDeviceTypeReason } from "@/lib/deviceTypeUtils";
 
 // Antivirus status constants
@@ -71,11 +71,6 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [editedDetails, setEditedDetails] = useState<UserDetails | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [showPasswords, setShowPasswords] = useState<{[key: string]: boolean}>({
-    vpn: false,
-    rdp: false,
-    m365: false
-  });
 
   useEffect(() => {
     if (open && userId) {
@@ -349,35 +344,20 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
     setEditing(false);
   };
 
-  const togglePasswordVisibility = (field: string) => {
-    setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
-  };
-
   const renderPasswordField = (
     label: string,
     value: string | null,
-    field: keyof UserDetails,
-    visibilityKey: string
+    field: keyof UserDetails
   ) => (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <div className="flex gap-2">
-        <Input
-          type={showPasswords[visibilityKey] ? "text" : "password"}
-          value={editing ? (editedDetails?.[field] as string || "") : (value || "N/A")}
-          onChange={(e) => editing && setEditedDetails(prev => prev ? { ...prev, [field]: e.target.value } : null)}
-          disabled={!editing}
-          className="flex-1"
-        />
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={() => togglePasswordVisibility(visibilityKey)}
-        >
-          {showPasswords[visibilityKey] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </Button>
-      </div>
+      <Input
+        type="text"
+        value={editing ? (editedDetails?.[field] as string || "") : (value || "N/A")}
+        onChange={(e) => editing && setEditedDetails(prev => prev ? { ...prev, [field]: e.target.value } : null)}
+        disabled={!editing}
+        className="flex-1"
+      />
     </div>
   );
 
@@ -525,7 +505,7 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
                   disabled={!editing}
                 />
               </div>
-              {renderPasswordField("VPN Password", userDetails.vpn_password, "vpn_password", "vpn")}
+              {renderPasswordField("VPN Password", userDetails.vpn_password, "vpn_password")}
             </div>
 
             <div className="space-y-4 p-4 border rounded-lg">
@@ -541,7 +521,7 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
                   disabled={!editing}
                 />
               </div>
-              {renderPasswordField("RDP Password", userDetails.rdp_password, "rdp_password", "rdp")}
+              {renderPasswordField("RDP Password", userDetails.rdp_password, "rdp_password")}
             </div>
 
             <div className="space-y-4 p-4 border rounded-lg">
@@ -556,7 +536,7 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
                   disabled
                 />
               </div>
-              {renderPasswordField("365 Password", userDetails.m365_password, "m365_password", "m365")}
+              {renderPasswordField("365 Password", userDetails.m365_password, "m365_password")}
             </div>
           </TabsContent>
 

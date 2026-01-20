@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Key, Edit, Save, X } from "lucide-react";
+import { Key, Edit, Save, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -26,8 +26,6 @@ export const UserCredentialsView = ({
   rdpPassword,
   onUpdate,
 }: UserCredentialsViewProps) => {
-  const [showVpnPassword, setShowVpnPassword] = useState(false);
-  const [showRdpPassword, setShowRdpPassword] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -129,7 +127,7 @@ export const UserCredentialsView = ({
                 {isEditing ? (
                   <Input
                     id="vpn-password"
-                    type={showVpnPassword ? "text" : "password"}
+                    type="text"
                     value={editVpnPassword}
                     onChange={(e) => setEditVpnPassword(e.target.value)}
                     placeholder="Enter VPN password"
@@ -138,22 +136,9 @@ export const UserCredentialsView = ({
                 ) : (
                   <div className="flex items-center gap-2 p-2 bg-muted rounded-md flex-1">
                     <code className="text-sm flex-1">
-                      {vpnPassword ? (showVpnPassword ? vpnPassword : "••••••••") : "Not set"}
+                      {vpnPassword || "Not set"}
                     </code>
                   </div>
-                )}
-                {vpnPassword && !isEditing && (
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setShowVpnPassword(!showVpnPassword)}
-                  >
-                    {showVpnPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
                 )}
               </div>
             </div>
@@ -187,7 +172,7 @@ export const UserCredentialsView = ({
                 {isEditing ? (
                   <Input
                     id="rdp-password"
-                    type={showRdpPassword ? "text" : "password"}
+                    type="text"
                     value={editRdpPassword}
                     onChange={(e) => setEditRdpPassword(e.target.value)}
                     placeholder="Enter RDP password"
@@ -196,22 +181,9 @@ export const UserCredentialsView = ({
                 ) : (
                   <div className="flex items-center gap-2 p-2 bg-muted rounded-md flex-1">
                     <code className="text-sm flex-1">
-                      {rdpPassword ? (showRdpPassword ? rdpPassword : "••••••••") : "Not set"}
+                      {rdpPassword || "Not set"}
                     </code>
                   </div>
-                )}
-                {rdpPassword && !isEditing && (
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setShowRdpPassword(!showRdpPassword)}
-                  >
-                    {showRdpPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
                 )}
               </div>
             </div>

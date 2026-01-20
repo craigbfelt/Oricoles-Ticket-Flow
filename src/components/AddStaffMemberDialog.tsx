@@ -740,7 +740,7 @@ Graeme Smart`;
                     <Label htmlFor="rdpPassword">RDP Password</Label>
                     <Input
                       id="rdpPassword"
-                      type="password"
+                      type="text"
                       value={rdpPassword}
                       onChange={(e) => setRdpPassword(e.target.value)}
                       placeholder="Enter password"
@@ -798,7 +798,7 @@ Graeme Smart`;
                     <Label htmlFor="vpnPassword">VPN Password</Label>
                     <Input
                       id="vpnPassword"
-                      type="password"
+                      type="text"
                       value={vpnPassword}
                       onChange={(e) => setVpnPassword(e.target.value)}
                       placeholder="Enter password"
