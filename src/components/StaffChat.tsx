@@ -127,8 +127,8 @@ export const StaffChat = () => {
         )
       `
       )
-      .eq("room_id", roomId)
-      .eq("is_deleted", false)
+      .eq("staff_chat_messages.room_id", roomId)
+      .eq("staff_chat_messages.is_deleted", false)
       .order("created_at", { ascending: true });
 
     if (error) {
