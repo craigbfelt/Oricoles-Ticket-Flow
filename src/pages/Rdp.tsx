@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchCredentials, ENCRYPTED_PASSWORD_PLACEHOLDER, ENCRYPTED_PASSWORD_DISPLAY } from "@/lib/credentialUtils";
+import { fetchCredentials, displayPassword } from "@/lib/credentialUtils";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
 import { Monitor, Upload, Plus, Trash2, ArrowLeftRight, Filter, Wifi, Server, Copy, Check, ArrowLeft } from "lucide-react";
@@ -468,11 +468,8 @@ rdpuser3,Pass789word,user3@example.com,Guest RDP user`;
       label: "Password",
       sortable: false,
       render: (password) => {
-        // Handle encrypted placeholder - show as masked password instead
-        if (password === ENCRYPTED_PASSWORD_PLACEHOLDER) {
-          return <span className="text-muted-foreground">{ENCRYPTED_PASSWORD_DISPLAY}</span>;
-        }
-        return <span>{password || "—"}</span>;
+        const displayedPassword = displayPassword(password);
+        return <span className={displayedPassword === "—" ? "" : "text-muted-foreground"}>{displayedPassword}</span>;
       },
     },
     {
