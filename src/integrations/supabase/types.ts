@@ -1928,6 +1928,117 @@ export type Database = {
           },
         ]
       }
+      staff_chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_deleted: boolean | null
+          is_edited: boolean | null
+          message: string
+          room_id: string
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_deleted?: boolean | null
+          is_edited?: boolean | null
+          message: string
+          room_id: string
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_deleted?: boolean | null
+          is_edited?: boolean | null
+          message?: string
+          room_id?: string
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_chat_messages_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "staff_chat_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_chat_participants: {
+        Row: {
+          id: string
+          joined_at: string
+          last_read_at: string | null
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_chat_participants_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "staff_chat_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_chat_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_chat_rooms: {
+        Row: {
+          created_at: string
+          id: string
+          room_name: string | null
+          room_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          room_name?: string | null
+          room_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          room_name?: string | null
+          room_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tenants: {
         Row: {
           created_at: string | null
@@ -2376,6 +2487,10 @@ export type Database = {
     }
     Functions: {
       generate_confirmation_token: { Args: never; Returns: string }
+      get_or_create_direct_chat_room: {
+        Args: { user_id_1: string; user_id_2: string }
+        Returns: string
+      }
       get_user_tenant_ids: { Args: { _user_id?: string }; Returns: string[] }
       has_role: {
         Args: {
