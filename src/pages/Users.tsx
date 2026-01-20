@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchCredentials } from "@/lib/credentialUtils";
+import { fetchCredentials, displayPassword } from "@/lib/credentialUtils";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
 import { Users as UsersIcon, Search, Upload, Download, Save, Key, ArrowLeft } from "lucide-react";
@@ -748,7 +748,7 @@ const Users = () => {
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Password</label>
                       <p className="text-sm text-muted-foreground font-mono">
-                        {selectedUser.password}
+                        {displayPassword(selectedUser.password)}
                       </p>
                     </div>
 

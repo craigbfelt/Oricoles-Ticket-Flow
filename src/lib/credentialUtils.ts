@@ -11,6 +11,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+// Constants for encrypted credential display
+export const ENCRYPTED_PASSWORD_PLACEHOLDER = '***ENCRYPTED***';
+export const ENCRYPTED_PASSWORD_DISPLAY = '••••••••';
+
 // Storage key for caching RPC availability
 const RPC_CACHE_KEY = 'oricol_rpc_decrypted_credentials_available';
 const RPC_CACHE_EXPIRY_KEY = 'oricol_rpc_decrypted_credentials_expiry';
@@ -265,4 +269,21 @@ export function resetRpcCache(): void {
   } catch {
     // localStorage not available
   }
+}
+
+/**
+ * Utility function to display password in a user-friendly way.
+ * If password is encrypted (shows the placeholder), displays masked password.
+ * Otherwise displays the actual password or fallback text.
+ * 
+ * @param password - The password value to display (may be encrypted placeholder)
+ * @param fallback - Text to show if password is empty/null (default: "—")
+ * @returns Formatted password display string
+ */
+export function displayPassword(password: string | null | undefined, fallback: string = "—"): string {
+  if (!password) return fallback;
+  if (password === ENCRYPTED_PASSWORD_PLACEHOLDER) {
+    return ENCRYPTED_PASSWORD_DISPLAY;
+  }
+  return password;
 }

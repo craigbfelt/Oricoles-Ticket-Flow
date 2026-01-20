@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Key, Edit, Save, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { displayPassword } from "@/lib/credentialUtils";
 
 interface UserCredentialsViewProps {
   userId: string;
@@ -136,7 +137,7 @@ export const UserCredentialsView = ({
                 ) : (
                   <div className="flex items-center gap-2 p-2 bg-muted rounded-md flex-1">
                     <code className="text-sm flex-1">
-                      {vpnPassword || "Not set"}
+                      {displayPassword(vpnPassword, "Not set")}
                     </code>
                   </div>
                 )}
@@ -181,7 +182,7 @@ export const UserCredentialsView = ({
                 ) : (
                   <div className="flex items-center gap-2 p-2 bg-muted rounded-md flex-1">
                     <code className="text-sm flex-1">
-                      {rdpPassword || "Not set"}
+                      {displayPassword(rdpPassword, "Not set")}
                     </code>
                   </div>
                 )}
