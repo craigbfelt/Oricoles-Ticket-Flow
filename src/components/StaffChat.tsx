@@ -64,7 +64,8 @@ export const StaffChat = () => {
   useEffect(() => {
     if (selectedRoom) {
       fetchMessages(selectedRoom.id);
-      subscribeToRoom(selectedRoom.id);
+      const cleanup = subscribeToRoom(selectedRoom.id);
+      return cleanup;
     }
     // fetchMessages is not included in deps to avoid re-fetching on every render
     // eslint-disable-next-line react-hooks/exhaustive-deps
