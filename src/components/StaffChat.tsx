@@ -51,6 +51,8 @@ export const StaffChat = () => {
     if (isOpen) {
       initializeChat();
     }
+    // initializeChat is not included in deps to avoid re-fetching on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   useEffect(() => {
@@ -64,6 +66,8 @@ export const StaffChat = () => {
       fetchMessages(selectedRoom.id);
       subscribeToRoom(selectedRoom.id);
     }
+    // fetchMessages is not included in deps to avoid re-fetching on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRoom]);
 
   const initializeChat = async () => {
@@ -136,7 +140,16 @@ export const StaffChat = () => {
     }
 
     // Transform the data to match our interface
-    const transformedMessages = data.map((msg: any) => ({
+    const transformedMessages = data.map((msg: {
+      id: string;
+      room_id: string;
+      sender_id: string;
+      message: string;
+      created_at: string;
+      is_edited: boolean | null;
+      is_deleted: boolean | null;
+      sender: Profile | Profile[];
+    }) => ({
       ...msg,
       sender: Array.isArray(msg.sender) ? msg.sender[0] : msg.sender,
     }));
