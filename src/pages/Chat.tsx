@@ -25,6 +25,7 @@ interface ChatMessage {
   sender_id: string;
   message: string;
   created_at: string;
+  updated_at: string;
   is_edited: boolean | null;
   is_deleted: boolean | null;
   sender?: Profile;
