@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, isSupabaseConfigured } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -68,6 +68,16 @@ const Chat = () => {
   }, [selectedRoom]);
 
   const initializeChat = async () => {
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured) {
+      toast({
+        title: "Supabase Not Configured",
+        description: "Please configure your Supabase credentials in the .env file. See .env.example for details.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Get current user
     const {
       data: { user },
@@ -117,12 +127,19 @@ const Chat = () => {
       .from("staff_chat_messages")
       .select(
         `
-        *,
+        id,
+        room_id,
+        sender_id,
+        message,
+        created_at,
+        updated_at,
+        is_edited,
+        is_deleted,
         sender:profiles!staff_chat_messages_sender_id_fkey(*)
       `
       )
-      .eq("staff_chat_messages.room_id", roomId)
-      .eq("staff_chat_messages.is_deleted", false)
+      .eq("room_id", roomId)
+      .eq("is_deleted", false)
       .order("created_at", { ascending: true });
 
     if (error) {
