@@ -26,7 +26,8 @@ import {
   Waves,
   Leaf,
   GitBranch,
-  Shield
+  Shield,
+  MessageCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -141,6 +142,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const allNavigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, requiredRoles: [] }, // Everyone
     { name: "Tickets", href: "/tickets", icon: Ticket, requiredRoles: ['admin'] }, // Admin only
+    { name: "Chat", href: "/chat", icon: MessageCircle, requiredRoles: [] }, // Everyone
     { name: "IT Suppliers", href: "/it-suppliers", icon: Building2, requiredRoles: [] }, // Everyone can view
     { name: "Oricol CRM", href: "/crm", icon: TrendingUp, requiredRoles: ['admin'] }, // Admin only
     { name: "Bluewave CRM", href: "/bluewave-crm", icon: Waves, requiredRoles: ['admin'] }, // Admin only

@@ -51,6 +51,7 @@ import ITSupplierDetails from "./pages/ITSupplierDetails";
 import NetworkDiagramOverview from "./pages/NetworkDiagramOverview";
 import UserManagement from "./pages/UserManagement";
 import EndpointMonitoring from "./pages/EndpointMonitoring";
+import Chat from "./pages/Chat";
 
 const queryClient = new QueryClient();
 
@@ -111,6 +112,7 @@ const App = () => {
           <Route path="/edge-function-tracker" element={<EdgeFunctionTrackerPage />} />
           <Route path="/it-suppliers" element={<ITSuppliers />} />
           <Route path="/it-suppliers/:supplierId" element={<ITSupplierDetails />} />
+          <Route path="/chat" element={<Chat />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
           </Routes>
