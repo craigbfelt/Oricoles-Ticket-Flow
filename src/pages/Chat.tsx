@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { MessageSquare, Send, Users } from "lucide-react";
+import { MessageSquare, Send, Users, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,6 +45,7 @@ const Chat = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [broadcastRoom, setBroadcastRoom] = useState<ChatRoom | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -268,6 +269,14 @@ const Chat = () => {
       .slice(0, 2);
   };
 
+  const filteredProfiles = profiles.filter((profile) => {
+    const searchLower = searchQuery.toLowerCase();
+    const fullName = profile.full_name?.toLowerCase() || "";
+    const email = profile.email?.toLowerCase() || "";
+    const role = profile.role?.toLowerCase() || "";
+    return fullName.includes(searchLower) || email.includes(searchLower) || role.includes(searchLower);
+  });
+
   return (
     <DashboardLayout>
       <div className="p-8 h-full">
@@ -305,10 +314,21 @@ const Chat = () => {
                   </ScrollArea>
                 </TabsContent>
 
-                <TabsContent value="direct" className="flex-1 mt-0">
-                  <ScrollArea className="h-full">
-                    <div className="p-4 space-y-2">
-                      {profiles.map((profile) => (
+                <TabsContent value="direct" className="flex-1 mt-0 flex flex-col">
+                  <div className="p-4 pb-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search users..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
+                  <ScrollArea className="flex-1">
+                    <div className="px-4 pb-4 space-y-2">
+                      {filteredProfiles.map((profile) => (
                         <Button
                           key={profile.id}
                           variant="ghost"
