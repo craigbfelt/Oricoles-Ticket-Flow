@@ -117,18 +117,18 @@ export const StaffChat = () => {
       .from("staff_chat_messages")
       .select(
         `
-        *,
-        sender:sender_id (
-          id,
-          user_id,
-          full_name,
-          email,
-          role
-        )
+        id,
+        room_id,
+        sender_id,
+        message,
+        created_at,
+        is_edited,
+        is_deleted,
+        sender:profiles!staff_chat_messages_sender_id_fkey(*)
       `
       )
-      .eq("staff_chat_messages.room_id", roomId)
-      .eq("staff_chat_messages.is_deleted", false)
+      .eq("room_id", roomId)
+      .eq("is_deleted", false)
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -140,22 +140,7 @@ export const StaffChat = () => {
       return;
     }
 
-    // Transform the data to match our interface
-    const transformedMessages = data.map((msg: {
-      id: string;
-      room_id: string;
-      sender_id: string;
-      message: string;
-      created_at: string;
-      is_edited: boolean | null;
-      is_deleted: boolean | null;
-      sender: Profile | Profile[];
-    }) => ({
-      ...msg,
-      sender: Array.isArray(msg.sender) ? msg.sender[0] : msg.sender,
-    }));
-
-    setMessages(transformedMessages || []);
+    setMessages(data || []);
   };
 
   const subscribeToRoom = (roomId: string) => {
