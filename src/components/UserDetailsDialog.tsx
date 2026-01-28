@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Save, Edit, Shield, Monitor, Key, History } from "lucide-react";
+import { Loader2, Save, Edit, Shield, Monitor, Key } from "lucide-react";
 import { determineDeviceType, getDeviceTypeReason } from "@/lib/deviceTypeUtils";
 
 // Antivirus status constants
@@ -87,6 +87,8 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
       fetchBranches();
       fetchUserTickets();
     }
+    // fetchUserDetails, fetchBranches, and fetchUserTickets are stable functions
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, userId]);
 
   const fetchBranches = async () => {
@@ -130,19 +132,27 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
       }
 
       // Fetch tickets created by or assigned to this user
-      const { data: createdTickets } = await supabase
+      const { data: createdTickets, error: createdError } = await supabase
         .from("tickets")
         .select("id, title, status, priority, created_at")
         .eq("created_by", profileData.user_id)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(20);
 
-      const { data: assignedTickets } = await supabase
+      if (createdError) {
+        console.error("Error fetching created tickets:", createdError);
+      }
+
+      const { data: assignedTickets, error: assignedError } = await supabase
         .from("tickets")
         .select("id, title, status, priority, created_at")
         .eq("assigned_to", profileData.user_id)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(20);
+
+      if (assignedError) {
+        console.error("Error fetching assigned tickets:", assignedError);
+      }
 
       // Combine and deduplicate tickets
       const allTickets = [...(createdTickets || []), ...(assignedTickets || [])];

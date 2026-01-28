@@ -65,6 +65,7 @@ const Dashboard = () => {
     id: string;
     title: string;
     status: string;
+    priority: string;
     created_at: string;
   }
   
@@ -466,19 +467,27 @@ const Dashboard = () => {
       }
 
       // Fetch user's tickets
-      const { data: createdTickets } = await supabase
+      const { data: createdTickets, error: createdError } = await supabase
         .from("tickets")
         .select("id, title, status, priority, created_at")
         .eq("created_by", userId)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(20);
 
-      const { data: assignedTickets } = await supabase
+      if (createdError) {
+        console.error("Error fetching created tickets:", createdError);
+      }
+
+      const { data: assignedTickets, error: assignedError } = await supabase
         .from("tickets")
         .select("id, title, status, priority, created_at")
         .eq("assigned_to", userId)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(20);
+
+      if (assignedError) {
+        console.error("Error fetching assigned tickets:", assignedError);
+      }
 
       // Combine and deduplicate tickets
       const allTickets = [...(createdTickets || []), ...(assignedTickets || [])];
