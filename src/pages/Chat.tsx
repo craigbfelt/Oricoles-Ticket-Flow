@@ -333,7 +333,7 @@ const Chat = () => {
                     <div className="px-4 pb-4 space-y-2">
                       {filteredProfiles.length === 0 ? (
                         <p className="text-sm text-muted-foreground text-center py-4">
-                          No users found
+                          {searchQuery ? "No users found" : "No users available"}
                         </p>
                       ) : (
                         filteredProfiles.map((profile) => (
