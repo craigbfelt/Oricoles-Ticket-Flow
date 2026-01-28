@@ -64,6 +64,14 @@ interface Branch {
   name: string;
 }
 
+interface Ticket {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  created_at: string;
+}
+
 export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: UserDetailsDialogProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -71,12 +79,16 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [editedDetails, setEditedDetails] = useState<UserDetails | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
 
   useEffect(() => {
     if (open && userId) {
       fetchUserDetails();
       fetchBranches();
+      fetchUserTickets();
     }
+    // fetchUserDetails, fetchBranches, and fetchUserTickets are stable functions
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, userId]);
 
   const fetchBranches = async () => {
@@ -90,6 +102,69 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
       setBranches(data || []);
     } catch (error) {
       console.error("Error fetching branches:", error);
+    }
+  };
+
+  const fetchUserTickets = async () => {
+    try {
+      // First get the user's email from master_user_list
+      const { data: userData } = await supabase
+        .from("master_user_list")
+        .select("email")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (!userData?.email) {
+        setTickets([]);
+        return;
+      }
+
+      // Find the auth user with this email
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("email", userData.email)
+        .maybeSingle();
+
+      if (!profileData?.user_id) {
+        setTickets([]);
+        return;
+      }
+
+      // Fetch tickets created by or assigned to this user
+      const { data: createdTickets, error: createdError } = await supabase
+        .from("tickets")
+        .select("id, title, status, priority, created_at")
+        .eq("created_by", profileData.user_id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (createdError) {
+        console.error("Error fetching created tickets:", createdError);
+      }
+
+      const { data: assignedTickets, error: assignedError } = await supabase
+        .from("tickets")
+        .select("id, title, status, priority, created_at")
+        .eq("assigned_to", profileData.user_id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (assignedError) {
+        console.error("Error fetching assigned tickets:", assignedError);
+      }
+
+      // Combine and deduplicate tickets
+      const allTickets = [...(createdTickets || []), ...(assignedTickets || [])];
+      const uniqueTickets = Array.from(
+        new Map(allTickets.map(ticket => [ticket.id, ticket])).values()
+      ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+       .slice(0, 20);
+
+      setTickets(uniqueTickets);
+    } catch (error) {
+      console.error("Error fetching user tickets:", error);
+      setTickets([]);
     }
   };
 
@@ -404,10 +479,11 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
         </DialogHeader>
 
         <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="basic">Basic Info</TabsTrigger>
             <TabsTrigger value="credentials">Credentials</TabsTrigger>
             <TabsTrigger value="device">Device & Security</TabsTrigger>
+            <TabsTrigger value="tickets">Tickets ({tickets.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="basic" className="space-y-4 mt-4">
@@ -621,6 +697,40 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
                 )}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="tickets" className="space-y-4 mt-4">
+            <div className="space-y-4">
+              {tickets.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">No tickets found for this user</p>
+              ) : (
+                tickets.map((ticket) => (
+                  <div
+                    key={ticket.id}
+                    className="p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-medium">{ticket.title}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(ticket.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Badge variant={
+                          ticket.status === 'open' ? 'destructive' :
+                          ticket.status === 'in_progress' ? 'default' :
+                          ticket.status === 'resolved' ? 'secondary' : 'outline'
+                        }>
+                          {ticket.status}
+                        </Badge>
+                        <Badge variant="outline">{ticket.priority}</Badge>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>

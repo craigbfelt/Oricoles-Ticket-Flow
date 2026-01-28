@@ -65,6 +65,7 @@ const Dashboard = () => {
     id: string;
     title: string;
     status: string;
+    priority: string;
     created_at: string;
   }
   
@@ -81,6 +82,7 @@ const Dashboard = () => {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [userDetailsDialogOpen, setUserDetailsDialogOpen] = useState(false);
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>(defaultThemeSettings);
+  const [userTickets, setUserTickets] = useState<Ticket[]>([]);
 
   // Load theme settings on component mount
   useEffect(() => {
@@ -438,6 +440,8 @@ const Dashboard = () => {
 
       if (!profile?.email) {
         console.log("No profile found for user");
+        setCurrentUserProfile(null);
+        setUserTickets([]);
         return;
       }
 
@@ -453,10 +457,50 @@ const Dashboard = () => {
         const enriched = await enrichUsersWithStats([directoryUser]);
         if (enriched && enriched.length > 0) {
           setCurrentUserProfile(enriched[0]);
+        } else {
+          console.error("Failed to enrich user profile");
+          setCurrentUserProfile(null);
         }
+      } else {
+        console.error("User not found in directory_users");
+        setCurrentUserProfile(null);
       }
+
+      // Fetch user's tickets
+      const { data: createdTickets, error: createdError } = await supabase
+        .from("tickets")
+        .select("id, title, status, priority, created_at")
+        .eq("created_by", userId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (createdError) {
+        console.error("Error fetching created tickets:", createdError);
+      }
+
+      const { data: assignedTickets, error: assignedError } = await supabase
+        .from("tickets")
+        .select("id, title, status, priority, created_at")
+        .eq("assigned_to", userId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (assignedError) {
+        console.error("Error fetching assigned tickets:", assignedError);
+      }
+
+      // Combine and deduplicate tickets
+      const allTickets = [...(createdTickets || []), ...(assignedTickets || [])];
+      const uniqueTickets = Array.from(
+        new Map(allTickets.map(ticket => [ticket.id, ticket])).values()
+      ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+       .slice(0, 20);
+
+      setUserTickets(uniqueTickets);
     } catch (error) {
       console.error("Error fetching current user profile:", error);
+      setCurrentUserProfile(null);
+      setUserTickets([]);
     }
   }, [enrichUsersWithStats]);
 
@@ -494,7 +538,7 @@ const Dashboard = () => {
     } catch (error) {
       console.error("Error checking admin role:", error);
     }
-  }, [fetchDirectoryUsers]);
+  }, [fetchDirectoryUsers, fetchCurrentUserProfile]);
 
   const fetchDashboardData = useCallback(async () => {
     const { data: tickets } = await supabase
@@ -984,6 +1028,42 @@ const Dashboard = () => {
                       </Badge>
                     )}
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* User Tickets */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Ticket className="h-5 w-5" />
+                    My Tickets
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {userTickets.length === 0 ? (
+                    <p className="text-muted-foreground">No tickets found</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {userTickets.map((ticket) => (
+                        <div
+                          key={ticket.id}
+                          className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer"
+                          onClick={() => navigate(`/tickets?id=${ticket.id}`)}
+                        >
+                          <div className="flex-1">
+                            <h3 className="font-medium text-sm">{ticket.title}</h3>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(ticket.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            {getStatusBadge(ticket.status)}
+                            <Badge variant="outline" className="text-xs">{ticket.priority}</Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
