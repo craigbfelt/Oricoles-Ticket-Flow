@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { MessageSquare, X, Send, Users, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -257,13 +257,15 @@ export const StaffChat = () => {
       .slice(0, 2);
   };
 
-  const filteredProfiles = profiles.filter((profile) => {
-    const searchLower = searchQuery.toLowerCase();
-    const fullName = profile.full_name?.toLowerCase() || "";
-    const email = profile.email?.toLowerCase() || "";
-    const role = profile.role?.toLowerCase() || "";
-    return fullName.includes(searchLower) || email.includes(searchLower) || role.includes(searchLower);
-  });
+  const filteredProfiles = useMemo(() => {
+    return profiles.filter((profile) => {
+      const searchLower = searchQuery.toLowerCase();
+      const fullName = profile.full_name?.toLowerCase() || "";
+      const email = profile.email?.toLowerCase() || "";
+      const role = profile.role?.toLowerCase() || "";
+      return fullName.includes(searchLower) || email.includes(searchLower) || role.includes(searchLower);
+    });
+  }, [profiles, searchQuery]);
 
   return (
     <>
@@ -310,7 +312,7 @@ export const StaffChat = () => {
                     </div>
                   </ScrollArea>
                 </TabsContent>
-                <TabsContent value="direct" className="flex-1 mt-0">
+                <TabsContent value="direct" className="flex-1 mt-0 flex flex-col">
                   <div className="px-4 pt-2 pb-2">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -319,12 +321,18 @@ export const StaffChat = () => {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-9"
+                        aria-label="Search users"
                       />
                     </div>
                   </div>
                   <ScrollArea className="h-[420px]">
                     <div className="px-4 pb-4 space-y-2">
-                      {filteredProfiles.map((profile) => (
+                      {filteredProfiles.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          No users found
+                        </p>
+                      ) : (
+                        filteredProfiles.map((profile) => (
                         <Button
                           key={profile.id}
                           variant={selectedUser?.id === profile.id ? "secondary" : "ghost"}
@@ -347,7 +355,8 @@ export const StaffChat = () => {
                             )}
                           </div>
                         </Button>
-                      ))}
+                        ))
+                      )}
                     </div>
                   </ScrollArea>
                 </TabsContent>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { MessageSquare, Send, Users, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -269,13 +269,15 @@ const Chat = () => {
       .slice(0, 2);
   };
 
-  const filteredProfiles = profiles.filter((profile) => {
-    const searchLower = searchQuery.toLowerCase();
-    const fullName = profile.full_name?.toLowerCase() || "";
-    const email = profile.email?.toLowerCase() || "";
-    const role = profile.role?.toLowerCase() || "";
-    return fullName.includes(searchLower) || email.includes(searchLower) || role.includes(searchLower);
-  });
+  const filteredProfiles = useMemo(() => {
+    return profiles.filter((profile) => {
+      const searchLower = searchQuery.toLowerCase();
+      const fullName = profile.full_name?.toLowerCase() || "";
+      const email = profile.email?.toLowerCase() || "";
+      const role = profile.role?.toLowerCase() || "";
+      return fullName.includes(searchLower) || email.includes(searchLower) || role.includes(searchLower);
+    });
+  }, [profiles, searchQuery]);
 
   return (
     <DashboardLayout>
@@ -323,12 +325,18 @@ const Chat = () => {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-9"
+                        aria-label="Search users"
                       />
                     </div>
                   </div>
                   <ScrollArea className="flex-1">
                     <div className="px-4 pb-4 space-y-2">
-                      {filteredProfiles.map((profile) => (
+                      {filteredProfiles.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          No users found
+                        </p>
+                      ) : (
+                        filteredProfiles.map((profile) => (
                         <Button
                           key={profile.id}
                           variant="ghost"
@@ -351,7 +359,8 @@ const Chat = () => {
                             )}
                           </div>
                         </Button>
-                      ))}
+                        ))
+                      )}
                     </div>
                   </ScrollArea>
                 </TabsContent>
