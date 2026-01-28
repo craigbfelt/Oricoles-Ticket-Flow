@@ -728,7 +728,7 @@ export const UnifiedWidget = () => {
   });
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-6 right-6 z-40">
       {isMinimized ? (
         <Button
           onClick={() => setIsMinimized(false)}
