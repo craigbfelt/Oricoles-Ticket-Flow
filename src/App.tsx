@@ -2,9 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { LiveChat } from "@/components/LiveChat";
-import { StaffChat } from "@/components/StaffChat";
-import { FloatingCopilot } from "@/components/FloatingCopilot";
+import { UnifiedWidget } from "@/components/UnifiedWidget";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useThemeInitializer } from "@/hooks/use-theme-initializer";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
@@ -117,9 +115,7 @@ const App = () => {
           <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-        <LiveChat />
-        <StaffChat />
-        <FloatingCopilot />
+        <UnifiedWidget />
       </PermissionsProvider>
     </TooltipProvider>
   </QueryClientProvider>
