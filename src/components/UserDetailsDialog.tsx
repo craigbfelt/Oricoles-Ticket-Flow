@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Save, Edit, Shield, Monitor, Key } from "lucide-react";
+import { Loader2, Save, Edit, Shield, Monitor, Key, History } from "lucide-react";
 import { determineDeviceType, getDeviceTypeReason } from "@/lib/deviceTypeUtils";
 
 // Antivirus status constants
@@ -469,10 +469,11 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
         </DialogHeader>
 
         <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="basic">Basic Info</TabsTrigger>
             <TabsTrigger value="credentials">Credentials</TabsTrigger>
             <TabsTrigger value="device">Device & Security</TabsTrigger>
+            <TabsTrigger value="tickets">Tickets ({tickets.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="basic" className="space-y-4 mt-4">
@@ -686,6 +687,40 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
                 )}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="tickets" className="space-y-4 mt-4">
+            <div className="space-y-4">
+              {tickets.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">No tickets found for this user</p>
+              ) : (
+                tickets.map((ticket) => (
+                  <div
+                    key={ticket.id}
+                    className="p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-medium">{ticket.title}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(ticket.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Badge variant={
+                          ticket.status === 'open' ? 'destructive' :
+                          ticket.status === 'in_progress' ? 'default' :
+                          ticket.status === 'resolved' ? 'secondary' : 'outline'
+                        }>
+                          {ticket.status}
+                        </Badge>
+                        <Badge variant="outline">{ticket.priority}</Badge>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>
