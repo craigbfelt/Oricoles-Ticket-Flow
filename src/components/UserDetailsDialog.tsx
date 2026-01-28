@@ -64,6 +64,14 @@ interface Branch {
   name: string;
 }
 
+interface Ticket {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  created_at: string;
+}
+
 export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: UserDetailsDialogProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -71,11 +79,13 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [editedDetails, setEditedDetails] = useState<UserDetails | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
 
   useEffect(() => {
     if (open && userId) {
       fetchUserDetails();
       fetchBranches();
+      fetchUserTickets();
     }
   }, [open, userId]);
 
@@ -90,6 +100,61 @@ export function UserDetailsDialog({ userId, open, onOpenChange, onUpdate }: User
       setBranches(data || []);
     } catch (error) {
       console.error("Error fetching branches:", error);
+    }
+  };
+
+  const fetchUserTickets = async () => {
+    try {
+      // First get the user's email from master_user_list
+      const { data: userData } = await supabase
+        .from("master_user_list")
+        .select("email")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (!userData?.email) {
+        setTickets([]);
+        return;
+      }
+
+      // Find the auth user with this email
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("email", userData.email)
+        .maybeSingle();
+
+      if (!profileData?.user_id) {
+        setTickets([]);
+        return;
+      }
+
+      // Fetch tickets created by or assigned to this user
+      const { data: createdTickets } = await supabase
+        .from("tickets")
+        .select("id, title, status, priority, created_at")
+        .eq("created_by", profileData.user_id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      const { data: assignedTickets } = await supabase
+        .from("tickets")
+        .select("id, title, status, priority, created_at")
+        .eq("assigned_to", profileData.user_id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      // Combine and deduplicate tickets
+      const allTickets = [...(createdTickets || []), ...(assignedTickets || [])];
+      const uniqueTickets = Array.from(
+        new Map(allTickets.map(ticket => [ticket.id, ticket])).values()
+      ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+       .slice(0, 20);
+
+      setTickets(uniqueTickets);
+    } catch (error) {
+      console.error("Error fetching user tickets:", error);
+      setTickets([]);
     }
   };
 
